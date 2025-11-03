@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">TechcitySuite</string>
+
+    <!-- Main Screen -->
+    <string name="phone_inventory_checker">Phone Inventory Checker</string>
+    <string name="enter_imei_number">Enter IMEI Number</string>
+    <string name="imei_hint">IMEI (15 digits)</string>
+    <string name="search">Search</string>
+    <string name="phone_details">Phone Details</string>
+
+    <!-- Labels -->
+    <string name="model_label">Model:</string>
+    <string name="ram_label">RAM:</string>
+    <string name="storage_label">Storage:</string>
+    <string name="color_label">Color:</string>
+    <string name="status_label">Status:</string>
+
+    <!-- Default Values -->
+    <string name="default_value">-</string>
+</resources>
