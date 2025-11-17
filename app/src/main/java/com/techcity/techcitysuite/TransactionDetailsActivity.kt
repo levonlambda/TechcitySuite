@@ -1,0 +1,633 @@
+package com.techcity.techcitysuite
+
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.techcity.techcitysuite.databinding.ActivityTransactionDetailsBinding
+import kotlinx.coroutines.*
+import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.*
+
+class TransactionDetailsActivity : AppCompatActivity() {
+
+    // ============================================================================
+    // START OF PART 1: PROPERTIES AND INITIALIZATION
+    // ============================================================================
+
+
+    private lateinit var binding: ActivityTransactionDetailsBinding
+    private lateinit var db: FirebaseFirestore
+    private var transactionType: String = ""
+    private var transactionFee: Double = 0.0
+    private var amount: Double = 0.0
+    private var customerPays: Double = 0.0
+    private var sequenceNumber: Int = 1
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
+
+    // ============================================================================
+    // END OF PART 1: PROPERTIES AND INITIALIZATION
+    // ============================================================================
+
+
+
+    // ============================================================================
+    // START OF PART 2: LIFECYCLE METHODS
+    // ============================================================================
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Initialize View Binding
+        binding = ActivityTransactionDetailsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Initialize Firestore
+        db = Firebase.firestore
+
+        // Get transaction type from intent
+        transactionType = intent.getStringExtra("TRANSACTION_TYPE") ?: "Cash In"
+
+        // Set up UI
+        setupUI()
+
+        // Get today's sequence number
+        getTodaySequenceNumber()
+
+        // Set up source of funds dropdown with dynamic label
+        setupSourceOfFundsDropdown()
+
+        // Set up listeners
+        setupListeners()
+    }
+
+
+    // ============================================================================
+    // START OF PART 3: UI SETUP METHODS
+    // ============================================================================
+
+    private fun setupUI() {
+        // Set title based on transaction type (remove "Transaction" word for payments and services)
+        val titleText = when (transactionType) {
+            "Skyro Payment" -> "Skyro Payment"
+            "Home Credit Payment" -> "Home Credit Payment"
+            "Mobile Loading Service" -> "Mobile Loading Service"
+            "Misc Payment" -> "Misc Payment"
+            else -> "$transactionType Transaction"
+        }
+        binding.titleText.text = titleText
+
+        // Set transaction type color
+        when (transactionType) {
+            "Cash In" -> {
+                binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+            }
+            "Cash Out" -> {
+                binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            }
+            "Mobile Loading Service" -> {
+                // Purple color for Mobile Loading
+                binding.titleText.setTextColor(ContextCompat.getColor(this, R.color.mobile_loading_purple))
+            }
+            "Skyro Payment" -> {
+                // Blue color for Skyro
+                binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
+            }
+            "Home Credit Payment" -> {
+                // Red color for Home Credit
+                binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            }
+            "Misc Payment" -> {
+                // Gray color for Misc Payment
+                binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+            }
+        }
+
+        // Handle fee options based on transaction type
+        when (transactionType) {
+            "Skyro Payment", "Home Credit Payment", "Mobile Loading Service" -> {
+                // For Skyro, Home Credit, and Mobile Loading: Only Add Fee is enabled
+                binding.radioAddToAmount.isChecked = true
+                binding.radioDeductFromAmount.isEnabled = false
+                binding.radioFree.isEnabled = false
+
+                // Set initial fee (will be calculated for Mobile Loading)
+                if (transactionType == "Mobile Loading Service") {
+                    binding.feeInput.setText("₱0")
+                } else {
+                    // Fixed fee of 15 pesos for Skyro and Home Credit
+                    transactionFee = 15.0
+                    binding.feeInput.setText(formatCurrency(transactionFee))
+                }
+            }
+            "Misc Payment" -> {
+                // For Misc Payment: No fee, always free
+                binding.radioFree.isChecked = true
+                binding.radioAddToAmount.isEnabled = false
+                binding.radioDeductFromAmount.isEnabled = false
+                binding.radioFree.isEnabled = false
+
+                // Set fee to 0
+                transactionFee = 0.0
+                binding.feeInput.setText("₱0")
+
+                // Update notes hint to show it's required
+                binding.notesInputLayout.hint = "Description (Required)"
+            }
+            else -> {
+                // For Cash In/Out: All options enabled
+                binding.radioAddToAmount.isChecked = true
+                binding.radioDeductFromAmount.isEnabled = true
+                binding.radioFree.isEnabled = true
+
+                // Set initial fee
+                binding.feeInput.setText("₱0")
+            }
+        }
+
+        // Disable fee and customer pays fields (read-only)
+        binding.feeInput.isEnabled = false
+        binding.customerPaysInput.isEnabled = false
+
+        // Set initial customer pays
+        binding.customerPaysInput.setText("₱0")
+
+        // Set initial sequence number display
+        binding.sequenceNumber.text = "#001"
+    }
+
+    private fun getTodaySequenceNumber() {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+
+        scope.launch {
+            try {
+                // Query transactions from today
+                val startOfDay = SimpleDateFormat("yyyy-MM-dd 00:00:00", Locale.US).parse("$today 00:00:00")
+                val endOfDay = SimpleDateFormat("yyyy-MM-dd 23:59:59", Locale.US).parse("$today 23:59:59")
+
+                val querySnapshot = db.collection("transactions")
+                    .whereGreaterThanOrEqualTo("timestamp", startOfDay?.time ?: 0)
+                    .whereLessThanOrEqualTo("timestamp", endOfDay?.time ?: System.currentTimeMillis())
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .limit(1)
+                    .get()
+                    .await()
+
+                if (!querySnapshot.isEmpty) {
+                    val lastTransaction = querySnapshot.documents[0]
+                    val lastSequence = lastTransaction.getLong("sequenceNumber")?.toInt() ?: 0
+                    sequenceNumber = lastSequence + 1
+                } else {
+                    sequenceNumber = 1
+                }
+
+                // Update display with padded number
+                binding.sequenceNumber.text = "#${sequenceNumber.toString().padStart(3, '0')}"
+
+            } catch (e: Exception) {
+                sequenceNumber = 1
+                binding.sequenceNumber.text = "#001"
+            }
+        }
+    }
+
+    private fun setupSourceOfFundsDropdown() {
+        // Different sources based on transaction type
+        val sources = when (transactionType) {
+            "Mobile Loading Service" -> arrayOf("GCash", "Reloader SIM")
+            "Misc Payment" -> arrayOf("Cash", "GCash", "PayMaya", "Others")
+            else -> arrayOf("GCash", "PayMaya", "Others")
+        }
+
+        // Change label based on transaction type
+        when (transactionType) {
+            "Cash In" -> {
+                binding.sourceOfFundsLabel.text = "Transfer To"
+            }
+            "Cash Out" -> {
+                binding.sourceOfFundsLabel.text = "Source of Funds"
+            }
+            "Skyro Payment", "Home Credit Payment" -> {
+                binding.sourceOfFundsLabel.text = "Payment Method"
+            }
+            "Mobile Loading Service" -> {
+                binding.sourceOfFundsLabel.text = "Load Source"
+            }
+            "Misc Payment" -> {
+                binding.sourceOfFundsLabel.text = "Payment Method"
+            }
+            else -> {
+                binding.sourceOfFundsLabel.text = "Source of Funds"
+            }
+        }
+
+        // Create adapter
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sources)
+
+        // Set adapter to the AutoCompleteTextView
+        binding.sourceOfFundsDropdown.setAdapter(adapter)
+
+        // Set default selection
+        binding.sourceOfFundsDropdown.setText(sources[0], false)
+
+        // Add item click listener for color changes
+        binding.sourceOfFundsDropdown.setOnItemClickListener { _, _, position, _ ->
+            updateSourceOfFundsColor(sources[position])
+        }
+
+        // Set initial color
+        updateSourceOfFundsColor(sources[0])
+    }
+
+    private fun updateSourceOfFundsColor(source: String) {
+        val color = when (source) {
+            "Cash" -> ContextCompat.getColor(this, R.color.cash_dark_green)
+            "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+            "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+            "Reloader SIM" -> ContextCompat.getColor(this, R.color.mobile_loading_purple)
+            "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+            else -> ContextCompat.getColor(this, android.R.color.black)
+        }
+
+        binding.sourceOfFundsDropdown.setTextColor(color)
+    }
+
+    private fun setupListeners() {
+        // Amount field text watcher
+        binding.amountInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                val input = s.toString()
+                if (input.isNotEmpty()) {
+                    try {
+                        amount = input.toDouble()
+                        calculateFeeAndTotal()
+                    } catch (e: NumberFormatException) {
+                        amount = 0.0
+                        transactionFee = 0.0
+                        customerPays = 0.0
+                        updateDisplay()
+                    }
+                } else {
+                    amount = 0.0
+                    if (transactionType != "Skyro Payment" && transactionType != "Home Credit Payment") {
+                        transactionFee = 0.0
+                    }
+                    customerPays = 0.0
+                    updateDisplay()
+                }
+            }
+        })
+
+        // Radio button listeners for fee options
+        binding.radioAddToAmount.setOnClickListener {
+            // Only allow if not Misc Payment
+            if (transactionType != "Misc Payment") {
+                if (amount > 0) {
+                    calculateFeeAndTotal()
+                }
+                binding.notesInputLayout.hint = "Add transaction details..."
+            }
+        }
+
+        binding.radioDeductFromAmount.setOnClickListener {
+            // Only allow if Cash In/Out
+            if (transactionType == "Cash In" || transactionType == "Cash Out") {
+                if (amount > 0) {
+                    calculateFeeAndTotal()
+                }
+                binding.notesInputLayout.hint = "Add transaction details..."
+            }
+        }
+
+        binding.radioFree.setOnClickListener {
+            // Only allow if Cash In/Out
+            if (transactionType == "Cash In" || transactionType == "Cash Out") {
+                if (amount > 0) {
+                    calculateFeeAndTotal()
+                }
+                binding.notesInputLayout.hint = "Reason for free transaction (Required)"
+            } else if (transactionType == "Misc Payment") {
+                // Always free for Misc Payment
+                binding.notesInputLayout.hint = "Description (Required)"
+            }
+        }
+
+        // Save button listener
+        binding.saveButton.setOnClickListener {
+            saveTransaction()
+        }
+
+        // Cancel button listener
+        binding.cancelButton.setOnClickListener {
+            finish()
+        }
+    }
+
+
+    // ============================================================================
+    // END OF PART 3: UI SETUP METHODS
+    // ============================================================================
+
+
+
+    // ============================================================================
+    // START OF PART 4: FEE CALCULATION METHODS
+    // ============================================================================
+
+    private fun calculateFee(baseAmount: Double): Double {
+        // Misc Payment has no fee
+        if (transactionType == "Misc Payment") {
+            return 0.0
+        }
+
+        // Mobile Loading Service fee structure
+        if (transactionType == "Mobile Loading Service") {
+            return when {
+                baseAmount <= 0 -> 0.0
+                baseAmount <= 99 -> 5.0
+                baseAmount <= 499 -> 10.0
+                baseAmount <= 999 -> 20.0
+                baseAmount >= 1000 -> 30.0
+                else -> 0.0
+            }
+        }
+
+        // Fixed fee for Skyro and Home Credit
+        if (transactionType == "Skyro Payment" || transactionType == "Home Credit Payment") {
+            return 15.0
+        }
+
+        // If Free option is selected, no fee
+        if (binding.radioFree.isChecked) {
+            return 0.0
+        }
+
+        // Fee calculation for Cash In/Out based on the provided table
+        return when {
+            baseAmount <= 0 -> 0.0
+            baseAmount <= 100 -> 5.0
+            baseAmount <= 500 -> 10.0
+            baseAmount <= 1000 -> 15.0
+            baseAmount <= 1500 -> 20.0
+            baseAmount <= 2000 -> 30.0
+            baseAmount <= 2500 -> 40.0
+            baseAmount <= 3000 -> 50.0
+            baseAmount <= 3500 -> 60.0
+            baseAmount <= 4000 -> 70.0
+            baseAmount <= 4500 -> 80.0
+            baseAmount <= 5000 -> 90.0
+            baseAmount <= 5500 -> 100.0
+            baseAmount <= 6000 -> 110.0
+            baseAmount <= 6500 -> 120.0
+            baseAmount <= 7000 -> 130.0
+            baseAmount <= 7500 -> 140.0
+            baseAmount <= 8000 -> 150.0
+            baseAmount <= 8500 -> 160.0
+            baseAmount <= 9000 -> 170.0
+            baseAmount <= 9500 -> 180.0
+            baseAmount <= 10000 -> 190.0
+            baseAmount <= 10500 -> 200.0
+            baseAmount <= 11000 -> 210.0
+            baseAmount <= 11500 -> 220.0
+            baseAmount <= 12000 -> 230.0
+            baseAmount <= 12500 -> 240.0
+            baseAmount <= 13000 -> 250.0
+            baseAmount <= 13500 -> 260.0
+            baseAmount <= 14000 -> 270.0
+            baseAmount <= 14500 -> 280.0
+            baseAmount <= 15000 -> 290.0
+            baseAmount <= 15500 -> 300.0
+            baseAmount <= 16000 -> 310.0
+            baseAmount <= 16500 -> 320.0
+            baseAmount <= 17000 -> 330.0
+            baseAmount <= 17500 -> 340.0
+            baseAmount <= 18000 -> 350.0
+            baseAmount <= 18500 -> 360.0
+            baseAmount <= 19000 -> 370.0
+            baseAmount <= 19500 -> 380.0
+            baseAmount <= 20000 -> 390.0
+            else -> {
+                // For amounts above 20000, add 10 pesos per 500 increment
+                val baseCharge = 390.0
+                val excess = baseAmount - 20000
+                val additionalCharge = (kotlin.math.ceil(excess / 500) * 10)
+                baseCharge + additionalCharge
+            }
+        }
+    }
+
+    private fun calculateFeeAndTotal() {
+        if (amount <= 0) {
+            // For fixed fee services, still show fee even with 0 amount
+            if (transactionType == "Skyro Payment" || transactionType == "Home Credit Payment") {
+                transactionFee = 15.0
+            } else {
+                transactionFee = 0.0
+            }
+            customerPays = 0.0
+            updateDisplay()
+            return
+        }
+
+        // Calculate fee based on transaction type
+        transactionFee = calculateFee(amount)
+
+        // Calculate what customer pays based on selected option
+        when {
+            binding.radioAddToAmount.isChecked -> {
+                // Customer pays amount + fee
+                customerPays = amount + transactionFee
+            }
+            binding.radioDeductFromAmount.isChecked -> {
+                // Customer pays only the amount (fee is deducted from what they receive)
+                customerPays = amount
+            }
+            binding.radioFree.isChecked -> {
+                // No fee, customer pays exact amount
+                transactionFee = 0.0
+                customerPays = amount
+            }
+        }
+
+        updateDisplay()
+    }
+
+    private fun updateDisplay() {
+
+        // ============================================================================
+        // END OF PART 4: FEE CALCULATION METHODS
+        // ============================================================================
+
+
+
+        // ============================================================================
+        // START OF PART 5: UI UPDATE METHODS
+        // ============================================================================
+
+        // Update fee display
+        binding.feeInput.setText(formatCurrency(transactionFee))
+
+        // Update customer pays field
+        binding.customerPaysInput.setText(formatCurrency(customerPays))
+    }
+
+
+    // ============================================================================
+    // END OF PART 5: UI UPDATE METHODS
+    // ============================================================================
+
+
+
+    // ============================================================================
+    // START OF PART 6: HELPER METHODS
+    // ============================================================================
+
+    private fun formatCurrency(amount: Double): String {
+        return "₱${String.format("%,.2f", amount)}"
+    }
+
+
+    // ============================================================================
+    // END OF PART 6: HELPER METHODS
+    // ============================================================================
+
+
+
+    // ============================================================================
+    // START OF PART 7: TRANSACTION SAVE METHODS
+    // ============================================================================
+
+    private fun saveTransaction() {
+        // Validate input
+        if (amount <= 0) {
+            showMessage("Please enter a valid amount", true)
+            return
+        }
+
+        // Get notes
+        val notes = binding.notesInput.text.toString().trim()
+
+        // Check if notes are required based on transaction type
+        when (transactionType) {
+            "Misc Payment" -> {
+                // Notes are ALWAYS required for Misc Payment
+                if (notes.isEmpty()) {
+                    showMessage("Please provide a description for this payment", true)
+                    binding.notesInput.requestFocus()
+                    return
+                }
+            }
+            "Cash In", "Cash Out" -> {
+                // Notes required only if Free option is selected
+                if (binding.radioFree.isChecked && notes.isEmpty()) {
+                    showMessage("Please provide a reason for free transaction", true)
+                    binding.notesInput.requestFocus()
+                    return
+                }
+            }
+        }
+
+        // Get source of funds / payment method
+        val sourceOfFunds = binding.sourceOfFundsDropdown.text.toString()
+
+        // Calculate actual amount customer receives
+        val customerReceives = when {
+            binding.radioAddToAmount.isChecked -> amount  // Customer receives full amount
+            binding.radioDeductFromAmount.isChecked -> amount - transactionFee  // Minus fee
+            binding.radioFree.isChecked -> amount  // Full amount (no fee)
+            else -> amount
+        }
+
+        // Determine fee option text
+        val feeOption = when {
+            binding.radioAddToAmount.isChecked -> "Add Fee"
+            binding.radioDeductFromAmount.isChecked -> "Deduct Fee"
+            binding.radioFree.isChecked -> "Free"
+            else -> "Add Fee"
+        }
+
+        // Show progress
+        binding.progressBar.visibility = View.VISIBLE
+        binding.saveButton.isEnabled = false
+
+        // Create transaction object
+        val transaction = hashMapOf(
+            "transactionType" to transactionType,
+            "sequenceNumber" to sequenceNumber,
+            "amount" to amount,
+            "fee" to transactionFee,
+            "customerPays" to customerPays,
+            "customerReceives" to customerReceives,
+            "feeOption" to feeOption,
+            "sourceOfFunds" to sourceOfFunds,
+            "notes" to notes,
+            "timestamp" to System.currentTimeMillis(),
+            "date" to SimpleDateFormat("M/d/yyyy", Locale.US).format(Date()),
+            "time" to SimpleDateFormat("HH:mm:ss", Locale.US).format(Date()),
+            "status" to "completed"
+        )
+
+        // Save to Firestore
+        db.collection("transactions")
+            .add(transaction)
+            .addOnSuccessListener { documentReference ->
+                binding.progressBar.visibility = View.GONE
+                showMessage("Transaction saved successfully!", false)
+
+                // Clear fields and finish after a delay
+                binding.root.postDelayed({
+                    finish()
+                }, 1500)
+            }
+            .addOnFailureListener { e ->
+                binding.progressBar.visibility = View.GONE
+                binding.saveButton.isEnabled = true
+                showMessage("Error saving transaction: ${e.message}", true)
+            }
+    }
+
+
+    // ============================================================================
+    // END OF PART 7: TRANSACTION SAVE METHODS
+    // ============================================================================
+
+
+
+    // ============================================================================
+    // START OF PART 6: HELPER METHODS (CONTINUED)
+    // ============================================================================
+
+    private fun showMessage(message: String, isError: Boolean) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+
+    // ============================================================================
+    // END OF PART 6: HELPER METHODS (CONTINUED)
+    // ============================================================================
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
+    }
+
+    // ============================================================================
+    // END OF PART 2: LIFECYCLE METHODS
+    // ============================================================================
+
+
+}

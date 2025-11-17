@@ -13,15 +13,34 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TechcitySuite">
+
+        <!-- Menu Activity - This is now the launcher -->
         <activity
-            android:name="com.techcity.techcitysuite.MainActivity"
+            android:name="com.techcity.techcitysuite.MenuActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Your existing IMEI Search Activity (keeping the original name) -->
+        <activity
+            android:name="com.techcity.techcitysuite.MainActivity"
+            android:exported="false"
+            android:label="Phone Inventory" />
+
+        <!-- Transaction Type Selection Activity -->
+        <activity
+            android:name="com.techcity.techcitysuite.TransactionTypeActivity"
+            android:exported="false"
+            android:label="Cash Transactions" />
+
+        <!-- Transaction Details Activity -->
+        <activity
+            android:name="com.techcity.techcitysuite.TransactionDetailsActivity"
+            android:exported="false"
+            android:label="Transaction Details" />
     </application>
 
 </manifest>

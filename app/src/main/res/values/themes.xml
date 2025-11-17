@@ -1,9 +1,48 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme with TechCity Blue/White/Black colors -->
     <style name="Base.Theme.TechcitySuite" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Primary brand colors - Blue instead of Purple -->
+        <item name="colorPrimary">@color/techcity_blue</item>
+        <item name="colorPrimaryVariant">@color/techcity_blue_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Secondary brand colors -->
+        <item name="colorSecondary">@color/techcity_accent</item>
+        <item name="colorSecondaryVariant">@color/techcity_blue_light</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorOnBackground">@color/black</item>
+
+        <!-- Surface colors -->
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/black</item>
+
+        <!-- Error colors (keep red for errors) -->
+        <item name="colorError">@color/red</item>
+        <item name="colorOnError">@color/white</item>
+
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/techcity_blue_dark</item>
+
+        <!-- Button colors -->
+        <item name="materialButtonStyle">@style/Widget.TechCity.Button</item>
     </style>
 
     <style name="Theme.TechcitySuite" parent="Base.Theme.TechcitySuite" />
+
+    <!-- Custom Button Style with Blue theme -->
+    <style name="Widget.TechCity.Button" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/techcity_blue</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">4dp</item>
+    </style>
+
+    <!-- Outlined Button Style -->
+    <style name="Widget.TechCity.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/techcity_blue</item>
+        <item name="android:textColor">@color/techcity_blue</item>
+        <item name="cornerRadius">4dp</item>
+    </style>
 </resources>

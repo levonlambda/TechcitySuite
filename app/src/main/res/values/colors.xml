@@ -1,20 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary brand colors -->
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
+    <!-- TechCity Store Brand Colors -->
 
-    <!-- Teal colors -->
+    <!-- Primary Brand Blue (from your image) -->
+    <color name="techcity_blue">#3F51B5</color>
+    <color name="techcity_blue_dark">#303F9F</color>
+    <color name="techcity_blue_light">#7986CB</color>
+
+    <!-- Accent Colors -->
+    <color name="techcity_accent">#3F51B5</color>
+
+    <!-- Basic Colors -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="gray">#757575</color>
+    <color name="light_gray">#E0E0E0</color>
+
+    <!-- Status Colors -->
+    <color name="green">#4CAF50</color>
+    <color name="red">#F44336</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
 
-    <!-- Basic colors -->
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Default Purple (for Android system compatibility) -->
+    <color name="purple_200">#7986CB</color>  <!-- Light TechCity Blue -->
+    <color name="purple_500">#3F51B5</color>  <!-- TechCity Blue -->
+    <color name="purple_700">#303F9F</color>  <!-- Dark TechCity Blue -->
 
-    <!-- Additional colors for the app -->
-    <color name="green">#4CAF50</color>
-    <color name="red">#F44336</color>
-    <color name="gray">#757575</color>
+    <!-- Transaction Type Colors -->
+    <color name="cash_in_green">#4CAF50</color>
+    <color name="cash_out_red">#F44336</color>
+    <color name="cash_dark_green">#2E7D32</color>
+
+    <!-- Mobile Loading Service Purple -->
+    <color name="mobile_loading_purple">#9C27B0</color>
+    <color name="mobile_loading_purple_light">#F3E5F5</color>
+
+    <!-- Button Colors -->
+    <color name="button_primary">#3F51B5</color>
+    <color name="button_secondary">#FFFFFF</color>
+    <color name="button_text_primary">#FFFFFF</color>
+    <color name="button_text_secondary">#3F51B5</color>
 </resources>
