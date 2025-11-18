@@ -24,14 +24,12 @@ class TransactionDetailsActivity : AppCompatActivity() {
     // START OF PART 1: PROPERTIES AND INITIALIZATION
     // ============================================================================
 
-
     private lateinit var binding: ActivityTransactionDetailsBinding
     private lateinit var db: FirebaseFirestore
     private var transactionType: String = ""
     private var transactionFee: Double = 0.0
     private var amount: Double = 0.0
     private var customerPays: Double = 0.0
-    private var sequenceNumber: Int = 1
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
     // ============================================================================
@@ -60,8 +58,8 @@ class TransactionDetailsActivity : AppCompatActivity() {
         // Set up UI
         setupUI()
 
-        // Get today's sequence number
-        getTodaySequenceNumber()
+        // Set up payment method dropdown
+        setupPaymentMethodDropdown()
 
         // Set up source of funds dropdown with dynamic label
         setupSourceOfFundsDropdown()
@@ -69,6 +67,10 @@ class TransactionDetailsActivity : AppCompatActivity() {
         // Set up listeners
         setupListeners()
     }
+
+    // ============================================================================
+    // END OF PART 2: LIFECYCLE METHODS
+    // ============================================================================
 
 
     // ============================================================================
@@ -109,6 +111,26 @@ class TransactionDetailsActivity : AppCompatActivity() {
             "Misc Payment" -> {
                 // Gray color for Misc Payment
                 binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+            }
+        }
+
+        // Show/Hide Paid with field based on transaction type
+        when (transactionType) {
+            "Cash In", "Mobile Loading Service", "Skyro Payment", "Home Credit Payment" -> {
+                // Show Paid with field
+                binding.paymentMethodCheckbox.visibility = View.VISIBLE
+                binding.paymentMethodLayout.visibility = View.VISIBLE
+                // Find the TextView label for "Paid with" and show it
+                val parent = binding.paymentMethodCheckbox.parent as? android.view.ViewGroup
+                parent?.visibility = View.VISIBLE
+            }
+            "Cash Out", "Misc Payment" -> {
+                // Hide Paid with field
+                binding.paymentMethodCheckbox.visibility = View.GONE
+                binding.paymentMethodLayout.visibility = View.GONE
+                // Find the TextView label for "Paid with" and hide it
+                val parent = binding.paymentMethodCheckbox.parent as? android.view.ViewGroup
+                parent?.visibility = View.GONE
             }
         }
 
@@ -161,43 +183,43 @@ class TransactionDetailsActivity : AppCompatActivity() {
         // Set initial customer pays
         binding.customerPaysInput.setText("₱0")
 
-        // Set initial sequence number display
-        binding.sequenceNumber.text = "#001"
+        // Set initial sequence number display - will be updated when transaction is saved
+        binding.sequenceNumber.text = "#---"
     }
 
-    private fun getTodaySequenceNumber() {
-        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+    private fun setupPaymentMethodDropdown() {
+        // Payment method options
+        val paymentMethods = arrayOf("Cash", "GCash", "PayMaya", "Others")
 
-        scope.launch {
-            try {
-                // Query transactions from today
-                val startOfDay = SimpleDateFormat("yyyy-MM-dd 00:00:00", Locale.US).parse("$today 00:00:00")
-                val endOfDay = SimpleDateFormat("yyyy-MM-dd 23:59:59", Locale.US).parse("$today 23:59:59")
+        // Create adapter
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, paymentMethods)
 
-                val querySnapshot = db.collection("transactions")
-                    .whereGreaterThanOrEqualTo("timestamp", startOfDay?.time ?: 0)
-                    .whereLessThanOrEqualTo("timestamp", endOfDay?.time ?: System.currentTimeMillis())
-                    .orderBy("timestamp", Query.Direction.DESCENDING)
-                    .limit(1)
-                    .get()
-                    .await()
+        // Set adapter to the AutoCompleteTextView
+        binding.paymentMethodDropdown.setAdapter(adapter)
 
-                if (!querySnapshot.isEmpty) {
-                    val lastTransaction = querySnapshot.documents[0]
-                    val lastSequence = lastTransaction.getLong("sequenceNumber")?.toInt() ?: 0
-                    sequenceNumber = lastSequence + 1
-                } else {
-                    sequenceNumber = 1
-                }
+        // Set default selection (Cash)
+        binding.paymentMethodDropdown.setText(paymentMethods[0], false)
 
-                // Update display with padded number
-                binding.sequenceNumber.text = "#${sequenceNumber.toString().padStart(3, '0')}"
+        // Initially disabled with gray color
+        binding.paymentMethodDropdown.isEnabled = false
+        binding.paymentMethodDropdown.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
 
-            } catch (e: Exception) {
-                sequenceNumber = 1
-                binding.sequenceNumber.text = "#001"
-            }
+        // Add item click listener for color changes
+        binding.paymentMethodDropdown.setOnItemClickListener { _, _, position, _ ->
+            updatePaymentMethodColor(paymentMethods[position])
         }
+    }
+
+    private fun updatePaymentMethodColor(method: String) {
+        val color = when (method) {
+            "Cash" -> ContextCompat.getColor(this, R.color.cash_dark_green)
+            "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+            "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+            "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+            else -> ContextCompat.getColor(this, android.R.color.black)
+        }
+
+        binding.paymentMethodDropdown.setTextColor(color)
     }
 
     private fun setupSourceOfFundsDropdown() {
@@ -262,6 +284,19 @@ class TransactionDetailsActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // Payment method checkbox listener
+        binding.paymentMethodCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            binding.paymentMethodDropdown.isEnabled = isChecked
+            if (!isChecked) {
+                // Reset to Cash when disabled with gray color
+                binding.paymentMethodDropdown.setText("Cash", false)
+                binding.paymentMethodDropdown.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+            } else {
+                // Apply color when enabled
+                updatePaymentMethodColor(binding.paymentMethodDropdown.text.toString())
+            }
+        }
+
         // Amount field text watcher
         binding.amountInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -335,7 +370,6 @@ class TransactionDetailsActivity : AppCompatActivity() {
             finish()
         }
     }
-
 
     // ============================================================================
     // END OF PART 3: UI SETUP METHODS
@@ -499,16 +533,17 @@ class TransactionDetailsActivity : AppCompatActivity() {
         return "₱${String.format("%,.2f", amount)}"
     }
 
+    private fun showMessage(message: String, isError: Boolean) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
 
     // ============================================================================
     // END OF PART 6: HELPER METHODS
     // ============================================================================
 
-
-
     // ============================================================================
-    // START OF PART 7: TRANSACTION SAVE METHODS
-    // ============================================================================
+// START OF PART 7: TRANSACTION SAVE METHODS
+// ============================================================================
 
     private fun saveTransaction() {
         // Validate input
@@ -519,6 +554,13 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
         // Get notes
         val notes = binding.notesInput.text.toString().trim()
+
+        // Get payment method
+        val paymentMethod = if (binding.paymentMethodCheckbox.isChecked) {
+            binding.paymentMethodDropdown.text.toString()
+        } else {
+            null // Not specified if checkbox is unchecked
+        }
 
         // Check if notes are required based on transaction type
         when (transactionType) {
@@ -559,16 +601,464 @@ class TransactionDetailsActivity : AppCompatActivity() {
             else -> "Add Fee"
         }
 
+        // Show confirmation dialog
+        showConfirmationDialog(
+            transactionType = transactionType,
+            amount = amount,
+            fee = transactionFee,
+            feeOption = feeOption,
+            customerReceives = customerReceives,
+            sourceOfFunds = sourceOfFunds,
+            paymentMethod = paymentMethod,
+            notes = notes
+        )
+    }
+
+    private fun showConfirmationDialog(
+        transactionType: String,
+        amount: Double,
+        fee: Double,
+        feeOption: String,
+        customerReceives: Double,
+        sourceOfFunds: String,
+        paymentMethod: String?,
+        notes: String
+    ) {
+        // Inflate the dialog layout
+        val dialogView = layoutInflater.inflate(R.layout.dialog_transaction_confirmation, null)
+
+        // Create the dialog
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        // Get dialog views using the inflated dialogView
+        val dialogTransactionType: android.widget.TextView = dialogView.findViewById(R.id.dialogTransactionType)
+        val dialogAmount: android.widget.TextView = dialogView.findViewById(R.id.dialogAmount)
+        val dialogFee: android.widget.TextView = dialogView.findViewById(R.id.dialogFee)
+        val dialogFeeOption: android.widget.TextView = dialogView.findViewById(R.id.dialogFeeOption)
+        val dialogTotal: android.widget.TextView = dialogView.findViewById(R.id.dialogTotal)
+        val paidWithRow: android.widget.LinearLayout = dialogView.findViewById(R.id.paidWithRow)
+        val dialogPaidWith: android.widget.TextView = dialogView.findViewById(R.id.dialogPaidWith)
+        val dialogMessage: android.widget.TextView = dialogView.findViewById(R.id.dialogMessage)
+        val dialogCancelButton: android.widget.Button = dialogView.findViewById(R.id.dialogCancelButton)
+        val dialogConfirmButton: android.widget.Button = dialogView.findViewById(R.id.dialogConfirmButton)
+
+        // Set transaction type with color
+        dialogTransactionType.text = transactionType
+        val transactionTypeColor = when (transactionType) {
+            "Cash In" -> ContextCompat.getColor(this, android.R.color.holo_green_dark)
+            "Cash Out" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+            "Mobile Loading Service" -> ContextCompat.getColor(this, R.color.mobile_loading_purple)
+            "Skyro Payment" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+            "Home Credit Payment" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+            "Misc Payment" -> ContextCompat.getColor(this, android.R.color.darker_gray)
+            else -> ContextCompat.getColor(this, android.R.color.black)
+        }
+        dialogTransactionType.setTextColor(transactionTypeColor)
+
+        // Calculate dynamic margin based on specific transaction types
+        val marginInDp = when (transactionType) {
+            "Cash In" -> 135
+            "Cash Out" -> 130
+            "Misc Payment" -> 110
+            "Skyro Payment" -> 90
+            "Mobile Loading Service" -> 60
+            "Home Credit Payment" -> 60
+            else -> 95
+        }
+
+        // Convert dp to pixels
+        val marginInPx = (marginInDp * resources.displayMetrics.density).toInt()
+
+        // Apply dynamic margin to transaction type
+        val layoutParams = dialogTransactionType.layoutParams as android.view.ViewGroup.MarginLayoutParams
+        layoutParams.marginEnd = marginInPx
+        dialogTransactionType.layoutParams = layoutParams
+
+        // Set amount
+        dialogAmount.text = formatCurrency(amount)
+
+        // Set fee
+        dialogFee.text = formatCurrency(fee)
+
+        // Set fee option
+        dialogFeeOption.text = feeOption
+
+        // Calculate customer pays (Total)
+        val customerPays = when (feeOption) {
+            "Add Fee" -> amount + fee
+            "Deduct Fee" -> amount
+            "Free" -> amount
+            else -> amount + fee
+        }
+
+        // Set total (customer pays) - BLACK and BOLD
+        dialogTotal.text = formatCurrency(customerPays)
+        dialogTotal.setTextColor(ContextCompat.getColor(this, android.R.color.black))
+
+        // Handle "Paid With" field based on transaction type
+        when (transactionType) {
+            "Cash In", "Mobile Loading Service", "Skyro Payment", "Home Credit Payment" -> {
+                // For these transactions, show what customer paid with (Cash by default or selected payment method)
+                paidWithRow.visibility = View.VISIBLE
+                val actualPaidWith = if (binding.paymentMethodCheckbox.isChecked && paymentMethod != null) {
+                    paymentMethod
+                } else {
+                    "Cash"  // Default to Cash if checkbox not checked
+                }
+                dialogPaidWith.text = actualPaidWith
+
+                // Set color for paid with based on the selected payment method
+                val paidWithColor = when (actualPaidWith) {
+                    "Cash" -> ContextCompat.getColor(this, R.color.cash_dark_green)
+                    "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+                    "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+                    "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                    else -> ContextCompat.getColor(this, android.R.color.black)
+                }
+                dialogPaidWith.setTextColor(paidWithColor)
+            }
+            "Cash Out" -> {
+                // For Cash Out, Source of Funds is how customer pays (they receive cash)
+                paidWithRow.visibility = View.VISIBLE
+                dialogPaidWith.text = sourceOfFunds  // This is how they pay (GCash, PayMaya, Others)
+
+                // Set color based on source of funds
+                val paidWithColor = when (sourceOfFunds) {
+                    "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+                    "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+                    "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                    else -> ContextCompat.getColor(this, android.R.color.black)
+                }
+                dialogPaidWith.setTextColor(paidWithColor)
+            }
+            "Misc Payment" -> {
+                // For Misc Payment, Payment Method is how customer pays
+                paidWithRow.visibility = View.VISIBLE
+                dialogPaidWith.text = sourceOfFunds  // This is the payment method (Cash, GCash, PayMaya, Others)
+
+                // Set color based on payment method
+                val paidWithColor = when (sourceOfFunds) {
+                    "Cash" -> ContextCompat.getColor(this, R.color.cash_dark_green)
+                    "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+                    "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+                    "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                    else -> ContextCompat.getColor(this, android.R.color.black)
+                }
+                dialogPaidWith.setTextColor(paidWithColor)
+            }
+        }
+
+        // Build the customer receives message based on transaction type
+        when (transactionType) {
+            "Cash Out" -> {
+                // For Cash Out: Customer receives cash amount
+                val messageText = android.text.SpannableStringBuilder()
+
+                // "Customer receives " in black
+                val part1 = "Customer receives "
+                messageText.append(part1)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    0,
+                    part1.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Amount in dark green
+                val startAmount = messageText.length
+                messageText.append(formatCurrency(customerReceives))
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.cash_dark_green)),
+                    startAmount,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // " in " in black
+                val part2 = " in "
+                val startIn = messageText.length
+                messageText.append(part2)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    startIn,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // "Cash" in green
+                val startCash = messageText.length
+                messageText.append("Cash")
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.cash_dark_green)),
+                    startCash,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                dialogMessage.text = messageText
+            }
+            "Misc Payment" -> {
+                // For Misc Payment: Just show payment received message
+                val messageText = android.text.SpannableStringBuilder()
+
+                // "Payment received: " in black
+                val part1 = "Payment received: "
+                messageText.append(part1)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    0,
+                    part1.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Amount in dark green
+                val startAmount = messageText.length
+                messageText.append(formatCurrency(amount))
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.cash_dark_green)),
+                    startAmount,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                dialogMessage.text = messageText
+            }
+            "Skyro Payment" -> {
+                // For Skyro: "Skyro payment ₱X.XX paid via [source]"
+                val messageText = android.text.SpannableStringBuilder()
+
+                // "Skyro payment " in black
+                val part1 = "Skyro payment "
+                messageText.append(part1)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    0,
+                    part1.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Amount in dark green
+                val startAmount = messageText.length
+                messageText.append(formatCurrency(amount))
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.cash_dark_green)),
+                    startAmount,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // " paid via " in black
+                val part2 = " paid via "
+                val startPaidVia = messageText.length
+                messageText.append(part2)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    startPaidVia,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Source in its specific color
+                val sourceColor = when (sourceOfFunds) {
+                    "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+                    "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+                    "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                    else -> ContextCompat.getColor(this, android.R.color.black)
+                }
+
+                val startSource = messageText.length
+                messageText.append(sourceOfFunds)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(sourceColor),
+                    startSource,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                dialogMessage.text = messageText
+            }
+            "Home Credit Payment" -> {
+                // For Home Credit: "Home Credit payment ₱X.XX paid via [source]"
+                val messageText = android.text.SpannableStringBuilder()
+
+                // "Home Credit payment " in black
+                val part1 = "Home Credit payment "
+                messageText.append(part1)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    0,
+                    part1.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Amount in dark green
+                val startAmount = messageText.length
+                messageText.append(formatCurrency(amount))
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.cash_dark_green)),
+                    startAmount,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // " paid via " in black
+                val part2 = " paid via "
+                val startPaidVia = messageText.length
+                messageText.append(part2)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    startPaidVia,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Source in its specific color
+                val sourceColor = when (sourceOfFunds) {
+                    "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+                    "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+                    "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                    else -> ContextCompat.getColor(this, android.R.color.black)
+                }
+
+                val startSource = messageText.length
+                messageText.append(sourceOfFunds)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(sourceColor),
+                    startSource,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                dialogMessage.text = messageText
+            }
+            else -> {
+                // For Cash In and Mobile Loading Service
+                val amountText = formatCurrency(customerReceives)
+                val sourceColor = when (sourceOfFunds) {
+                    "Cash" -> ContextCompat.getColor(this, R.color.cash_dark_green)
+                    "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+                    "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+                    "Reloader SIM" -> ContextCompat.getColor(this, R.color.mobile_loading_purple)
+                    "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                    else -> ContextCompat.getColor(this, android.R.color.black)
+                }
+
+                // Build the styled message
+                val messageText = android.text.SpannableStringBuilder()
+
+                // "Customer receives " in black
+                val part1 = "Customer receives "
+                messageText.append(part1)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    0,
+                    part1.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Amount in dark green
+                val startAmount = messageText.length
+                messageText.append(amountText)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.cash_dark_green)),
+                    startAmount,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // " via " in black
+                val part2 = " via "
+                val startVia = messageText.length
+                messageText.append(part2)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    startVia,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Source in its specific color
+                val startSource = messageText.length
+                messageText.append(sourceOfFunds)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(sourceColor),
+                    startSource,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                dialogMessage.text = messageText
+            }
+        }
+
+        // Cancel button
+        dialogCancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // Confirm button
+        dialogConfirmButton.setOnClickListener {
+            dialog.dismiss()
+            proceedWithSave(
+                transactionType = transactionType,
+                amount = amount,
+                fee = fee,
+                feeOption = feeOption,
+                customerReceives = customerReceives,
+                sourceOfFunds = sourceOfFunds,
+                paymentMethod = paymentMethod,
+                notes = notes
+            )
+        }
+
+        // Show the dialog
+        dialog.show()
+    }
+
+    private fun proceedWithSave(
+        transactionType: String,
+        amount: Double,
+        fee: Double,
+        feeOption: String,
+        customerReceives: Double,
+        sourceOfFunds: String,
+        paymentMethod: String?,
+        notes: String
+    ) {
         // Show progress
         binding.progressBar.visibility = View.VISIBLE
         binding.saveButton.isEnabled = false
 
-        // Create transaction object
+        // Calculate customer pays
+        val customerPays = when (feeOption) {
+            "Add Fee" -> amount + fee
+            "Deduct Fee" -> amount
+            "Free" -> amount
+            else -> amount + fee
+        }
+
+        // Process transaction in ledger system
+        val transactionNumber = TransactionProcessor.processTransaction(
+            transactionType = transactionType,
+            amount = amount,
+            customerPays = customerPays,
+            sourceOfFunds = sourceOfFunds,
+            paidWith = paymentMethod,
+            isPaidWithChecked = binding.paymentMethodCheckbox.isChecked,
+            notes = notes
+        )
+
+        // COMMENTED OUT FIRESTORE SAVING FOR NOW
+        /*
+        // Create transaction object for Firebase (keeping existing functionality)
         val transaction = hashMapOf(
             "transactionType" to transactionType,
-            "sequenceNumber" to sequenceNumber,
+            "sequenceNumber" to transactionNumber,  // Use the ledger transaction number
             "amount" to amount,
-            "fee" to transactionFee,
+            "fee" to fee,
             "customerPays" to customerPays,
             "customerReceives" to customerReceives,
             "feeOption" to feeOption,
@@ -579,6 +1069,11 @@ class TransactionDetailsActivity : AppCompatActivity() {
             "time" to SimpleDateFormat("HH:mm:ss", Locale.US).format(Date()),
             "status" to "completed"
         )
+
+        // Add payment method if specified
+        if (paymentMethod != null) {
+            transaction["paymentMethod"] = paymentMethod
+        }
 
         // Save to Firestore
         db.collection("transactions")
@@ -597,27 +1092,22 @@ class TransactionDetailsActivity : AppCompatActivity() {
                 binding.saveButton.isEnabled = true
                 showMessage("Error saving transaction: ${e.message}", true)
             }
+        */
+
+        // FOR TESTING: Just save to ledger without Firestore
+        // Simulate success after processing ledger
+        binding.progressBar.visibility = View.GONE
+        showMessage("Transaction #$transactionNumber saved to ledger!", false)
+
+        // Clear fields and finish after a delay
+        binding.root.postDelayed({
+            finish()
+        }, 1500)
     }
 
-
-    // ============================================================================
-    // END OF PART 7: TRANSACTION SAVE METHODS
-    // ============================================================================
-
-
-
-    // ============================================================================
-    // START OF PART 6: HELPER METHODS (CONTINUED)
-    // ============================================================================
-
-    private fun showMessage(message: String, isError: Boolean) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-
-
-    // ============================================================================
-    // END OF PART 6: HELPER METHODS (CONTINUED)
-    // ============================================================================
+// ============================================================================
+// END OF PART 7: TRANSACTION SAVE METHODS
+// ============================================================================
 
 
     override fun onDestroy() {

@@ -41,6 +41,13 @@
             android:name="com.techcity.techcitysuite.TransactionDetailsActivity"
             android:exported="false"
             android:label="Transaction Details" />
+
+        <!-- Ledger View Activity -->
+        <activity
+            android:name="com.techcity.techcitysuite.LedgerViewActivity"
+            android:exported="false"
+            android:label="Ledgers" />
+
     </application>
 
 </manifest>

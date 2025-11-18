@@ -16,6 +16,9 @@ class MenuActivity : AppCompatActivity() {
         binding = ActivityMenuBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Clear all ledgers on app start (for testing purposes)
+        LedgerManager.clearAll()
+
         // Set up click listeners for menu options
         setupMenuButtons()
     }
@@ -30,6 +33,12 @@ class MenuActivity : AppCompatActivity() {
         // Cash Transactions button
         binding.transactionsButton.setOnClickListener {
             val intent = Intent(this, TransactionTypeActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Ledger button
+        binding.ledgerButton.setOnClickListener {
+            val intent = Intent(this, LedgerViewActivity::class.java)
             startActivity(intent)
         }
     }
