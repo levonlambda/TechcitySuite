@@ -104,6 +104,15 @@ object TransactionProcessor {
         isPaidWithChecked: Boolean,
         notes: String
     ) {
+        // Calculate the amount customer receives (amount minus fee if deducted)
+        val customerReceives = if (customerPays < amount) {
+            // Fee was deducted, customer receives less
+            customerPays
+        } else {
+            // Fee was added or free, customer receives full amount
+            amount
+        }
+
         // Credit entry: Where the payment comes from
         val creditLedger = if (isPaidWithChecked && paidWith != null) {
             LedgerType.fromString(paidWith)
@@ -119,13 +128,13 @@ object TransactionProcessor {
             notes = notes
         )
 
-        // Debit entry: Where the funds are transferred to
+        // Debit entry: Where the funds are transferred to (customer receives this amount)
         val debitLedger = LedgerType.fromString(transferTo)
         LedgerManager.addDebit(
             ledgerType = debitLedger,
             transactionNumber = transactionNumber,
             transactionType = "Cash In",
-            amount = amount,
+            amount = customerReceives,  // Fixed: Use customerReceives instead of amount
             notes = notes
         )
     }
@@ -144,6 +153,15 @@ object TransactionProcessor {
         isPaidWithChecked: Boolean,
         notes: String
     ) {
+        // Calculate the amount of load delivered
+        val loadAmount = if (customerPays < amount) {
+            // Fee was deducted, load amount is reduced
+            customerPays
+        } else {
+            // Fee was added or free, full load amount
+            amount
+        }
+
         // Credit entry: Where the payment comes from
         val creditLedger = if (isPaidWithChecked && paidWith != null) {
             LedgerType.fromString(paidWith)
@@ -171,7 +189,7 @@ object TransactionProcessor {
             ledgerType = debitLedger,
             transactionNumber = transactionNumber,
             transactionType = "Mobile Loading Service",
-            amount = amount,
+            amount = loadAmount,  // Fixed: Use loadAmount instead of amount
             notes = notes
         )
     }
@@ -205,13 +223,13 @@ object TransactionProcessor {
             notes = notes
         )
 
-        // Debit entry: Where the payment goes
+        // Debit entry: Where the payment goes (full amount for payment services)
         val debitLedger = LedgerType.fromString(paymentMethod)
         LedgerManager.addDebit(
             ledgerType = debitLedger,
             transactionNumber = transactionNumber,
             transactionType = "Skyro Payment",
-            amount = amount,
+            amount = amount,  // Keep as amount - we pay the full amount to the service
             notes = notes
         )
     }
@@ -245,13 +263,13 @@ object TransactionProcessor {
             notes = notes
         )
 
-        // Debit entry: Where the payment goes
+        // Debit entry: Where the payment goes (full amount for payment services)
         val debitLedger = LedgerType.fromString(paymentMethod)
         LedgerManager.addDebit(
             ledgerType = debitLedger,
             transactionNumber = transactionNumber,
             transactionType = "Home Credit Payment",
-            amount = amount,
+            amount = amount,  // Keep as amount - we pay the full amount to the service
             notes = notes
         )
     }
@@ -268,16 +286,25 @@ object TransactionProcessor {
         sourceOfFunds: String,
         notes: String
     ) {
-        // Debit entry: Money leaving Cash Ledger
+        // Calculate the amount customer receives in cash
+        val customerReceives = if (customerPays < amount) {
+            // Fee was deducted, customer receives less cash
+            customerPays
+        } else {
+            // Fee was added or free, customer receives full amount in cash
+            amount
+        }
+
+        // Debit entry: Money leaving Cash Ledger (what customer receives)
         LedgerManager.addDebit(
             ledgerType = LedgerType.CASH,
             transactionNumber = transactionNumber,
             transactionType = "Cash Out",
-            amount = amount,
+            amount = customerReceives,  // Fixed: Use customerReceives instead of amount
             notes = notes
         )
 
-        // Credit entry: Money coming from source
+        // Credit entry: Money coming from source (what customer pays)
         val creditLedger = LedgerType.fromString(sourceOfFunds)
         LedgerManager.addCredit(
             ledgerType = creditLedger,

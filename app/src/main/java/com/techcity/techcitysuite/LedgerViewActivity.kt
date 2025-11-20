@@ -1,5 +1,9 @@
 package com.techcity.techcitysuite
 
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.widget.Toast
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,16 +12,20 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.techcity.techcitysuite.databinding.ActivityLedgerViewBinding
 import com.techcity.techcitysuite.databinding.ItemLedgerEntryBinding
+import java.util.Collections
 
 class LedgerViewActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLedgerViewBinding
     private var currentLedgerType: LedgerType = LedgerType.CASH
     private var showingAllCredits = false
+    private lateinit var itemTouchHelper: ItemTouchHelper
+    private var currentAdapter: LedgerEntriesAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +36,9 @@ class LedgerViewActivity : AppCompatActivity() {
 
         // Set up UI
         setupUI()
+
+        // Set up drag and drop
+        setupDragAndDrop()
 
         // Load initial ledger (Cash)
         loadLedger(LedgerType.CASH)
@@ -74,6 +85,189 @@ class LedgerViewActivity : AppCompatActivity() {
         binding.ledgerRecyclerView.layoutManager = LinearLayoutManager(this)
     }
 
+    private fun setupDragAndDrop() {
+        val callback = object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            ItemTouchHelper.LEFT  // Add swipe left for delete
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val fromPosition = viewHolder.adapterPosition
+                val toPosition = target.adapterPosition
+
+                if (currentAdapter != null) {
+                    currentAdapter?.swapItems(fromPosition, toPosition)
+
+                    if (showingAllCredits) {
+                        // Save the new order for All Credits view
+                        currentAdapter?.getEntries()?.let { orderedEntries ->
+                            LedgerManager.updateAllCreditsOrder(orderedEntries)
+                        }
+                    } else {
+                        // Save the new order to the specific ledger
+                        val ledger = LedgerManager.getLedger(currentLedgerType)
+                        currentAdapter?.getEntries()?.let { orderedEntries ->
+                            ledger.updateCustomOrder(orderedEntries)
+                        }
+                    }
+
+                    return true
+                }
+                return false
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                if (direction == ItemTouchHelper.LEFT) {
+                    val position = viewHolder.adapterPosition
+                    val entry = currentAdapter?.getEntries()?.get(position)
+
+                    entry?.let {
+                        showDeleteConfirmationDialog(it.transactionNumber, position)
+                    }
+                }
+            }
+
+            override fun isLongPressDragEnabled(): Boolean {
+                // Enable drag for both individual ledgers and All Credits view
+                return true
+            }
+
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    // Item is being dragged - change border color to blue
+                    viewHolder?.let {
+                        if (it is LedgerEntriesAdapter.ViewHolder) {
+                            it.setDragging(true)
+                        }
+                    }
+                } else if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                    // Item is being swiped - change background to red
+                    viewHolder?.let {
+                        if (it is LedgerEntriesAdapter.ViewHolder) {
+                            it.setSwiping(true)
+                        }
+                    }
+                }
+            }
+
+            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(recyclerView, viewHolder)
+
+                // Dragging/swiping ended - reset appearance
+                if (viewHolder is LedgerEntriesAdapter.ViewHolder) {
+                    viewHolder.setDragging(false)
+                    viewHolder.setSwiping(false)
+                }
+            }
+
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                    // Draw red background with delete icon when swiping
+                    val itemView = viewHolder.itemView
+                    val paint = Paint()
+
+                    if (dX < 0) {  // Swiping left
+                        // Draw red background
+                        paint.color = Color.RED
+                        c.drawRect(
+                            itemView.right.toFloat() + dX,
+                            itemView.top.toFloat(),
+                            itemView.right.toFloat(),
+                            itemView.bottom.toFloat(),
+                            paint
+                        )
+
+                        // Draw delete icon
+                        val deleteIcon = ContextCompat.getDrawable(
+                            this@LedgerViewActivity,
+                            android.R.drawable.ic_menu_delete
+                        )
+
+                        deleteIcon?.let { icon ->
+                            val iconMargin = (itemView.height - icon.intrinsicHeight) / 2
+                            val iconTop = itemView.top + iconMargin
+                            val iconBottom = iconTop + icon.intrinsicHeight
+                            val iconLeft = itemView.right - iconMargin - icon.intrinsicWidth
+                            val iconRight = itemView.right - iconMargin
+
+                            icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                            icon.setTint(Color.WHITE)
+                            icon.draw(c)
+                        }
+                    }
+                }
+
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+            }
+        }
+
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper.attachToRecyclerView(binding.ledgerRecyclerView)
+    }
+
+    private fun showDeleteConfirmationDialog(transactionNumber: Int, position: Int) {
+        // Get all entries for this transaction
+        val entries = LedgerManager.getTransactionDetails(transactionNumber)
+
+        if (entries.isNotEmpty()) {
+            val firstEntry = entries.first()
+
+            // Build message showing what will be deleted
+            val message = StringBuilder()
+            message.append("Delete Transaction #${transactionNumber.toString().padStart(3, '0')}?\n\n")
+            message.append("Type: ${firstEntry.transactionType}\n")
+            message.append("This will remove:\n")
+
+            entries.forEach { entry ->
+                message.append("• ${entry.entryType} of ${formatCurrency(entry.amount)} from ${entry.ledgerSource} ledger\n")
+            }
+
+            AlertDialog.Builder(this)
+                .setTitle("Confirm Delete")
+                .setMessage(message.toString())
+                .setPositiveButton("Delete") { _, _ ->
+                    // Delete the transaction
+                    if (LedgerManager.deleteTransaction(transactionNumber)) {
+                        // Refresh the current view
+                        if (showingAllCredits) {
+                            showAllCredits()
+                        } else {
+                            loadLedger(currentLedgerType)
+                        }
+
+                        // Show confirmation message
+                        Toast.makeText(
+                            this,
+                            "Transaction #${transactionNumber.toString().padStart(3, '0')} deleted",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                .setNegativeButton("Cancel") { _, _ ->
+                    // Refresh to restore the swiped item
+                    currentAdapter?.notifyItemChanged(position)
+                }
+                .setOnCancelListener {
+                    // Refresh to restore the swiped item if dialog is cancelled
+                    currentAdapter?.notifyItemChanged(position)
+                }
+                .show()
+        }
+    }
+
     private fun loadLedger(ledgerType: LedgerType) {
         currentLedgerType = ledgerType
         showingAllCredits = false
@@ -114,13 +308,15 @@ class LedgerViewActivity : AppCompatActivity() {
         if (entries.isEmpty()) {
             binding.emptyMessage.visibility = View.VISIBLE
             binding.ledgerRecyclerView.visibility = View.GONE
+            currentAdapter = null
         } else {
             binding.emptyMessage.visibility = View.GONE
             binding.ledgerRecyclerView.visibility = View.VISIBLE
 
-            // Set adapter with showPaymentSource = true for all views now
-            val adapter = LedgerEntriesAdapter(entries, showPaymentSource = true)
-            binding.ledgerRecyclerView.adapter = adapter
+            // Create mutable list for drag and drop
+            val mutableEntries = entries.toMutableList()
+            currentAdapter = LedgerEntriesAdapter(mutableEntries, showPaymentSource = true, canReorder = true)
+            binding.ledgerRecyclerView.adapter = currentAdapter
         }
     }
 
@@ -136,17 +332,8 @@ class LedgerViewActivity : AppCompatActivity() {
         // Update title
         binding.ledgerTitle.text = "All Credit Transactions"
 
-        // Collect all credit entries from all ledgers
-        val allCreditEntries = mutableListOf<LedgerEntry>()
-        val allLedgers = LedgerManager.getAllLedgers()
-
-        allLedgers.forEach { (_, ledger) ->
-            val creditEntries = ledger.entries.filter { it.entryType == LedgerEntryType.CREDIT }
-            allCreditEntries.addAll(creditEntries)
-        }
-
-        // Sort by transaction number (descending)
-        allCreditEntries.sortByDescending { it.transactionNumber }
+        // Get all credit entries in their custom order (or default order)
+        val allCreditEntries = LedgerManager.getAllCreditsOrdered()
 
         // Calculate totals
         val creditTotal = allCreditEntries.sumOf { it.amount }
@@ -166,13 +353,15 @@ class LedgerViewActivity : AppCompatActivity() {
             binding.emptyMessage.text = "No credit transactions yet"
             binding.emptyMessage.visibility = View.VISIBLE
             binding.ledgerRecyclerView.visibility = View.GONE
+            currentAdapter = null
         } else {
             binding.emptyMessage.visibility = View.GONE
             binding.ledgerRecyclerView.visibility = View.VISIBLE
 
-            // Set adapter with showPaymentSource = true
-            val adapter = LedgerEntriesAdapter(allCreditEntries, showPaymentSource = true)
-            binding.ledgerRecyclerView.adapter = adapter
+            // Set adapter with canReorder = true for All Credits view now
+            val mutableEntries = allCreditEntries.toMutableList()
+            currentAdapter = LedgerEntriesAdapter(mutableEntries, showPaymentSource = true, canReorder = true)
+            binding.ledgerRecyclerView.adapter = currentAdapter
         }
     }
 
@@ -200,14 +389,60 @@ class LedgerViewActivity : AppCompatActivity() {
      * RecyclerView Adapter for Ledger Entries
      */
     inner class LedgerEntriesAdapter(
-        private val entries: List<LedgerEntry>,
-        private val showPaymentSource: Boolean = false
+        private val entries: MutableList<LedgerEntry>,
+        private val showPaymentSource: Boolean = false,
+        private val canReorder: Boolean = false
     ) : RecyclerView.Adapter<LedgerEntriesAdapter.ViewHolder>() {
+
+        fun swapItems(fromPosition: Int, toPosition: Int) {
+            if (fromPosition < toPosition) {
+                for (i in fromPosition until toPosition) {
+                    Collections.swap(entries, i, i + 1)
+                }
+            } else {
+                for (i in fromPosition downTo toPosition + 1) {
+                    Collections.swap(entries, i, i - 1)
+                }
+            }
+            notifyItemMoved(fromPosition, toPosition)
+        }
+
+        fun getEntries(): List<LedgerEntry> = entries
 
         inner class ViewHolder(private val binding: ItemLedgerEntryBinding) :
             RecyclerView.ViewHolder(binding.root) {
 
+            fun setDragging(isDragging: Boolean) {
+                if (isDragging) {
+                    // Change stroke color to blue when dragging
+                    binding.cardView.strokeColor = ContextCompat.getColor(itemView.context, android.R.color.holo_blue_dark)
+                    binding.cardView.strokeWidth = 4  // Make border thicker
+                    binding.cardView.cardElevation = 8f  // Increase elevation for lifted effect
+                } else {
+                    // Reset to normal state
+                    binding.cardView.strokeColor = ContextCompat.getColor(itemView.context, R.color.light_gray)
+                    binding.cardView.strokeWidth = 2  // Normal border width
+                    binding.cardView.cardElevation = 2f  // Normal elevation
+                }
+            }
+
+            fun setSwiping(isSwiping: Boolean) {
+                if (isSwiping) {
+                    // Optional: Add visual feedback when swiping
+                    binding.cardView.alpha = 0.8f
+                } else {
+                    binding.cardView.alpha = 1.0f
+                }
+            }
+
             fun bind(entry: LedgerEntry) {
+                // Add visual indicator that item can be dragged (only in individual ledger views)
+                if (canReorder) {
+                    binding.root.alpha = 1.0f
+                } else {
+                    binding.root.alpha = 1.0f
+                }
+
                 // Set transaction number
                 binding.transactionNumber.text = "#${entry.transactionNumber.toString().padStart(3, '0')}"
 
@@ -226,7 +461,7 @@ class LedgerViewActivity : AppCompatActivity() {
                 }
                 binding.transactionType.setTextColor(transactionTypeColor)
 
-                // Show payment source badge - always visible now
+                // Show payment source badge
                 if (showPaymentSource) {
                     binding.paymentSource.visibility = View.VISIBLE
                     binding.paymentSource.text = entry.ledgerSource.name

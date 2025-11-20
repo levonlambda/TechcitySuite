@@ -1035,15 +1035,24 @@ class TransactionDetailsActivity : AppCompatActivity() {
         // Calculate customer pays
         val customerPays = when (feeOption) {
             "Add Fee" -> amount + fee
-            "Deduct Fee" -> amount
+            "Deduct Fee" -> amount  // Customer pays the amount, receives less
             "Free" -> amount
             else -> amount + fee
         }
 
+        // Calculate what customer actually receives
+        val actualCustomerReceives = when (feeOption) {
+            "Add Fee" -> amount  // Customer receives full amount, pays extra for fee
+            "Deduct Fee" -> amount - fee  // Customer receives amount minus fee
+            "Free" -> amount  // Customer receives full amount
+            else -> amount
+        }
+
         // Process transaction in ledger system
+        // Pass the actual amount customer receives for proper ledger entries
         val transactionNumber = TransactionProcessor.processTransaction(
             transactionType = transactionType,
-            amount = amount,
+            amount = actualCustomerReceives,  // This should be what customer receives
             customerPays = customerPays,
             sourceOfFunds = sourceOfFunds,
             paidWith = paymentMethod,
@@ -1102,7 +1111,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
         // Clear fields and finish after a delay
         binding.root.postDelayed({
             finish()
-        }, 1500)
+        }, 1000)
     }
 
 // ============================================================================
