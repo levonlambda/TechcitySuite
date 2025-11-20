@@ -45,8 +45,18 @@ data class LedgerEntry(
     val ledgerSource: LedgerType,  // Which ledger this entry belongs to
     val notes: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val date: String = SimpleDateFormat("M/d/yyyy", Locale.US).format(Date()),
-    val time: String = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+    val date: String = run {
+        val timeZone = TimeZone.getTimeZone("GMT+08:00")
+        val format = SimpleDateFormat("M/d/yyyy", Locale.US)
+        format.timeZone = timeZone
+        format.format(Date())
+    },
+    val time: String = run {
+        val timeZone = TimeZone.getTimeZone("GMT+08:00")
+        val format = SimpleDateFormat("h:mm a", Locale.US)
+        format.timeZone = timeZone
+        format.format(Date())
+    }
 )
 
 /**

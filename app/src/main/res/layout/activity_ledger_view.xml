@@ -7,6 +7,10 @@
     android:background="@color/white"
     tools:context=".LedgerViewActivity">
 
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: HEADER SECTION -->
+    <!-- ========================================================================== -->
+
     <!-- Header -->
     <LinearLayout
         android:id="@+id/headerSection"
@@ -26,15 +30,31 @@
             android:padding="16dp"
             android:paddingBottom="8dp">
 
-            <TextView
-                android:id="@+id/ledgerTitle"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Cash Ledger"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="@color/white" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/ledgerTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cash Ledger"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white" />
+
+                <!-- Date Label -->
+                <TextView
+                    android:id="@+id/dateLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Today"
+                    android:textSize="14sp"
+                    android:textColor="#B3C5E8"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
 
             <!-- All Credits Button -->
             <Button
@@ -46,7 +66,17 @@
                 android:backgroundTint="@color/white"
                 android:textColor="#3F51B5"
                 style="@style/Widget.MaterialComponents.Button"
-                app:cornerRadius="18dp" />
+                app:cornerRadius="18dp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Kebab Menu Button -->
+            <ImageButton
+                android:id="@+id/menuButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_kebab_menu"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Menu" />
         </LinearLayout>
 
         <!-- Balance Section with White Background - Single Line -->
@@ -150,6 +180,10 @@
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: HEADER SECTION -->
+    <!-- ========================================================================== -->
 
     <!-- Ledger Type Selector -->
     <HorizontalScrollView

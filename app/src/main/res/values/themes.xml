@@ -45,4 +45,16 @@
         <item name="android:textColor">@color/techcity_blue</item>
         <item name="cornerRadius">4dp</item>
     </style>
+
+    <!-- Custom DatePicker Style -->
+    <style name="DatePickerSpinnerStyle" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="colorAccent">@color/techcity_blue</item>
+        <item name="colorControlActivated">@color/techcity_blue</item>
+        <item name="android:datePickerStyle">@style/SpinnerDatePicker</item>
+    </style>
+
+    <style name="SpinnerDatePicker" parent="android:Widget.Material.DatePicker">
+        <item name="android:calendarViewShown">false</item>
+        <item name="android:datePickerMode">spinner</item>
+    </style>
 </resources>

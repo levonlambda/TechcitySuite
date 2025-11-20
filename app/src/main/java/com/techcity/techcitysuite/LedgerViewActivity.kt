@@ -17,7 +17,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.techcity.techcitysuite.databinding.ActivityLedgerViewBinding
 import com.techcity.techcitysuite.databinding.ItemLedgerEntryBinding
+import java.text.SimpleDateFormat
 import java.util.Collections
+import java.util.*
+
 
 class LedgerViewActivity : AppCompatActivity() {
 
@@ -26,6 +29,7 @@ class LedgerViewActivity : AppCompatActivity() {
     private var showingAllCredits = false
     private lateinit var itemTouchHelper: ItemTouchHelper
     private var currentAdapter: LedgerEntriesAdapter? = null
+    private var selectedDate: String = "" // Add this line - stores current filter date
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +59,10 @@ class LedgerViewActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
+        // Initialize selected date to today
+        selectedDate = getCurrentDate()
+        updateDateLabel()
+
         // Set up ledger selection buttons
         binding.cashButton.setOnClickListener {
             showingAllCredits = false
@@ -79,6 +87,11 @@ class LedgerViewActivity : AppCompatActivity() {
         // Set up All Credits button
         binding.allCreditsButton.setOnClickListener {
             showAllCredits()
+        }
+
+        // Set up menu button for date picker
+        binding.menuButton.setOnClickListener {
+            showDatePicker()
         }
 
         // Set up RecyclerView
@@ -281,20 +294,24 @@ class LedgerViewActivity : AppCompatActivity() {
         // Update title
         binding.ledgerTitle.text = "${ledgerType.name} Ledger"
 
-        // Calculate totals
-        val entries = ledger.getEntriesSorted()
+        // Get entries and filter by selected date
+        val allEntries = ledger.getEntriesSorted()
+        val entries = allEntries.filter { it.date == selectedDate }
+
+        // Calculate totals from filtered entries
         val creditTotal = entries.filter { it.entryType == LedgerEntryType.CREDIT }
             .sumOf { it.amount }
         val debitTotal = entries.filter { it.entryType == LedgerEntryType.DEBIT }
             .sumOf { it.amount }
+        val filteredBalance = creditTotal - debitTotal
 
         // Update amounts
-        binding.totalAmount.text = formatCurrency(ledger.balance)
+        binding.totalAmount.text = formatCurrency(filteredBalance)
         binding.creditAmount.text = formatCurrency(creditTotal)
         binding.debitAmount.text = formatCurrency(debitTotal)
 
         // Set total color based on value
-        if (ledger.balance >= 0) {
+        if (filteredBalance >= 0) {
             binding.totalAmount.setTextColor(
                 ContextCompat.getColor(this, android.R.color.black)
             )
@@ -306,6 +323,7 @@ class LedgerViewActivity : AppCompatActivity() {
 
         // Load entries
         if (entries.isEmpty()) {
+            binding.emptyMessage.text = "No transactions for this date"
             binding.emptyMessage.visibility = View.VISIBLE
             binding.ledgerRecyclerView.visibility = View.GONE
             currentAdapter = null
@@ -332,11 +350,12 @@ class LedgerViewActivity : AppCompatActivity() {
         // Update title
         binding.ledgerTitle.text = "All Credit Transactions"
 
-        // Get all credit entries in their custom order (or default order)
+        // Get all credit entries and filter by selected date
         val allCreditEntries = LedgerManager.getAllCreditsOrdered()
+        val entries = allCreditEntries.filter { it.date == selectedDate }
 
-        // Calculate totals
-        val creditTotal = allCreditEntries.sumOf { it.amount }
+        // Calculate totals from filtered entries
+        val creditTotal = entries.sumOf { it.amount }
 
         // Update amounts
         binding.totalAmount.text = formatCurrency(creditTotal)
@@ -349,8 +368,8 @@ class LedgerViewActivity : AppCompatActivity() {
         )
 
         // Load entries
-        if (allCreditEntries.isEmpty()) {
-            binding.emptyMessage.text = "No credit transactions yet"
+        if (entries.isEmpty()) {
+            binding.emptyMessage.text = "No credit transactions for this date"
             binding.emptyMessage.visibility = View.VISIBLE
             binding.ledgerRecyclerView.visibility = View.GONE
             currentAdapter = null
@@ -359,7 +378,7 @@ class LedgerViewActivity : AppCompatActivity() {
             binding.ledgerRecyclerView.visibility = View.VISIBLE
 
             // Set adapter with canReorder = true for All Credits view now
-            val mutableEntries = allCreditEntries.toMutableList()
+            val mutableEntries = entries.toMutableList()
             currentAdapter = LedgerEntriesAdapter(mutableEntries, showPaymentSource = true, canReorder = true)
             binding.ledgerRecyclerView.adapter = currentAdapter
         }
@@ -383,6 +402,122 @@ class LedgerViewActivity : AppCompatActivity() {
 
     private fun formatCurrency(amount: Double): String {
         return "₱${String.format("%,.2f", amount)}"
+    }
+
+    private fun getCurrentDate(): String {
+        val timeZone = TimeZone.getTimeZone("GMT+08:00")
+        val format = SimpleDateFormat("M/d/yyyy", Locale.US)
+        format.timeZone = timeZone
+        return format.format(Date())
+    }
+
+    private fun updateDateLabel() {
+        val today = getCurrentDate()
+        if (selectedDate == today) {
+            binding.dateLabel.text = "Today"
+        } else {
+            binding.dateLabel.text = selectedDate
+        }
+    }
+
+    private fun showDatePicker() {
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT+08:00"))
+
+        // Parse current selected date
+        try {
+            val format = SimpleDateFormat("M/d/yyyy", Locale.US)
+            format.timeZone = TimeZone.getTimeZone("GMT+08:00")
+            val date = format.parse(selectedDate)
+            if (date != null) {
+                calendar.time = date
+            }
+        } catch (e: Exception) {
+            // Use current date if parsing fails
+        }
+
+        // Create custom dialog
+        val dialogView = layoutInflater.inflate(R.layout.dialog_date_picker, null)
+        val datePicker = dialogView.findViewById<android.widget.DatePicker>(R.id.datePicker)
+        val cancelButton = dialogView.findViewById<android.widget.Button>(R.id.cancelButton)
+        val okButton = dialogView.findViewById<android.widget.Button>(R.id.okButton)
+
+        // Set initial date
+        datePicker.init(
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH),
+            null
+        )
+
+        // Create dialog
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        // Set button click listeners
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        okButton.setOnClickListener {
+            // Update selected date
+            selectedDate = "${datePicker.month + 1}/${datePicker.dayOfMonth}/${datePicker.year}"
+            updateDateLabel()
+
+            // Refresh current view with new date filter
+            if (showingAllCredits) {
+                showAllCredits()
+            } else {
+                loadLedger(currentLedgerType)
+            }
+
+            dialog.dismiss()
+        }
+
+        dialog.show()
+
+        // Adjust dialog size after showing
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.85).toInt(), // 85% of screen width
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
+    private fun addDividerToButtonBar(parent: android.view.ViewGroup) {
+        for (i in 0 until parent.childCount) {
+            val child = parent.getChildAt(i)
+
+            // Look for the button bar (usually has id "buttonPanel")
+            if (child.id == android.R.id.button1 || child.id == android.R.id.button2) {
+                // Found a button, add border to its parent
+                (child.parent as? android.view.View)?.let { buttonBar ->
+                    buttonBar.setPadding(
+                        buttonBar.paddingLeft,
+                        32, // Add top padding
+                        buttonBar.paddingRight,
+                        buttonBar.paddingBottom
+                    )
+                    // Add top border
+                    buttonBar.background = android.graphics.drawable.LayerDrawable(
+                        arrayOf(
+                            android.graphics.drawable.ColorDrawable(
+                                ContextCompat.getColor(this, R.color.light_gray)
+                            ).apply {
+                                setBounds(0, 0, 10000, 2)
+                            },
+                            android.graphics.drawable.ColorDrawable(
+                                android.graphics.Color.WHITE
+                            )
+                        )
+                    )
+                }
+                return
+            }
+
+            if (child is android.view.ViewGroup) {
+                addDividerToButtonBar(child)
+            }
+        }
     }
 
     /**
@@ -514,6 +649,9 @@ class LedgerViewActivity : AppCompatActivity() {
                 if (entry.notes.isNotEmpty()) {
                     binding.notes.visibility = View.VISIBLE
                     binding.notes.text = "Notes: ${entry.notes}"
+                    binding.notes.setTextColor(
+                        ContextCompat.getColor(itemView.context, R.color.techcity_blue)
+                    )
                 } else {
                     binding.notes.visibility = View.GONE
                 }
