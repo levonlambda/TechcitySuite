@@ -24,12 +24,23 @@ import java.util.*
 
 class LedgerViewActivity : AppCompatActivity() {
 
+    // ============================================================================
+    // START OF PART 1: PROPERTIES AND INITIALIZATION
+    // ============================================================================
+
     private lateinit var binding: ActivityLedgerViewBinding
     private var currentLedgerType: LedgerType = LedgerType.CASH
     private var showingAllCredits = false
     private lateinit var itemTouchHelper: ItemTouchHelper
     private var currentAdapter: LedgerEntriesAdapter? = null
-    private var selectedDate: String = "" // Add this line - stores current filter date
+    private var selectedDate: String = ""
+
+    // Track toggled entries by their ID
+    private val toggledEntries = mutableSetOf<String>()
+
+    // ============================================================================
+    // END OF PART 1: PROPERTIES AND INITIALIZATION
+    // ============================================================================
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -194,7 +205,10 @@ class LedgerViewActivity : AppCompatActivity() {
 
                     if (dX < 0) {  // Swiping left
                         // Draw red background
-                        paint.color = Color.RED
+                        paint.color = ContextCompat.getColor(
+                            this@LedgerViewActivity,
+                            R.color.techcity_blue
+                        )
                         c.drawRect(
                             itemView.right.toFloat() + dX,
                             itemView.top.toFloat(),
@@ -285,6 +299,9 @@ class LedgerViewActivity : AppCompatActivity() {
         currentLedgerType = ledgerType
         showingAllCredits = false
 
+        // Clear toggled entries when switching ledgers
+        toggledEntries.clear()
+
         // Update button states
         updateButtonStates(ledgerType)
 
@@ -333,13 +350,24 @@ class LedgerViewActivity : AppCompatActivity() {
 
             // Create mutable list for drag and drop
             val mutableEntries = entries.toMutableList()
-            currentAdapter = LedgerEntriesAdapter(mutableEntries, showPaymentSource = true, canReorder = true)
+            currentAdapter = LedgerEntriesAdapter(
+                entries = mutableEntries,
+                showPaymentSource = true,
+                canReorder = true,
+                toggledEntries = toggledEntries,
+                onEntryClick = { entryId ->
+                    toggleEntryBackground(entryId)
+                }
+            )
             binding.ledgerRecyclerView.adapter = currentAdapter
         }
     }
 
     private fun showAllCredits() {
         showingAllCredits = true
+
+        // Clear toggled entries when switching to All Credits
+        toggledEntries.clear()
 
         // Reset button states (none selected)
         binding.cashButton.alpha = 0.6f
@@ -379,9 +407,27 @@ class LedgerViewActivity : AppCompatActivity() {
 
             // Set adapter with canReorder = true for All Credits view now
             val mutableEntries = entries.toMutableList()
-            currentAdapter = LedgerEntriesAdapter(mutableEntries, showPaymentSource = true, canReorder = true)
+            currentAdapter = LedgerEntriesAdapter(
+                entries = mutableEntries,
+                showPaymentSource = true,
+                canReorder = true,
+                toggledEntries = toggledEntries,
+                onEntryClick = { entryId ->
+                    toggleEntryBackground(entryId)
+                }
+            )
             binding.ledgerRecyclerView.adapter = currentAdapter
         }
+    }
+
+    private fun toggleEntryBackground(entryId: String) {
+        if (toggledEntries.contains(entryId)) {
+            toggledEntries.remove(entryId)
+        } else {
+            toggledEntries.add(entryId)
+        }
+        // Notify adapter to update the specific item
+        currentAdapter?.notifyDataSetChanged()
     }
 
     private fun updateButtonStates(selectedType: LedgerType) {
@@ -526,7 +572,9 @@ class LedgerViewActivity : AppCompatActivity() {
     inner class LedgerEntriesAdapter(
         private val entries: MutableList<LedgerEntry>,
         private val showPaymentSource: Boolean = false,
-        private val canReorder: Boolean = false
+        private val canReorder: Boolean = false,
+        private val toggledEntries: MutableSet<String>,
+        private val onEntryClick: (String) -> Unit
     ) : RecyclerView.Adapter<LedgerEntriesAdapter.ViewHolder>() {
 
         fun swapItems(fromPosition: Int, toPosition: Int) {
@@ -546,6 +594,17 @@ class LedgerViewActivity : AppCompatActivity() {
 
         inner class ViewHolder(private val binding: ItemLedgerEntryBinding) :
             RecyclerView.ViewHolder(binding.root) {
+
+            init {
+                // Set up click listener on the card view
+                binding.cardView.setOnClickListener {
+                    val position = adapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        val entry = entries[position]
+                        onEntryClick(entry.id)
+                    }
+                }
+            }
 
             fun setDragging(isDragging: Boolean) {
                 if (isDragging) {
@@ -576,6 +635,19 @@ class LedgerViewActivity : AppCompatActivity() {
                     binding.root.alpha = 1.0f
                 } else {
                     binding.root.alpha = 1.0f
+                }
+
+                // Set background color based on toggle state
+                if (toggledEntries.contains(entry.id)) {
+                    // Toggled state - subtle light gray background (same as system light_gray)
+                    binding.cardView.setCardBackgroundColor(
+                        ContextCompat.getColor(itemView.context, R.color.toggle_gray)
+                    )
+                } else {
+                    // Normal state - white background
+                    binding.cardView.setCardBackgroundColor(
+                        ContextCompat.getColor(itemView.context, android.R.color.white)
+                    )
                 }
 
                 // Set transaction number
