@@ -17,4 +17,24 @@
 
     <!-- Default Values -->
     <string name="default_value">-</string>
+
+    <!-- Menu Activity -->
+    <string name="techcity_suite">TechCity Suite</string>
+    <string name="business_management_system">Business Management System</string>
+    <string name="phone_inventory">Phone Inventory</string>
+    <string name="search_phones_by_imei">Search phones by IMEI number</string>
+    <string name="cash_transactions">Cash Transactions</string>
+    <string name="record_cash_transactions">Record Cash In/Out transactions</string>
+    <string name="ledgers">Ledgers</string>
+    <string name="view_ledgers">View Cash, GCash, PayMaya ledgers</string>
+    <string name="version_1_0">Version 1.0</string>
+    <string name="menu">Menu</string>
+
+    <!-- Content Descriptions for Accessibility -->
+    <string name="app_logo">App Logo</string>
+    <string name="inventory_icon">Inventory Icon</string>
+    <string name="transactions_icon">Transactions Icon</string>
+    <string name="ledger_icon">Ledger Icon</string>
+    <string name="more_options">More Options</string>
+    <string name="menu_button">Menu Button</string>
 </resources>

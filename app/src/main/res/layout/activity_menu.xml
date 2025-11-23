@@ -4,8 +4,44 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
     tools:context=".MenuActivity">
+
+    <!-- Menu Bar -->
+    <LinearLayout
+        android:id="@+id/menuBar"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@color/techcity_blue"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/techcity_suite"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:gravity="center_vertical" />
+
+        <!-- Kebab Menu Button -->
+        <ImageButton
+            android:id="@+id/kebabMenuButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_kebab_menu"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/menu_button"
+            android:padding="12dp" />
+    </LinearLayout>
 
     <!-- App Logo/Title -->
     <ImageView
@@ -13,7 +49,8 @@
         android:layout_width="80dp"
         android:layout_height="80dp"
         android:src="@mipmap/ic_launcher_round"
-        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="@string/app_logo"
+        app:layout_constraintTop_toBottomOf="@id/menuBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="40dp" />
@@ -22,7 +59,7 @@
         android:id="@+id/appTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TechCity Suite"
+        android:text="@string/techcity_suite"
         android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="@color/black"
@@ -35,7 +72,7 @@
         android:id="@+id/appSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Business Management System"
+        android:text="@string/business_management_system"
         android:textSize="14sp"
         android:textColor="@color/gray"
         app:layout_constraintTop_toBottomOf="@id/appTitle"
@@ -52,7 +89,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/versionText"
         android:layout_marginTop="48dp"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="16dp"
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -82,7 +120,8 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@android:drawable/ic_menu_search"
-                        android:tint="@color/teal_700"
+                        android:contentDescription="@string/inventory_icon"
+                        app:tint="@color/teal_700"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />
@@ -91,7 +130,7 @@
                         android:id="@+id/inventoryTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Phone Inventory"
+                        android:text="@string/phone_inventory"
                         android:textSize="20sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
@@ -103,7 +142,7 @@
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Search phones by IMEI number"
+                        android:text="@string/search_phones_by_imei"
                         android:textSize="14sp"
                         android:textColor="@color/gray"
                         app:layout_constraintTop_toBottomOf="@id/inventoryTitle"
@@ -116,7 +155,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@android:drawable/ic_menu_more"
-                        android:tint="@color/gray"
+                        android:contentDescription="@string/more_options"
+                        app:tint="@color/gray"
                         android:rotation="270"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -148,7 +188,8 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@android:drawable/ic_menu_recent_history"
-                        android:tint="@color/purple_500"
+                        android:contentDescription="@string/transactions_icon"
+                        app:tint="@color/purple_500"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />
@@ -157,7 +198,7 @@
                         android:id="@+id/transactionsTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Cash Transactions"
+                        android:text="@string/cash_transactions"
                         android:textSize="20sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
@@ -169,7 +210,7 @@
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Record Cash In/Out transactions"
+                        android:text="@string/record_cash_transactions"
                         android:textSize="14sp"
                         android:textColor="@color/gray"
                         app:layout_constraintTop_toBottomOf="@id/transactionsTitle"
@@ -182,7 +223,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@android:drawable/ic_menu_more"
-                        android:tint="@color/gray"
+                        android:contentDescription="@string/more_options"
+                        app:tint="@color/gray"
                         android:rotation="270"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -214,7 +256,8 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@android:drawable/ic_menu_agenda"
-                        android:tint="#FF9800"
+                        android:contentDescription="@string/ledger_icon"
+                        app:tint="#FF9800"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />
@@ -223,7 +266,7 @@
                         android:id="@+id/ledgerTitleText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Ledgers"
+                        android:text="@string/ledgers"
                         android:textSize="20sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
@@ -235,7 +278,7 @@
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="View Cash, GCash, PayMaya ledgers"
+                        android:text="@string/view_ledgers"
                         android:textSize="14sp"
                         android:textColor="@color/gray"
                         app:layout_constraintTop_toBottomOf="@id/ledgerTitleText"
@@ -248,7 +291,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@android:drawable/ic_menu_more"
-                        android:tint="@color/gray"
+                        android:contentDescription="@string/more_options"
+                        app:tint="@color/gray"
                         android:rotation="270"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -265,7 +309,7 @@
         android:id="@+id/versionText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Version 1.0"
+        android:text="@string/version_1_0"
         android:textSize="12sp"
         android:textColor="@color/gray"
         app:layout_constraintBottom_toBottomOf="parent"
