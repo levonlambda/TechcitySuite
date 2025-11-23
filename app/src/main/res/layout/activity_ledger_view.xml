@@ -252,7 +252,7 @@
         android:padding="8dp"
         android:background="#F5F5F5"
         app:layout_constraintTop_toBottomOf="@id/ledgerSelector"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/transactionTypeFilterRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -266,8 +266,66 @@
         android:textColor="@color/gray"
         android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/ledgerSelector"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/transactionTypeFilterRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Transaction Type Filter Row -->
+    <LinearLayout
+        android:id="@+id/transactionTypeFilterRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/white"
+        android:elevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Button
+            android:id="@+id/filterAllButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="All"
+            android:textSize="10sp"
+            android:layout_marginEnd="4dp"
+            android:backgroundTint="@color/techcity_blue"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <Button
+            android:id="@+id/filterGadgetsButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="Gadgets"
+            android:textSize="10sp"
+            android:layout_marginEnd="4dp"
+            android:backgroundTint="@color/techcity_blue"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <Button
+            android:id="@+id/filterAccessoriesButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="Accessory"
+            android:textSize="10sp"
+            android:layout_marginEnd="4dp"
+            android:backgroundTint="@color/techcity_blue"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <Button
+            android:id="@+id/filterServiceButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="Service"
+            android:textSize="10sp"
+            android:backgroundTint="@color/techcity_blue"
+            style="@style/Widget.MaterialComponents.Button" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

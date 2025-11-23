@@ -38,9 +38,20 @@ class LedgerViewActivity : AppCompatActivity() {
     // Track toggled entries by their ID
     private val toggledEntries = mutableSetOf<String>()
 
-    // ============================================================================
-    // END OF PART 1: PROPERTIES AND INITIALIZATION
-    // ============================================================================
+    // Transaction type filter
+    private var currentTransactionFilter: TransactionTypeFilter = TransactionTypeFilter.ALL
+
+    // Enum for transaction type filters
+    enum class TransactionTypeFilter {
+        ALL,
+        GADGETS,
+        ACCESSORIES,
+        SERVICE
+    }
+
+// ============================================================================
+// END OF PART 1: PROPERTIES AND INITIALIZATION
+// ============================================================================
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +65,9 @@ class LedgerViewActivity : AppCompatActivity() {
 
         // Set up drag and drop
         setupDragAndDrop()
+
+        // Set up transaction type filters
+        setupTransactionTypeFilters()
 
         // Load initial ledger (Cash)
         loadLedger(LedgerType.CASH)
@@ -245,6 +259,97 @@ class LedgerViewActivity : AppCompatActivity() {
         itemTouchHelper.attachToRecyclerView(binding.ledgerRecyclerView)
     }
 
+    private fun setupTransactionTypeFilters() {
+        // Set up filter buttons
+        binding.filterAllButton.setOnClickListener {
+            currentTransactionFilter = TransactionTypeFilter.ALL
+            updateFilterButtonStates()
+            refreshCurrentView()
+        }
+
+        binding.filterGadgetsButton.setOnClickListener {
+            currentTransactionFilter = TransactionTypeFilter.GADGETS
+            updateFilterButtonStates()
+            refreshCurrentView()
+        }
+
+        binding.filterAccessoriesButton.setOnClickListener {
+            currentTransactionFilter = TransactionTypeFilter.ACCESSORIES
+            updateFilterButtonStates()
+            refreshCurrentView()
+        }
+
+        binding.filterServiceButton.setOnClickListener {
+            currentTransactionFilter = TransactionTypeFilter.SERVICE
+            updateFilterButtonStates()
+            refreshCurrentView()
+        }
+
+        // Set initial button states
+        updateFilterButtonStates()
+    }
+
+    private fun updateFilterButtonStates() {
+        // Reset all buttons to non-selected state (faded, no border, regular blue)
+        resetButtonToNonSelected(binding.filterAllButton as com.google.android.material.button.MaterialButton)
+        resetButtonToNonSelected(binding.filterGadgetsButton as com.google.android.material.button.MaterialButton)
+        resetButtonToNonSelected(binding.filterAccessoriesButton as com.google.android.material.button.MaterialButton)
+        resetButtonToNonSelected(binding.filterServiceButton as com.google.android.material.button.MaterialButton)
+
+        // Highlight selected button (full opacity, white border, darker blue)
+        when (currentTransactionFilter) {
+            TransactionTypeFilter.ALL -> setButtonToSelected(binding.filterAllButton as com.google.android.material.button.MaterialButton)
+            TransactionTypeFilter.GADGETS -> setButtonToSelected(binding.filterGadgetsButton as com.google.android.material.button.MaterialButton)
+            TransactionTypeFilter.ACCESSORIES -> setButtonToSelected(binding.filterAccessoriesButton as com.google.android.material.button.MaterialButton)
+            TransactionTypeFilter.SERVICE -> setButtonToSelected(binding.filterServiceButton as com.google.android.material.button.MaterialButton)
+        }
+    }
+
+    private fun resetButtonToNonSelected(button: com.google.android.material.button.MaterialButton) {
+        button.alpha = 0.5f
+        button.strokeWidth = 0
+        button.backgroundTintList = ContextCompat.getColorStateList(this, R.color.techcity_blue)
+    }
+
+    private fun setButtonToSelected(button: com.google.android.material.button.MaterialButton) {
+        button.alpha = 1.0f
+        button.strokeWidth = 4
+        button.setStrokeColorResource(android.R.color.white)
+        button.backgroundTintList = ContextCompat.getColorStateList(this, R.color.techcity_blue_dark)
+    }
+
+    private fun refreshCurrentView() {
+        if (showingAllCredits) {
+            showAllCredits()
+        } else {
+            loadLedger(currentLedgerType)
+        }
+    }
+
+    private fun filterEntriesByTransactionType(entries: List<LedgerEntry>): List<LedgerEntry> {
+        return when (currentTransactionFilter) {
+            TransactionTypeFilter.ALL -> entries
+            TransactionTypeFilter.GADGETS -> entries.filter { entry ->
+                // Gadgets filter - currently empty, will be populated when we add gadget transaction types
+                false
+            }
+            TransactionTypeFilter.ACCESSORIES -> entries.filter { entry ->
+                // Accessories filter - currently empty, will be populated when we add accessory transaction types
+                false
+            }
+            TransactionTypeFilter.SERVICE -> entries.filter { entry ->
+                entry.transactionType in listOf(
+                    "Cash In",
+                    "Cash Out",
+                    "Mobile Loading Service",
+                    "Skyro Payment",
+                    "Home Credit Payment",
+                    "Misc Payment"
+                )
+            }
+        }
+    }
+
     private fun showDeleteConfirmationDialog(transactionNumber: Int, position: Int) {
         // Get all entries for this transaction
         val entries = LedgerManager.getTransactionDetails(transactionNumber)
@@ -313,7 +418,8 @@ class LedgerViewActivity : AppCompatActivity() {
 
         // Get entries and filter by selected date
         val allEntries = ledger.getEntriesSorted()
-        val entries = allEntries.filter { it.date == selectedDate }
+        val dateFilteredEntries = allEntries.filter { it.date == selectedDate }
+        val entries = filterEntriesByTransactionType(dateFilteredEntries)
 
         // Calculate totals from filtered entries
         val creditTotal = entries.filter { it.entryType == LedgerEntryType.CREDIT }
@@ -380,7 +486,8 @@ class LedgerViewActivity : AppCompatActivity() {
 
         // Get all credit entries and filter by selected date
         val allCreditEntries = LedgerManager.getAllCreditsOrdered()
-        val entries = allCreditEntries.filter { it.date == selectedDate }
+        val dateFilteredEntries = allCreditEntries.filter { it.date == selectedDate }
+        val entries = filterEntriesByTransactionType(dateFilteredEntries)
 
         // Calculate totals from filtered entries
         val creditTotal = entries.sumOf { it.amount }
