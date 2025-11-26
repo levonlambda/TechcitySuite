@@ -43,18 +43,7 @@
             android:padding="12dp" />
     </LinearLayout>
 
-    <!-- App Logo/Title -->
-    <ImageView
-        android:id="@+id/appLogo"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:src="@mipmap/ic_launcher_round"
-        android:contentDescription="@string/app_logo"
-        app:layout_constraintTop_toBottomOf="@id/menuBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="40dp" />
-
+    <!-- App Title -->
     <TextView
         android:id="@+id/appTitle"
         android:layout_width="wrap_content"
@@ -63,7 +52,7 @@
         android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="@color/black"
-        app:layout_constraintTop_toBottomOf="@id/appLogo"
+        app:layout_constraintTop_toBottomOf="@id/menuBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp" />
@@ -88,8 +77,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/versionText"
-        android:layout_marginTop="48dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
         android:padding="16dp">
 
         <LinearLayout
@@ -101,8 +90,8 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/inventoryCard"
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="4dp">
 
@@ -113,12 +102,12 @@
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="20dp">
+                    android:padding="16dp">
 
                     <ImageView
                         android:id="@+id/inventoryIcon"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:src="@android:drawable/ic_menu_search"
                         android:contentDescription="@string/inventory_icon"
                         app:tint="@color/teal_700"
@@ -131,46 +120,149 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:text="@string/phone_inventory"
-                        android:textSize="20sp"
+                        android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
                         app:layout_constraintTop_toTopOf="@id/inventoryIcon"
                         app:layout_constraintStart_toEndOf="@id/inventoryIcon"
                         app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginStart="20dp" />
+                        android:layout_marginStart="16dp" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:text="@string/search_phones_by_imei"
-                        android:textSize="14sp"
+                        android:textSize="12sp"
                         android:textColor="@color/gray"
                         app:layout_constraintTop_toBottomOf="@id/inventoryTitle"
                         app:layout_constraintStart_toEndOf="@id/inventoryIcon"
                         app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginStart="20dp"
-                        android:layout_marginTop="4dp" />
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_more"
-                        android:contentDescription="@string/more_options"
-                        app:tint="@color/gray"
-                        android:rotation="270"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="2dp" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Cash Transactions Card -->
+            <!-- Devices Transactions Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/devicesCard"
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/devicesTransactionsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:id="@+id/devicesIcon"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@drawable/ic_mobile_phone"
+                        android:contentDescription="@string/devices_transactions"
+                        app:tint="@color/techcity_blue"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                    <TextView
+                        android:id="@+id/devicesTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/devices_transactions"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        app:layout_constraintTop_toTopOf="@id/devicesIcon"
+                        app:layout_constraintStart_toEndOf="@id/devicesIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/add_devices_inventory"
+                        android:textSize="12sp"
+                        android:textColor="@color/gray"
+                        app:layout_constraintTop_toBottomOf="@id/devicesTitle"
+                        app:layout_constraintStart_toEndOf="@id/devicesIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="2dp" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Accessories Transactions Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/accessoriesCard"
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/accessoriesTransactionsButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:id="@+id/accessoriesIcon"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@drawable/ic_charger"
+                        android:contentDescription="@string/accessories_transactions"
+                        app:tint="#FF9800"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                    <TextView
+                        android:id="@+id/accessoriesTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/accessories_transactions"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        app:layout_constraintTop_toTopOf="@id/accessoriesIcon"
+                        app:layout_constraintStart_toEndOf="@id/accessoriesIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/add_accessories_inventory"
+                        android:textSize="12sp"
+                        android:textColor="@color/gray"
+                        app:layout_constraintTop_toBottomOf="@id/accessoriesTitle"
+                        app:layout_constraintStart_toEndOf="@id/accessoriesIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="2dp" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Service Transactions Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/transactionsCard"
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="4dp">
 
@@ -181,15 +273,15 @@
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="20dp">
+                    android:padding="16dp">
 
                     <ImageView
                         android:id="@+id/transactionsIcon"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@android:drawable/ic_menu_recent_history"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@drawable/ic_coin"
                         android:contentDescription="@string/transactions_icon"
-                        app:tint="@color/purple_500"
+                        app:tint="#4CAF50"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />
@@ -198,37 +290,26 @@
                         android:id="@+id/transactionsTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="@string/cash_transactions"
-                        android:textSize="20sp"
+                        android:text="@string/service_transactions"
+                        android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
                         app:layout_constraintTop_toTopOf="@id/transactionsIcon"
                         app:layout_constraintStart_toEndOf="@id/transactionsIcon"
                         app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginStart="20dp" />
+                        android:layout_marginStart="16dp" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="@string/record_cash_transactions"
-                        android:textSize="14sp"
+                        android:text="@string/record_service_transactions"
+                        android:textSize="12sp"
                         android:textColor="@color/gray"
                         app:layout_constraintTop_toBottomOf="@id/transactionsTitle"
                         app:layout_constraintStart_toEndOf="@id/transactionsIcon"
                         app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginStart="20dp"
-                        android:layout_marginTop="4dp" />
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_more"
-                        android:contentDescription="@string/more_options"
-                        app:tint="@color/gray"
-                        android:rotation="270"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="2dp" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -237,8 +318,8 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/ledgerCard"
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="4dp">
 
@@ -249,15 +330,15 @@
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="20dp">
+                    android:padding="16dp">
 
                     <ImageView
                         android:id="@+id/ledgerIcon"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@android:drawable/ic_menu_agenda"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@drawable/ic_book"
                         android:contentDescription="@string/ledger_icon"
-                        app:tint="#FF9800"
+                        app:tint="@color/black"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />
@@ -267,36 +348,82 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:text="@string/ledgers"
-                        android:textSize="20sp"
+                        android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
                         app:layout_constraintTop_toTopOf="@id/ledgerIcon"
                         app:layout_constraintStart_toEndOf="@id/ledgerIcon"
                         app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginStart="20dp" />
+                        android:layout_marginStart="16dp" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:text="@string/view_ledgers"
-                        android:textSize="14sp"
+                        android:textSize="12sp"
                         android:textColor="@color/gray"
                         app:layout_constraintTop_toBottomOf="@id/ledgerTitleText"
                         app:layout_constraintStart_toEndOf="@id/ledgerIcon"
                         app:layout_constraintEnd_toEndOf="parent"
-                        android:layout_marginStart="20dp"
-                        android:layout_marginTop="4dp" />
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="2dp" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Account Receivable Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/accountReceivableCard"
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/accountReceivableButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="16dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_more"
-                        android:contentDescription="@string/more_options"
-                        app:tint="@color/gray"
-                        android:rotation="270"
+                        android:id="@+id/accountReceivableIcon"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@android:drawable/ic_menu_my_calendar"
+                        android:contentDescription="@string/account_receivable"
+                        app:tint="#ff0000"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />
+
+                    <TextView
+                        android:id="@+id/accountReceivableTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/account_receivable"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        app:layout_constraintTop_toTopOf="@id/accountReceivableIcon"
+                        app:layout_constraintStart_toEndOf="@id/accountReceivableIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/manage_receivables"
+                        android:textSize="12sp"
+                        android:textColor="@color/gray"
+                        app:layout_constraintTop_toBottomOf="@id/accountReceivableTitle"
+                        app:layout_constraintStart_toEndOf="@id/accountReceivableIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="2dp" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -315,6 +442,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="8dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

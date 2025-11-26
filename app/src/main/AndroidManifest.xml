@@ -48,6 +48,12 @@
             android:exported="false"
             android:label="Ledgers" />
 
+        <!-- Device Transaction Activity -->
+        <activity
+            android:name="com.techcity.techcitysuite.DeviceTransactionActivity"
+            android:exported="false"
+            android:label="Device Transaction" />
+
     </application>
 
 </manifest>

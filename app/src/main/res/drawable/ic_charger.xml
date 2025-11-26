@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Headphone band -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M12,3C7,3 3,7 3,12v7h4v-6H5v-1c0,-3.87 3.13,-7 7,-7s7,3.13 7,7v1h-2v6h4v-7C21,7 17,3 12,3z" />
+
+    <!-- Left earpiece -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M4,14h2v4H4z" />
+
+    <!-- Right earpiece -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M18,14h2v4h-2z" />
+</vector>

@@ -30,7 +30,13 @@ class MenuActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Cash Transactions button
+        // Device Transactions button
+        binding.devicesTransactionsButton.setOnClickListener {
+            val intent = Intent(this, DeviceTransactionActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Service Transactions button (Cash In/Out, etc.)
         binding.transactionsButton.setOnClickListener {
             val intent = Intent(this, TransactionTypeActivity::class.java)
             startActivity(intent)
@@ -40,6 +46,20 @@ class MenuActivity : AppCompatActivity() {
         binding.ledgerButton.setOnClickListener {
             val intent = Intent(this, LedgerViewActivity::class.java)
             startActivity(intent)
+        }
+
+        // Accessories Transactions button (placeholder for future)
+        binding.accessoriesTransactionsButton.setOnClickListener {
+            // TODO: Implement AccessoriesTransactionActivity
+            // val intent = Intent(this, AccessoriesTransactionActivity::class.java)
+            // startActivity(intent)
+        }
+
+        // Account Receivable button (placeholder for future)
+        binding.accountReceivableButton.setOnClickListener {
+            // TODO: Implement AccountReceivableActivity
+            // val intent = Intent(this, AccountReceivableActivity::class.java)
+            // startActivity(intent)
         }
     }
 }

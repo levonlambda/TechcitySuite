@@ -23,16 +23,27 @@
     <string name="business_management_system">Business Management System</string>
     <string name="phone_inventory">Phone Inventory</string>
     <string name="search_phones_by_imei">Search phones by IMEI number</string>
+    <string name="devices_transactions">Device Transaction</string>
+    <string name="add_devices_inventory">Phones, Tablets, Laptops, Printers</string>
+    <string name="accessories_transactions">Accessory Transaction</string>
+    <string name="add_accessories_inventory">Charger, Tempered Glass, Smartwatch, Etc</string>
+    <string name="service_transactions">Service Transaction</string>
+    <string name="record_service_transactions">Home Credit Payment, Skyro Payment, E-Load</string>
     <string name="cash_transactions">Cash Transactions</string>
     <string name="record_cash_transactions">Record Cash In/Out transactions</string>
     <string name="ledgers">Ledgers</string>
     <string name="view_ledgers">View Cash, GCash, PayMaya ledgers</string>
     <string name="version_1_0">Version 1.0</string>
     <string name="menu">Menu</string>
+    <string name="account_receivable">Account Receivable</string>
+    <string name="manage_receivables">Reconcile customer payments</string>
+    <string name="account_receivable_icon">Account Receivable Icon</string>
 
     <!-- Content Descriptions for Accessibility -->
     <string name="app_logo">App Logo</string>
     <string name="inventory_icon">Inventory Icon</string>
+    <string name="devices_icon">Devices Icon</string>
+    <string name="accessories_icon">Accessories Icon</string>
     <string name="transactions_icon">Transactions Icon</string>
     <string name="ledger_icon">Ledger Icon</string>
     <string name="more_options">More Options</string>
