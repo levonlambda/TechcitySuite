@@ -61,7 +61,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- IMEI Input with Search Button -->
+                <!-- IMEI Input with Search and Barcode Buttons -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -74,7 +74,8 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/imeiInputLayout"
@@ -95,20 +96,35 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <Button
+                    <!-- Search Button with Magnifying Glass Icon -->
+                    <ImageButton
                         android:id="@+id/searchButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Search"
-                        android:textSize="14sp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_marginStart="8dp"
-                        android:backgroundTint="#3F51B5"
-                        app:cornerRadius="4dp" />
+                        android:src="@drawable/ic_search"
+                        android:background="@drawable/rounded_button_background_blue"
+                        android:contentDescription="Search"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter" />
+
+                    <!-- Barcode Scanner Button -->
+                    <ImageButton
+                        android:id="@+id/barcodeButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_barcode_scanner"
+                        android:background="@drawable/rounded_button_background_blue"
+                        android:contentDescription="Scan Barcode"
+                        android:padding="12dp"
+                        app:tint="@color/white" />
 
                 </LinearLayout>
 
-                <!-- Device Details -->
+                <!-- Device Details Label (dynamic - changes to brand name) -->
                 <TextView
+                    android:id="@+id/deviceDetailsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Device Details"
@@ -590,93 +606,169 @@
                     android:textColor="#9C27B0"
                     android:layout_marginBottom="16dp" />
 
-                <!-- Interest Amount -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Interest Amount"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:layout_marginBottom="8dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/interestLayout"
+                <!-- Row 1: Down Payment and Interest in Horizontal Layout -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter interest"
-                    app:prefixText="₱"
-                    app:boxStrokeColor="#3F51B5"
-                    app:hintTextColor="#3F51B5"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    android:orientation="horizontal">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/interestInput"
-                        android:layout_width="match_parent"
+                    <!-- Down Payment (FIRST) -->
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:inputType="numberDecimal" />
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                </com.google.android.material.textfield.TextInputLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Down Payment"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"
+                            android:layout_marginBottom="8dp" />
 
-                <!-- Down Payment Amount -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Down Payment"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/ihDownPaymentLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Amount"
+                            app:prefixText="₱"
+                            app:boxStrokeColor="#3F51B5"
+                            app:hintTextColor="#3F51B5"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/ihDownPaymentLayout"
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/ihDownPaymentInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textStyle="bold"
+                                android:inputType="number" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <!-- Interest Percent (SECOND) -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Interest"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"
+                            android:layout_marginBottom="8dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/interestLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Percent"
+                            app:suffixText="%"
+                            app:boxStrokeColor="#3F51B5"
+                            app:hintTextColor="#3F51B5"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/interestInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textStyle="bold"
+                                android:inputType="numberDecimal" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Row 2: Monthly Amount and Months to Pay in Horizontal Layout -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Amount"
-                    app:prefixText="₱"
-                    app:boxStrokeColor="#3F51B5"
-                    app:hintTextColor="#3F51B5"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/ihDownPaymentInput"
-                        android:layout_width="match_parent"
+                    <!-- Monthly Amount (FIRST - Read Only) -->
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:inputType="numberDecimal" />
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                </com.google.android.material.textfield.TextInputLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Monthly Amount"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"
+                            android:layout_marginBottom="8dp" />
 
-                <!-- Down Payment Source -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Down Payment Source"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/monthlyAmountLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:boxStrokeColor="@color/gray"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/ihDownPaymentSourceLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Select source"
-                    app:boxStrokeColor="#3F51B5"
-                    app:hintTextColor="#3F51B5"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/monthlyAmountInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:focusable="false"
+                                android:enabled="false"
+                                android:textStyle="bold"
+                                android:textColor="#9C27B0" />
 
-                    <AutoCompleteTextView
-                        android:id="@+id/ihDownPaymentSourceDropdown"
-                        android:layout_width="match_parent"
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <!-- Months to Pay (SECOND) -->
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:inputType="none"
-                        android:textStyle="bold" />
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:orientation="vertical">
 
-                </com.google.android.material.textfield.TextInputLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Months to Pay"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"
+                            android:layout_marginBottom="8dp" />
 
-                <!-- Balance -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/monthsToPayLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Months"
+                            app:boxStrokeColor="#3F51B5"
+                            app:hintTextColor="#3F51B5"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/monthsToPayInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textStyle="bold"
+                                android:inputType="number" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Balance (Full Width - Read Only) -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -706,61 +798,35 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Months to Pay -->
+                <!-- Down Payment Source (Last - Conditional) -->
                 <TextView
+                    android:id="@+id/ihDownPaymentSourceLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Months to Pay"
+                    android:text="Down Payment Source"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
                     android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone" />
 
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/monthsToPayLayout"
+                    android:id="@+id/ihDownPaymentSourceLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter months"
+                    android:hint="Select source"
                     app:boxStrokeColor="#3F51B5"
                     app:hintTextColor="#3F51B5"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    android:visibility="gone"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/monthsToPayInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Monthly Amount -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Monthly Amount"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/monthlyAmountLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:boxStrokeColor="@color/gray"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/monthlyAmountInput"
+                    <AutoCompleteTextView
+                        android:id="@+id/ihDownPaymentSourceDropdown"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="none"
-                        android:focusable="false"
-                        android:enabled="false"
-                        android:textStyle="bold"
-                        android:textColor="#9C27B0" />
+                        android:textStyle="bold" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 

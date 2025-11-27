@@ -90,6 +90,12 @@ class DeviceTransactionActivity : AppCompatActivity() {
         setupButtonListeners()
         setupSearchButton()
 
+        // Disable save button and transaction type until valid IMEI is selected
+        binding.saveButton.isEnabled = false
+        binding.saveButton.alpha = 0.5f
+        binding.purchaseTypeDropdown.isEnabled = false
+        binding.purchaseTypeLayout.isEnabled = false
+
         // Show Cash Transaction card by default
         showAppropriateCard()
     }
@@ -120,6 +126,8 @@ class DeviceTransactionActivity : AppCompatActivity() {
             transactionType = transactionTypes[position]
             updateTransactionTypeColor(transactionType)
             showAppropriateCard()
+            // Validate form when transaction type changes
+            validateFormForTransactionType()
         }
 
         // Payment Source Dropdown (for Cash Transaction)
@@ -263,6 +271,25 @@ class DeviceTransactionActivity : AppCompatActivity() {
         }
     }
 
+    private fun validateFormForTransactionType() {
+        // Check if valid IMEI is selected first
+        if (foundInventoryItem == null) {
+            disableFormControls()
+            return
+        }
+
+        when (transactionType) {
+            "In-House Installment" -> {
+                validateInHouseForm()
+            }
+            else -> {
+                // For other transaction types, enable save button if IMEI is valid
+                binding.saveButton.isEnabled = true
+                binding.saveButton.alpha = 1.0f
+            }
+        }
+    }
+
     // ============================================================================
     // END OF PART 3: DROPDOWN SETUP METHODS
     // ============================================================================
@@ -272,78 +299,171 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // START OF PART 4: PRICE AND DISCOUNT LISTENERS
     // ============================================================================
 
+    // Flag to prevent infinite loop between discount watchers
+    private var isUpdatingDiscount = false
+    // Flag to prevent infinite loop when correcting invalid values
+    private var isCorrectingValue = false
+
     private fun setupPriceListeners() {
         // Price input listener
         binding.priceInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                val input = s.toString()
-                price = if (input.isNotEmpty()) {
-                    try {
-                        input.toDouble()
-                    } catch (e: NumberFormatException) {
-                        0.0
-                    }
-                } else {
-                    0.0
-                }
-                updateAllCalculations()
-            }
-        })
+                if (isCorrectingValue) return
 
-        // Discount amount listener
-        binding.discountInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
                 val input = s.toString()
                 if (input.isNotEmpty()) {
                     try {
-                        discount = input.toDouble()
-                        // Update percent
-                        if (price > 0) {
-                            val percent = (discount / price) * 100
-                            binding.discountPercentInput.removeTextChangedListener(percentWatcher)
-                            binding.discountPercentInput.setText(String.format("%.2f", percent))
-                            binding.discountPercentInput.addTextChangedListener(percentWatcher)
+                        // Parse with comma stripping
+                        val parsedPrice = input.replace(",", "").toDouble()
+
+                        // Validate: Price cannot be negative
+                        if (parsedPrice < 0) {
+                            isCorrectingValue = true
+                            binding.priceInput.setText("0.00")
+                            binding.priceInput.setSelection(binding.priceInput.text?.length ?: 0)
+                            isCorrectingValue = false
+                            price = 0.0
+                            showMessage("Price cannot be negative", true)
+                        } else {
+                            price = parsedPrice
                         }
+
+                        // Re-validate discount against new price
+                        validateDiscountAgainstPrice()
+
+                        updateAllCalculations()
                     } catch (e: NumberFormatException) {
+                        price = 0.0
                         discount = 0.0
+                        updateAllCalculations()
                     }
                 } else {
+                    price = 0.0
                     discount = 0.0
-                    binding.discountPercentInput.removeTextChangedListener(percentWatcher)
-                    binding.discountPercentInput.setText("")
-                    binding.discountPercentInput.addTextChangedListener(percentWatcher)
+                    updateAllCalculations()
                 }
+            }
+        })
+
+        // Discount amount listener with dynamic comma formatting
+        binding.discountInput.addTextChangedListener(object : TextWatcher {
+            private var currentText = ""
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingDiscount || isCorrectingValue) return
+
+                val input = s.toString()
+
+                // Avoid re-processing if text hasn't changed
+                if (input == currentText) return
+
+                // Strip commas and parse
+                val cleanInput = input.replace(",", "")
+
+                if (cleanInput.isEmpty()) {
+                    discount = 0.0
+                    isUpdatingDiscount = true
+                    binding.discountPercentInput.setText("")
+                    isUpdatingDiscount = false
+                    updateAllCalculations()
+                    currentText = ""
+                    return
+                }
+
+                try {
+                    var parsedDiscount = cleanInput.toDouble()
+
+                    // Validate: Discount cannot exceed price
+                    if (parsedDiscount > price && price > 0) {
+                        parsedDiscount = price
+                        showMessage("Discount cannot exceed price", true)
+                    }
+
+                    discount = parsedDiscount
+
+                    // Format with commas
+                    val formatted = String.format("%,.0f", discount)
+
+                    // Only update if formatting changed
+                    if (formatted != input) {
+                        isUpdatingDiscount = true
+                        binding.discountInput.setText(formatted)
+                        // Set cursor to end
+                        binding.discountInput.setSelection(formatted.length)
+                        isUpdatingDiscount = false
+                    }
+
+                    currentText = formatted
+
+                    // Update percent with 1 decimal place
+                    if (price > 0) {
+                        val percent = (discount / price) * 100
+                        isUpdatingDiscount = true
+                        binding.discountPercentInput.setText(String.format("%.1f", percent))
+                        isUpdatingDiscount = false
+                    }
+                } catch (e: NumberFormatException) {
+                    discount = 0.0
+                }
+
                 updateAllCalculations()
             }
         })
 
         // Discount percent listener
-        binding.discountPercentInput.addTextChangedListener(percentWatcher)
-    }
+        binding.discountPercentInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingDiscount || isCorrectingValue) return
 
-    private val percentWatcher = object : TextWatcher {
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        override fun afterTextChanged(s: Editable?) {
-            val input = s.toString()
-            if (input.isNotEmpty() && price > 0) {
-                try {
-                    val percent = input.toDouble()
-                    discount = (price * percent) / 100
-                    // Update amount
-                    binding.discountInput.removeTextChangedListener(binding.discountInput.getTag() as? TextWatcher)
-                    binding.discountInput.setText(String.format("%.2f", discount))
-                } catch (e: NumberFormatException) {
+                val input = s.toString()
+                if (input.isNotEmpty() && price > 0) {
+                    try {
+                        var percent = input.toDouble()
+
+                        // Validate: Percent cannot exceed 100%
+                        if (percent > 100) {
+                            percent = 100.0
+                            isUpdatingDiscount = true
+                            binding.discountPercentInput.setText("100.0")
+                            binding.discountPercentInput.setSelection(5)
+                            isUpdatingDiscount = false
+                            showMessage("Discount cannot exceed 100%", true)
+                        }
+
+                        discount = (price * percent) / 100
+                        // Update amount with commas and no decimal
+                        isUpdatingDiscount = true
+                        binding.discountInput.setText(String.format("%,.0f", discount))
+                        isUpdatingDiscount = false
+                    } catch (e: NumberFormatException) {
+                        discount = 0.0
+                    }
+                } else {
                     discount = 0.0
                 }
-            } else {
-                discount = 0.0
+                updateAllCalculations()
             }
-            updateAllCalculations()
+        })
+    }
+
+    private fun validateDiscountAgainstPrice() {
+        // If discount exceeds new price, cap it
+        if (discount > price && price > 0) {
+            discount = price
+            isUpdatingDiscount = true
+            binding.discountInput.setText(String.format("%,.0f", discount))
+            if (price > 0) {
+                val percent = (discount / price) * 100
+                binding.discountPercentInput.setText(String.format("%.1f", percent))
+            }
+            isUpdatingDiscount = false
+            showMessage("Discount adjusted to match price", true)
         }
     }
 
@@ -372,12 +492,62 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // START OF PART 5: DOWN PAYMENT LISTENERS
     // ============================================================================
 
+    // Flag to prevent infinite loop in HC down payment formatting
+    private var isUpdatingHCDownPayment = false
+
     private fun setupDownPaymentListeners() {
-        // Home Credit / Skyro down payment listener
+        // Home Credit / Skyro down payment listener with dynamic comma formatting
         binding.hcDownPaymentInput.addTextChangedListener(object : TextWatcher {
+            private var currentText = ""
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingHCDownPayment || isCorrectingValue) return
+
+                val input = s.toString()
+
+                // Avoid re-processing if text hasn't changed
+                if (input == currentText) return
+
+                // Strip commas and parse
+                val cleanInput = input.replace(",", "")
+
+                if (cleanInput.isEmpty()) {
+                    currentText = ""
+                    updateHCBalance()
+                    updateHCDownPaymentSourceVisibility()
+                    return
+                }
+
+                try {
+                    var downPaymentValue = cleanInput.toDouble()
+
+                    // Calculate max down payment (price - discount)
+                    val maxDownPayment = price - discount
+
+                    // Validate: Down payment cannot exceed (price - discount)
+                    if (downPaymentValue > maxDownPayment && maxDownPayment > 0) {
+                        downPaymentValue = maxDownPayment
+                        showMessage("Down payment cannot exceed price minus discount", true)
+                    }
+
+                    // Format with commas (no decimals)
+                    val formatted = String.format("%,.0f", downPaymentValue)
+
+                    // Only update if formatting changed
+                    if (formatted != input) {
+                        isUpdatingHCDownPayment = true
+                        binding.hcDownPaymentInput.setText(formatted)
+                        binding.hcDownPaymentInput.setSelection(formatted.length)
+                        isUpdatingHCDownPayment = false
+                    }
+
+                    currentText = formatted
+                } catch (e: NumberFormatException) {
+                    // Invalid input, ignore
+                }
+
                 updateHCBalance()
                 updateHCDownPaymentSourceVisibility()
             }
@@ -385,13 +555,13 @@ class DeviceTransactionActivity : AppCompatActivity() {
     }
 
     private fun updateHCBalance() {
-        val downPayment = binding.hcDownPaymentInput.text.toString().toDoubleOrNull() ?: 0.0
+        val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
         val balance = price - discount - downPayment
         binding.hcBalanceInput.setText(formatCurrency(balance))
     }
 
     private fun updateHCDownPaymentSourceVisibility() {
-        val downPayment = binding.hcDownPaymentInput.text.toString().toDoubleOrNull() ?: 0.0
+        val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
 
         if (downPayment > 0) {
             binding.hcDownPaymentSourceLabel.visibility = View.VISIBLE
@@ -411,24 +581,108 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // START OF PART 6: IN-HOUSE LISTENERS
     // ============================================================================
 
+    // Flag to prevent infinite loop in in-house down payment formatting
+    private var isUpdatingIHDownPayment = false
+    // Flag to prevent infinite loop in interest formatting
+    private var isUpdatingInterest = false
+
     private fun setupInHouseListeners() {
-        // Interest listener
+        // Interest percent listener with single decimal formatting
         binding.interestInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingInterest || isCorrectingValue) return
+
+                val input = s.toString()
+
+                if (input.isEmpty()) {
+                    updateInHouseBalance()
+                    updateMonthlyAmount()
+                    validateInHouseForm()
+                    return
+                }
+
+                try {
+                    var percent = input.toDouble()
+
+                    // Validate: Interest percent cannot exceed 100%
+                    if (percent > 100) {
+                        percent = 100.0
+                        isUpdatingInterest = true
+                        binding.interestInput.setText(String.format("%.1f", percent))
+                        binding.interestInput.setSelection(binding.interestInput.text?.length ?: 0)
+                        isUpdatingInterest = false
+                        showMessage("Interest cannot exceed 100%", true)
+                    }
+                } catch (e: NumberFormatException) {
+                    // Invalid input, ignore
+                }
+
                 updateInHouseBalance()
                 updateMonthlyAmount()
+                validateInHouseForm()
             }
         })
 
-        // Down payment listener
+        // Down payment listener with dynamic comma formatting
         binding.ihDownPaymentInput.addTextChangedListener(object : TextWatcher {
+            private var currentText = ""
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingIHDownPayment || isCorrectingValue) return
+
+                val input = s.toString()
+
+                // Avoid re-processing if text hasn't changed
+                if (input == currentText) return
+
+                // Strip commas and parse
+                val cleanInput = input.replace(",", "")
+
+                if (cleanInput.isEmpty()) {
+                    currentText = ""
+                    updateInHouseBalance()
+                    updateMonthlyAmount()
+                    updateIHDownPaymentSourceVisibility()
+                    validateInHouseForm()
+                    return
+                }
+
+                try {
+                    var downPaymentValue = cleanInput.toDouble()
+
+                    // Calculate max down payment (price - discount)
+                    val maxDownPayment = price - discount
+
+                    // Validate: Down payment cannot exceed (price - discount)
+                    if (downPaymentValue > maxDownPayment && maxDownPayment > 0) {
+                        downPaymentValue = maxDownPayment
+                        showMessage("Down payment cannot exceed price minus discount", true)
+                    }
+
+                    // Format with commas (no decimals)
+                    val formatted = String.format("%,.0f", downPaymentValue)
+
+                    // Only update if formatting changed
+                    if (formatted != input) {
+                        isUpdatingIHDownPayment = true
+                        binding.ihDownPaymentInput.setText(formatted)
+                        binding.ihDownPaymentInput.setSelection(formatted.length)
+                        isUpdatingIHDownPayment = false
+                    }
+
+                    currentText = formatted
+                } catch (e: NumberFormatException) {
+                    // Invalid input, ignore
+                }
+
                 updateInHouseBalance()
                 updateMonthlyAmount()
+                updateIHDownPaymentSourceVisibility()
+                validateInHouseForm()
             }
         })
 
@@ -438,23 +692,86 @@ class DeviceTransactionActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 updateMonthlyAmount()
+                validateInHouseForm()
             }
         })
     }
 
     private fun updateInHouseBalance() {
-        val interest = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
-        val downPayment = binding.ihDownPaymentInput.text.toString().toDoubleOrNull() ?: 0.0
-        val balance = (price + interest) - discount - downPayment
+        // Get values
+        val downPayment = binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+        val interestPercent = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
+
+        // Calculate base amount (Price - Discount - Down Payment)
+        val baseAmount = price - discount - downPayment
+
+        // Calculate interest amount from percent
+        val interestAmount = baseAmount * (interestPercent / 100)
+
+        // Calculate balance = base amount + interest amount
+        val balance = baseAmount + interestAmount
+
         binding.ihBalanceInput.setText(formatCurrency(balance))
     }
 
     private fun updateMonthlyAmount() {
-        val balance = binding.ihBalanceInput.text.toString().replace("₱", "").replace(",", "").toDoubleOrNull() ?: 0.0
+        // Parse balance (strip currency symbol and commas)
+        val balanceText = binding.ihBalanceInput.text.toString()
+            .replace("₱", "")
+            .replace(",", "")
+        val balance = balanceText.toDoubleOrNull() ?: 0.0
+
         val months = binding.monthsToPayInput.text.toString().toIntOrNull() ?: 0
 
         val monthlyAmount = if (months > 0) balance / months else 0.0
         binding.monthlyAmountInput.setText(formatCurrency(monthlyAmount))
+    }
+
+    private fun updateIHDownPaymentSourceVisibility() {
+        val downPayment = binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+
+        if (downPayment > 0) {
+            binding.ihDownPaymentSourceLabel.visibility = View.VISIBLE
+            binding.ihDownPaymentSourceLayout.visibility = View.VISIBLE
+        } else {
+            binding.ihDownPaymentSourceLabel.visibility = View.GONE
+            binding.ihDownPaymentSourceLayout.visibility = View.GONE
+        }
+    }
+
+    private fun validateInHouseForm() {
+        // Only validate if In-House Installment is selected
+        if (transactionType != "In-House Installment") return
+
+        // Check if valid IMEI is selected
+        if (foundInventoryItem == null) {
+            disableFormControls()
+            return
+        }
+
+        // Get values
+        val interestPercent = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
+        val monthsToPay = binding.monthsToPayInput.text.toString().toIntOrNull() ?: 0
+
+        // Parse balance
+        val balanceText = binding.ihBalanceInput.text.toString()
+            .replace("₱", "")
+            .replace(",", "")
+        val balance = balanceText.toDoubleOrNull() ?: 0.0
+
+        // Validate all conditions
+        val isInterestValid = interestPercent <= 100
+        val isMonthsValid = monthsToPay > 0
+        val isBalanceValid = balance > 0
+
+        // Enable/disable save button based on validation
+        if (isInterestValid && isMonthsValid && isBalanceValid) {
+            binding.saveButton.isEnabled = true
+            binding.saveButton.alpha = 1.0f
+        } else {
+            binding.saveButton.isEnabled = false
+            binding.saveButton.alpha = 0.5f
+        }
     }
 
     // ============================================================================
@@ -482,9 +799,9 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // ============================================================================
 
     private fun searchByIMEI() {
-        val imei = binding.imeiInput.text.toString().trim()
+        val searchTerm = binding.imeiInput.text.toString().trim()
 
-        if (imei.isEmpty()) {
+        if (searchTerm.isEmpty()) {
             showMessage("Please enter IMEI or Serial Number", true)
             return
         }
@@ -493,10 +810,10 @@ class DeviceTransactionActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
         binding.searchButton.isEnabled = false
 
-        // Search in Firestore
+        // Search in Firestore with partial matching
         scope.launch {
             try {
-                searchInFirestore(imei)
+                searchInFirestorePartial(searchTerm)
             } catch (e: Exception) {
                 binding.progressBar.visibility = View.GONE
                 binding.searchButton.isEnabled = true
@@ -505,59 +822,65 @@ class DeviceTransactionActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun searchInFirestore(imei: String) {
+    private suspend fun searchInFirestorePartial(searchTerm: String) {
         withContext(Dispatchers.IO) {
             try {
-                // Search in imei1 field
-                val querySnapshot1 = db.collection("inventory")
-                    .whereEqualTo("imei1", imei)
+                // Fetch all inventory items
+                val querySnapshot = db.collection("inventory")
                     .get()
                     .await()
 
-                // Search in imei2 field if not found in imei1
-                val querySnapshot2 = if (querySnapshot1.isEmpty) {
-                    db.collection("inventory")
-                        .whereEqualTo("imei2", imei)
-                        .get()
-                        .await()
-                } else {
-                    querySnapshot1
-                }
+                // Filter for partial matches in imei1, imei2, or serialNumber
+                val matchingItems = mutableListOf<Pair<InventoryItem, String>>()
 
-                // Search in serialNumber field if not found in imei fields
-                val querySnapshot3 = if (querySnapshot2.isEmpty) {
-                    db.collection("inventory")
-                        .whereEqualTo("serialNumber", imei)
-                        .get()
-                        .await()
-                } else {
-                    querySnapshot2
+                for (document in querySnapshot.documents) {
+                    val data = document.data ?: continue
+
+                    val imei1 = (data["imei1"] ?: "").toString()
+                    val imei2 = (data["imei2"] ?: "").toString()
+                    val serialNumber = (data["serialNumber"] ?: "").toString()
+
+                    // Determine matched identifier
+                    var matchedIdentifier: String? = null
+
+                    if (imei1.isNotEmpty() && imei1.contains(searchTerm, ignoreCase = true)) {
+                        matchedIdentifier = imei1
+                    } else if (imei2.isNotEmpty() && imei2.contains(searchTerm, ignoreCase = true)) {
+                        matchedIdentifier = imei2
+                    } else if (serialNumber.isNotEmpty() && serialNumber.contains(searchTerm, ignoreCase = true)) {
+                        matchedIdentifier = serialNumber
+                    }
+
+                    if (matchedIdentifier != null) {
+                        val isArchived = data["isArchived"] as? Boolean ?: false
+                        if (!isArchived) {
+                            val item = document.toObject(InventoryItem::class.java)
+                            if (item != null) {
+                                matchingItems.add(Pair(item, matchedIdentifier))
+                            }
+                        }
+                    }
                 }
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
                     binding.searchButton.isEnabled = true
 
-                    if (!querySnapshot1.isEmpty || !querySnapshot2.isEmpty || !querySnapshot3.isEmpty) {
-                        // Get the first matching document
-                        val document = when {
-                            !querySnapshot1.isEmpty -> querySnapshot1.documents[0]
-                            !querySnapshot2.isEmpty -> querySnapshot2.documents[0]
-                            else -> querySnapshot3.documents[0]
+                    when {
+                        matchingItems.isEmpty() -> {
+                            showMessage("No device found matching: $searchTerm", false)
+                            clearDeviceInfo()
                         }
-
-                        // Convert to InventoryItem object
-                        val item = document.toObject(InventoryItem::class.java)
-
-                        if (item != null) {
+                        matchingItems.size == 1 -> {
+                            val (item, matchedIdentifier) = matchingItems[0]
                             foundInventoryItem = item
-                            displayDeviceInfo(item)
-                        } else {
-                            showMessage("Error parsing device data", true)
+                            displayDeviceInfo(item, matchedIdentifier)
+                            showMessage("Device found!", false)
                         }
-                    } else {
-                        showMessage("No device found with: $imei", false)
-                        clearDeviceInfo()
+                        else -> {
+                            showMessage("Multiple matches found (${matchingItems.size}). Please enter more digits.", true)
+                            clearDeviceInfo()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -570,24 +893,89 @@ class DeviceTransactionActivity : AppCompatActivity() {
         }
     }
 
-    private fun displayDeviceInfo(item: InventoryItem) {
-        // Display device details in combined field
-        val deviceDetails = "${item.manufacturer} ${item.model} | ${item.ram} / ${item.storage} / ${item.color}"
+    private fun displayDeviceInfo(item: InventoryItem, matchedIdentifier: String) {
+        // Update IMEI field with the complete matched identifier
+        binding.imeiInput.setText(matchedIdentifier)
+
+        // Update Device Details hint to show brand name (bold style)
+        binding.deviceDetailsLayout.hint = item.manufacturer
+        binding.deviceDetailsLayout.setHintTextAppearance(R.style.BoldHintStyle)
+
+        // Format RAM with GB if not already present
+        val ramDisplay = if (item.ram.contains("GB", ignoreCase = true)) {
+            item.ram
+        } else {
+            "${item.ram}GB"
+        }
+
+        // Format Storage with GB if not already present
+        val storageDisplay = if (item.storage.contains("GB", ignoreCase = true)) {
+            item.storage
+        } else {
+            "${item.storage}GB"
+        }
+
+        // Set field value: Model - RAM + Storage - (Color)
+        val deviceDetails = "${item.model} - $ramDisplay + $storageDisplay - (${item.color})"
         binding.deviceDetailsInput.setText(deviceDetails)
 
-        // Auto-fill price
+        // Set text color based on status
+        val textColor = when (item.status.lowercase()) {
+            "on-hand" -> ContextCompat.getColor(this, R.color.techcity_blue)
+            "on-display" -> ContextCompat.getColor(this, android.R.color.black)
+            else -> ContextCompat.getColor(this, android.R.color.black)
+        }
+        binding.deviceDetailsInput.setTextColor(textColor)
+
+        // Auto-fill price with formatting (commas and 2 decimal places)
         price = item.retailPrice
-        binding.priceInput.setText(item.retailPrice.toString())
+        binding.priceInput.setText(String.format("%,.2f", price))
+
+        // Enable save button and transaction type dropdown
+        enableFormControls()
 
         // Update all calculations
         updateAllCalculations()
-
-        showMessage("Device found!", false)
     }
 
     private fun clearDeviceInfo() {
+        // Reset Device Details hint to default (normal style)
+        binding.deviceDetailsLayout.hint = "Will be populated from IMEI"
+        binding.deviceDetailsLayout.setHintTextAppearance(R.style.NormalHintStyle)
+
+        // Clear device details field and reset color
         binding.deviceDetailsInput.setText("")
+        binding.deviceDetailsInput.setTextColor(ContextCompat.getColor(this, R.color.gray))
+
+        // Clear price field
+        binding.priceInput.setText("")
+        price = 0.0
+
+        // Clear found item
         foundInventoryItem = null
+
+        // Disable save button and transaction type dropdown
+        disableFormControls()
+    }
+
+    private fun enableFormControls() {
+        // Enable save button
+        binding.saveButton.isEnabled = true
+        binding.saveButton.alpha = 1.0f
+
+        // Enable transaction type dropdown
+        binding.purchaseTypeDropdown.isEnabled = true
+        binding.purchaseTypeLayout.isEnabled = true
+    }
+
+    private fun disableFormControls() {
+        // Disable save button
+        binding.saveButton.isEnabled = false
+        binding.saveButton.alpha = 0.5f
+
+        // Disable transaction type dropdown
+        binding.purchaseTypeDropdown.isEnabled = false
+        binding.purchaseTypeLayout.isEnabled = false
     }
 
     // ============================================================================

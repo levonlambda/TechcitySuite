@@ -57,4 +57,18 @@
         <item name="android:calendarViewShown">false</item>
         <item name="android:datePickerMode">spinner</item>
     </style>
+
+    <!-- Bold Hint Style for Device Details -->
+    <style name="BoldHintStyle" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/techcity_blue</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- Normal Hint Style for Device Details -->
+    <style name="NormalHintStyle" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/gray</item>
+        <item name="android:textSize">14sp</item>
+    </style>
 </resources>
