@@ -54,6 +54,18 @@
             android:exported="false"
             android:label="Device Transaction" />
 
+        <!-- Accessory Transaction Activity -->
+        <activity
+            android:name="com.techcity.techcitysuite.AccessoryTransactionActivity"
+            android:exported="false"
+            android:label="Accessory Transaction" />
+
+        <!-- Program Settings Activity -->
+        <activity
+            android:name="com.techcity.techcitysuite.ProgramSettingsActivity"
+            android:exported="false"
+            android:label="Program Settings" />
+
     </application>
 
 </manifest>
