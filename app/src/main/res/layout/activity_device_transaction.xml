@@ -502,35 +502,91 @@
 
                 </LinearLayout>
 
-                <!-- Balance (Separate Line) -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Balance"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/hcBalanceLayout"
+                <!-- Balance and Subsidy in Horizontal Layout -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:boxStrokeColor="@color/gray"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/hcBalanceInput"
-                        android:layout_width="match_parent"
+                    <!-- Balance (FIRST) -->
+                    <LinearLayout
+                        android:id="@+id/hcBalanceContainer"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:inputType="none"
-                        android:focusable="false"
-                        android:enabled="false"
-                        android:textStyle="bold"
-                        android:textColor="@color/red" />
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                </com.google.android.material.textfield.TextInputLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Balance"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"
+                            android:layout_marginBottom="8dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/hcBalanceLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:boxStrokeColor="@color/gray"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/hcBalanceInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:focusable="false"
+                                android:enabled="false"
+                                android:textStyle="bold"
+                                android:textColor="@color/red" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <!-- Subsidy (SECOND - Conditional, only when Brand Zero = Yes) -->
+                    <LinearLayout
+                        android:id="@+id/hcSubsidyContainer"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/hcSubsidyLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Subsidy (3%)"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"
+                            android:layout_marginBottom="8dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/hcSubsidyLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:boxStrokeColor="@color/gray"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/hcSubsidyInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:focusable="false"
+                                android:enabled="false"
+                                android:textStyle="bold"
+                                android:textColor="@color/green" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
 
                 <!-- Down Payment Source (Separate Line, conditional) -->
                 <TextView
@@ -648,7 +704,7 @@
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
-                    <!-- Interest Percent (SECOND) -->
+                    <!-- Interest (SECOND) -->
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"

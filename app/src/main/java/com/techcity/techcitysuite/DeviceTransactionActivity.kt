@@ -30,6 +30,9 @@ class DeviceTransactionActivity : AppCompatActivity() {
     private var price: Double = 0.0
     private var discount: Double = 0.0
 
+    // Device type from phones collection (for subsidy calculation)
+    private var deviceType: String = "phone" // Default to phone
+
     // Transaction type
     private var transactionType: String = "Cash Transaction"
     private val transactionTypes = arrayOf(
@@ -151,6 +154,8 @@ class DeviceTransactionActivity : AppCompatActivity() {
             val selected = brandZeroOptions[position]
             brandZero = (selected == "Yes")
             updateBrandZeroColor(selected)
+            // Show/hide subsidy field based on Brand Zero selection
+            updateSubsidyVisibility()
         }
 
         // Home Credit Down Payment Source Dropdown
@@ -253,6 +258,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                 binding.homeCreditTitle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
                 binding.hcBalanceInput.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
                 updateHCBalance()
+                updateSubsidyVisibility()
             }
             "Skyro Transaction" -> {
                 binding.homeCreditCard.visibility = View.VISIBLE
@@ -262,6 +268,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                 binding.homeCreditTitle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
                 binding.hcBalanceInput.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
                 updateHCBalance()
+                updateSubsidyVisibility()
             }
             "In-House Installment" -> {
                 binding.inHouseCard.visibility = View.VISIBLE
@@ -299,189 +306,202 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // START OF PART 4: PRICE AND DISCOUNT LISTENERS
     // ============================================================================
 
-    // Flag to prevent infinite loop between discount watchers
-    private var isUpdatingDiscount = false
-    // Flag to prevent infinite loop when correcting invalid values
-    private var isCorrectingValue = false
+        // Flag to prevent infinite loop between discount watchers
+        private var isUpdatingDiscount = false
+        // Flag to prevent infinite loop when correcting invalid values
+        private var isCorrectingValue = false
 
-    private fun setupPriceListeners() {
-        // Price input listener
-        binding.priceInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (isCorrectingValue) return
+        private fun setupPriceListeners() {
+            // Price input listener
+            binding.priceInput.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    if (isCorrectingValue) return
 
-                val input = s.toString()
-                if (input.isNotEmpty()) {
-                    try {
-                        // Parse with comma stripping
-                        val parsedPrice = input.replace(",", "").toDouble()
+                    val input = s.toString()
+                    if (input.isNotEmpty()) {
+                        try {
+                            // Parse with comma stripping
+                            val parsedPrice = input.replace(",", "").toDouble()
 
-                        // Validate: Price cannot be negative
-                        if (parsedPrice < 0) {
-                            isCorrectingValue = true
-                            binding.priceInput.setText("0.00")
-                            binding.priceInput.setSelection(binding.priceInput.text?.length ?: 0)
-                            isCorrectingValue = false
+                            // Validate: Price cannot be negative
+                            if (parsedPrice < 0) {
+                                isCorrectingValue = true
+                                binding.priceInput.setText("0.00")
+                                binding.priceInput.setSelection(binding.priceInput.text?.length ?: 0)
+                                isCorrectingValue = false
+                                price = 0.0
+                                showMessage("Price cannot be negative", true)
+                            } else {
+                                price = parsedPrice
+                            }
+
+                            // Re-validate discount against new price
+                            validateDiscountAgainstPrice()
+
+                            updateAllCalculations()
+                        } catch (e: NumberFormatException) {
                             price = 0.0
-                            showMessage("Price cannot be negative", true)
-                        } else {
-                            price = parsedPrice
+                            discount = 0.0
+                            updateAllCalculations()
                         }
-
-                        // Re-validate discount against new price
-                        validateDiscountAgainstPrice()
-
-                        updateAllCalculations()
-                    } catch (e: NumberFormatException) {
+                    } else {
                         price = 0.0
                         discount = 0.0
                         updateAllCalculations()
                     }
-                } else {
-                    price = 0.0
-                    discount = 0.0
-                    updateAllCalculations()
                 }
-            }
-        })
+            })
 
-        // Discount amount listener with dynamic comma formatting
-        binding.discountInput.addTextChangedListener(object : TextWatcher {
-            private var currentText = ""
+            // Discount amount listener with dynamic comma formatting
+            binding.discountInput.addTextChangedListener(object : TextWatcher {
+                private var currentText = ""
 
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (isUpdatingDiscount || isCorrectingValue) return
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    if (isUpdatingDiscount || isCorrectingValue) return
 
-                val input = s.toString()
+                    val input = s.toString()
 
-                // Avoid re-processing if text hasn't changed
-                if (input == currentText) return
+                    // Avoid re-processing if text hasn't changed
+                    if (input == currentText) return
 
-                // Strip commas and parse
-                val cleanInput = input.replace(",", "")
+                    // Strip commas and parse
+                    val cleanInput = input.replace(",", "")
 
-                if (cleanInput.isEmpty()) {
-                    discount = 0.0
-                    isUpdatingDiscount = true
-                    binding.discountPercentInput.setText("")
-                    isUpdatingDiscount = false
-                    updateAllCalculations()
-                    currentText = ""
-                    return
-                }
-
-                try {
-                    var parsedDiscount = cleanInput.toDouble()
-
-                    // Validate: Discount cannot exceed price
-                    if (parsedDiscount > price && price > 0) {
-                        parsedDiscount = price
-                        showMessage("Discount cannot exceed price", true)
-                    }
-
-                    discount = parsedDiscount
-
-                    // Format with commas
-                    val formatted = String.format("%,.0f", discount)
-
-                    // Only update if formatting changed
-                    if (formatted != input) {
+                    if (cleanInput.isEmpty()) {
+                        discount = 0.0
                         isUpdatingDiscount = true
-                        binding.discountInput.setText(formatted)
-                        // Set cursor to end
-                        binding.discountInput.setSelection(formatted.length)
+                        binding.discountPercentInput.setText("")
                         isUpdatingDiscount = false
+                        updateAllCalculations()
+                        currentText = ""
+                        return
                     }
 
-                    currentText = formatted
-
-                    // Update percent with 1 decimal place
-                    if (price > 0) {
-                        val percent = (discount / price) * 100
-                        isUpdatingDiscount = true
-                        binding.discountPercentInput.setText(String.format("%.1f", percent))
-                        isUpdatingDiscount = false
-                    }
-                } catch (e: NumberFormatException) {
-                    discount = 0.0
-                }
-
-                updateAllCalculations()
-            }
-        })
-
-        // Discount percent listener
-        binding.discountPercentInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (isUpdatingDiscount || isCorrectingValue) return
-
-                val input = s.toString()
-                if (input.isNotEmpty() && price > 0) {
                     try {
-                        var percent = input.toDouble()
+                        var parsedDiscount = cleanInput.toDouble()
 
-                        // Validate: Percent cannot exceed 100%
-                        if (percent > 100) {
-                            percent = 100.0
-                            isUpdatingDiscount = true
-                            binding.discountPercentInput.setText("100.0")
-                            binding.discountPercentInput.setSelection(5)
-                            isUpdatingDiscount = false
-                            showMessage("Discount cannot exceed 100%", true)
+                        // Validate: Discount cannot exceed price
+                        if (parsedDiscount > price && price > 0) {
+                            parsedDiscount = price
+                            showMessage("Discount cannot exceed price", true)
                         }
 
-                        discount = (price * percent) / 100
-                        // Update amount with commas and no decimal
-                        isUpdatingDiscount = true
-                        binding.discountInput.setText(String.format("%,.0f", discount))
-                        isUpdatingDiscount = false
+                        discount = parsedDiscount
+
+                        // Format with commas only (preserve user's decimal input)
+                        val parts = cleanInput.split(".")
+                        val integerPart = parts[0].toLongOrNull() ?: 0
+                        val formattedInteger = String.format("%,d", integerPart)
+                        val formatted = if (parts.size > 1) {
+                            "$formattedInteger.${parts[1]}"
+                        } else {
+                            formattedInteger
+                        }
+
+                        // Only update if formatting changed
+                        if (formatted != input) {
+                            isUpdatingDiscount = true
+                            binding.discountInput.setText(formatted)
+                            // Set cursor to end
+                            binding.discountInput.setSelection(formatted.length)
+                            isUpdatingDiscount = false
+                        }
+
+                        currentText = formatted
+
+                        // Update percent with 1 decimal place
+                        if (price > 0) {
+                            val percent = (discount / price) * 100
+                            isUpdatingDiscount = true
+                            binding.discountPercentInput.setText(String.format("%.1f", percent))
+                            isUpdatingDiscount = false
+                        }
                     } catch (e: NumberFormatException) {
                         discount = 0.0
                     }
-                } else {
-                    discount = 0.0
+
+                    updateAllCalculations()
                 }
-                updateAllCalculations()
-            }
-        })
-    }
+            })
 
-    private fun validateDiscountAgainstPrice() {
-        // If discount exceeds new price, cap it
-        if (discount > price && price > 0) {
-            discount = price
-            isUpdatingDiscount = true
-            binding.discountInput.setText(String.format("%,.0f", discount))
-            if (price > 0) {
-                val percent = (discount / price) * 100
-                binding.discountPercentInput.setText(String.format("%.1f", percent))
-            }
-            isUpdatingDiscount = false
-            showMessage("Discount adjusted to match price", true)
+            // Discount percent listener
+            binding.discountPercentInput.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    if (isUpdatingDiscount || isCorrectingValue) return
+
+                    val input = s.toString()
+                    if (input.isNotEmpty() && price > 0) {
+                        try {
+                            var percent = input.toDouble()
+
+                            // Validate: Percent cannot exceed 100%
+                            if (percent > 100) {
+                                percent = 100.0
+                                isUpdatingDiscount = true
+                                binding.discountPercentInput.setText("100.0")
+                                binding.discountPercentInput.setSelection(5)
+                                isUpdatingDiscount = false
+                                showMessage("Discount cannot exceed 100%", true)
+                            }
+
+                            discount = (price * percent) / 100
+                            // Update amount with commas and 2 decimal places (from percent calculation)
+                            isUpdatingDiscount = true
+                            binding.discountInput.setText(String.format("%,.2f", discount))
+                            isUpdatingDiscount = false
+                        } catch (e: NumberFormatException) {
+                            discount = 0.0
+                        }
+                    } else {
+                        discount = 0.0
+                    }
+                    updateAllCalculations()
+                }
+            })
         }
-    }
 
-    private fun updateAllCalculations() {
-        when (transactionType) {
-            "Cash Transaction" -> updateCashAmount()
-            "Home Credit Transaction", "Skyro Transaction" -> updateHCBalance()
-            "In-House Installment" -> {
-                updateInHouseBalance()
-                updateMonthlyAmount()
+        private fun validateDiscountAgainstPrice() {
+            // If discount exceeds new price, cap it
+            if (discount > price && price > 0) {
+                discount = price
+                isUpdatingDiscount = true
+                binding.discountInput.setText(String.format("%,.2f", discount))
+                if (price > 0) {
+                    val percent = (discount / price) * 100
+                    binding.discountPercentInput.setText(String.format("%.1f", percent))
+                }
+                isUpdatingDiscount = false
+                showMessage("Discount adjusted to match price", true)
             }
         }
-    }
 
-    private fun updateCashAmount() {
-        val amount = price - discount
-        binding.cashAmountInput.setText(formatCurrency(amount))
-    }
+        private fun updateAllCalculations() {
+            when (transactionType) {
+                "Cash Transaction" -> updateCashAmount()
+                "Home Credit Transaction", "Skyro Transaction" -> {
+                    updateHCBalance()
+                    // Update subsidy when price changes
+                    if (brandZero) {
+                        updateSubsidyAmount()
+                    }
+                }
+                "In-House Installment" -> {
+                    updateInHouseBalance()
+                    updateMonthlyAmount()
+                }
+            }
+        }
+
+        private fun updateCashAmount() {
+            val amount = price - discount
+            binding.cashAmountInput.setText(formatCurrency(amount))
+        }
 
     // ============================================================================
     // END OF PART 4: PRICE AND DISCOUNT LISTENERS
@@ -492,85 +512,130 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // START OF PART 5: DOWN PAYMENT LISTENERS
     // ============================================================================
 
-    // Flag to prevent infinite loop in HC down payment formatting
-    private var isUpdatingHCDownPayment = false
+        // Flag to prevent infinite loop in HC down payment formatting
+        private var isUpdatingHCDownPayment = false
 
-    private fun setupDownPaymentListeners() {
-        // Home Credit / Skyro down payment listener with dynamic comma formatting
-        binding.hcDownPaymentInput.addTextChangedListener(object : TextWatcher {
-            private var currentText = ""
+        private fun setupDownPaymentListeners() {
+            // Home Credit / Skyro down payment listener with dynamic comma formatting
+            binding.hcDownPaymentInput.addTextChangedListener(object : TextWatcher {
+                private var currentText = ""
 
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (isUpdatingHCDownPayment || isCorrectingValue) return
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    if (isUpdatingHCDownPayment || isCorrectingValue) return
 
-                val input = s.toString()
+                    val input = s.toString()
 
-                // Avoid re-processing if text hasn't changed
-                if (input == currentText) return
+                    // Avoid re-processing if text hasn't changed
+                    if (input == currentText) return
 
-                // Strip commas and parse
-                val cleanInput = input.replace(",", "")
+                    // Strip commas and parse
+                    val cleanInput = input.replace(",", "")
 
-                if (cleanInput.isEmpty()) {
-                    currentText = ""
+                    if (cleanInput.isEmpty()) {
+                        currentText = ""
+                        updateHCBalance()
+                        updateHCDownPaymentSourceVisibility()
+                        return
+                    }
+
+                    try {
+                        var downPaymentValue = cleanInput.toDouble()
+
+                        // Calculate max down payment (price - discount)
+                        val maxDownPayment = price - discount
+
+                        // Validate: Down payment cannot exceed (price - discount)
+                        if (downPaymentValue > maxDownPayment && maxDownPayment > 0) {
+                            downPaymentValue = maxDownPayment
+                            showMessage("Down payment cannot exceed price minus discount", true)
+                        }
+
+                        // Format with commas (no decimals)
+                        val formatted = String.format("%,.0f", downPaymentValue)
+
+                        // Only update if formatting changed
+                        if (formatted != input) {
+                            isUpdatingHCDownPayment = true
+                            binding.hcDownPaymentInput.setText(formatted)
+                            binding.hcDownPaymentInput.setSelection(formatted.length)
+                            isUpdatingHCDownPayment = false
+                        }
+
+                        currentText = formatted
+                    } catch (e: NumberFormatException) {
+                        // Invalid input, ignore
+                    }
+
                     updateHCBalance()
                     updateHCDownPaymentSourceVisibility()
-                    return
                 }
-
-                try {
-                    var downPaymentValue = cleanInput.toDouble()
-
-                    // Calculate max down payment (price - discount)
-                    val maxDownPayment = price - discount
-
-                    // Validate: Down payment cannot exceed (price - discount)
-                    if (downPaymentValue > maxDownPayment && maxDownPayment > 0) {
-                        downPaymentValue = maxDownPayment
-                        showMessage("Down payment cannot exceed price minus discount", true)
-                    }
-
-                    // Format with commas (no decimals)
-                    val formatted = String.format("%,.0f", downPaymentValue)
-
-                    // Only update if formatting changed
-                    if (formatted != input) {
-                        isUpdatingHCDownPayment = true
-                        binding.hcDownPaymentInput.setText(formatted)
-                        binding.hcDownPaymentInput.setSelection(formatted.length)
-                        isUpdatingHCDownPayment = false
-                    }
-
-                    currentText = formatted
-                } catch (e: NumberFormatException) {
-                    // Invalid input, ignore
-                }
-
-                updateHCBalance()
-                updateHCDownPaymentSourceVisibility()
-            }
-        })
-    }
-
-    private fun updateHCBalance() {
-        val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
-        val balance = price - discount - downPayment
-        binding.hcBalanceInput.setText(formatCurrency(balance))
-    }
-
-    private fun updateHCDownPaymentSourceVisibility() {
-        val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
-
-        if (downPayment > 0) {
-            binding.hcDownPaymentSourceLabel.visibility = View.VISIBLE
-            binding.hcDownPaymentSourceLayout.visibility = View.VISIBLE
-        } else {
-            binding.hcDownPaymentSourceLabel.visibility = View.GONE
-            binding.hcDownPaymentSourceLayout.visibility = View.GONE
+            })
         }
-    }
+
+        private fun updateHCBalance() {
+            val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+
+            // Calculate subsidy if Brand Zero is enabled
+            val subsidy = if (brandZero) {
+                val subsidyPercent = when (deviceType.lowercase()) {
+                    "laptop" -> 0.08  // 8% for laptops
+                    else -> 0.03      // 3% for phones and tablets
+                }
+                price * subsidyPercent
+            } else {
+                0.0
+            }
+
+            // Balance = Price - Discount - Down Payment - Subsidy (if Brand Zero)
+            val balance = price - discount - downPayment - subsidy
+            binding.hcBalanceInput.setText(formatCurrency(balance))
+        }
+
+        private fun updateHCDownPaymentSourceVisibility() {
+            val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+
+            if (downPayment > 0) {
+                binding.hcDownPaymentSourceLabel.visibility = View.VISIBLE
+                binding.hcDownPaymentSourceLayout.visibility = View.VISIBLE
+            } else {
+                binding.hcDownPaymentSourceLabel.visibility = View.GONE
+                binding.hcDownPaymentSourceLayout.visibility = View.GONE
+            }
+        }
+
+        private fun updateSubsidyVisibility() {
+            // Only show subsidy when Brand Zero is Yes
+            if (brandZero) {
+                binding.hcSubsidyContainer.visibility = View.VISIBLE
+                updateSubsidyAmount()
+            } else {
+                binding.hcSubsidyContainer.visibility = View.GONE
+            }
+            // Update balance whenever Brand Zero changes (to add/remove subsidy from calculation)
+            updateHCBalance()
+        }
+
+        private fun updateSubsidyAmount() {
+            // Calculate subsidy based on device type
+            // Phone/Tablet = 3% of price
+            // Laptop = 8% of price
+            val subsidyPercent = when (deviceType.lowercase()) {
+                "laptop" -> 0.08  // 8% for laptops
+                else -> 0.03      // 3% for phones and tablets
+            }
+
+            val subsidyAmount = price * subsidyPercent
+            binding.hcSubsidyInput.setText(formatCurrency(subsidyAmount))
+
+            // Update label to show the percentage
+            val percentText = when (deviceType.lowercase()) {
+                "laptop" -> "Subsidy (8%)"
+                else -> "Subsidy (3%)"
+            }
+            binding.hcSubsidyLabel.text = percentText
+        }
 
     // ============================================================================
     // END OF PART 5: DOWN PAYMENT LISTENERS
@@ -876,6 +941,9 @@ class DeviceTransactionActivity : AppCompatActivity() {
                             foundInventoryItem = item
                             displayDeviceInfo(item, matchedIdentifier)
                             showMessage("Device found!", false)
+
+                            // Fetch device type from phones collection
+                            fetchDeviceType(item.manufacturer, item.model)
                         }
                         else -> {
                             showMessage("Multiple matches found (${matchingItems.size}). Please enter more digits.", true)
@@ -889,6 +957,39 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     binding.searchButton.isEnabled = true
                     showMessage("Search failed: ${e.message}", true)
                 }
+            }
+        }
+    }
+
+    private fun fetchDeviceType(manufacturer: String, model: String) {
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    // Query phones collection by manufacturer and model
+                    val querySnapshot = db.collection("phones")
+                        .whereEqualTo("manufacturer", manufacturer)
+                        .whereEqualTo("model", model)
+                        .get()
+                        .await()
+
+                    val fetchedDeviceType = if (querySnapshot.documents.isNotEmpty()) {
+                        val phoneDoc = querySnapshot.documents[0]
+                        phoneDoc.getString("deviceType") ?: "phone"
+                    } else {
+                        "phone" // Default to phone if not found
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        deviceType = fetchedDeviceType
+                        // Update subsidy if it's visible
+                        if (brandZero) {
+                            updateSubsidyAmount()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // If fetch fails, default to phone
+                deviceType = "phone"
             }
         }
     }
@@ -951,8 +1052,9 @@ class DeviceTransactionActivity : AppCompatActivity() {
         binding.priceInput.setText("")
         price = 0.0
 
-        // Clear found item
+        // Clear found item and reset device type
         foundInventoryItem = null
+        deviceType = "phone"
 
         // Disable save button and transaction type dropdown
         disableFormControls()
@@ -1026,12 +1128,23 @@ class DeviceTransactionActivity : AppCompatActivity() {
             }
             "Home Credit Transaction", "Skyro Transaction" -> {
                 val brandZeroValue = brandZero
-                val downPayment = binding.hcDownPaymentInput.text.toString().toDoubleOrNull() ?: 0.0
+                val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
                 val balance = price - (discount + downPayment)
 
                 transactionData["brandZero"] = brandZeroValue
                 transactionData["downPaymentAmount"] = downPayment
                 transactionData["balance"] = balance
+
+                // Add subsidy if Brand Zero is Yes
+                if (brandZeroValue) {
+                    val subsidyPercent = when (deviceType.lowercase()) {
+                        "laptop" -> 0.08
+                        else -> 0.03
+                    }
+                    val subsidyAmount = price * subsidyPercent
+                    transactionData["subsidy"] = subsidyAmount
+                    transactionData["deviceType"] = deviceType
+                }
 
                 if (downPayment > 0) {
                     transactionData["downPaymentSource"] = binding.hcDownPaymentSourceDropdown.text.toString()
@@ -1039,7 +1152,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
             }
             "In-House Installment" -> {
                 val interest = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
-                val downPayment = binding.ihDownPaymentInput.text.toString().toDoubleOrNull() ?: 0.0
+                val downPayment = binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
                 val balance = (price + interest) - (discount + downPayment)
                 val monthsToPay = binding.monthsToPayInput.text.toString().toIntOrNull() ?: 0
                 val monthlyAmount = if (monthsToPay > 0) balance / monthsToPay else 0.0

@@ -351,87 +351,36 @@
                     android:textColor="@color/red"
                     android:layout_marginBottom="16dp" />
 
-                <!-- Down Payment and Brand Zero in Horizontal Layout -->
-                <LinearLayout
+                <!-- Down Payment (Full Width - No Brand Zero for Accessories) -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Down Payment"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/hcDownPaymentLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:hint="Amount"
+                    app:prefixText="₱"
+                    app:boxStrokeColor="#FF9800"
+                    app:hintTextColor="#FF9800"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-                    <!-- Down Payment (FIRST) -->
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/hcDownPaymentInput"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:textStyle="bold"
+                        android:inputType="numberDecimal" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Down Payment"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/black"
-                            android:layout_marginBottom="8dp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/hcDownPaymentLayout"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Amount"
-                            app:prefixText="₱"
-                            app:boxStrokeColor="#FF9800"
-                            app:hintTextColor="#FF9800"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/hcDownPaymentInput"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textStyle="bold"
-                                android:inputType="numberDecimal" />
-
-                        </com.google.android.material.textfield.TextInputLayout>
-                    </LinearLayout>
-
-                    <!-- Brand Zero (SECOND) -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Brand Zero"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/black"
-                            android:layout_marginBottom="8dp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/brandZeroLayout"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Select"
-                            app:boxStrokeColor="#FF9800"
-                            app:hintTextColor="#FF9800"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-
-                            <AutoCompleteTextView
-                                android:id="@+id/brandZeroDropdown"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="none"
-                                android:textStyle="bold" />
-
-                        </com.google.android.material.textfield.TextInputLayout>
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <!-- Balance (Separate Line) -->
+                <!-- Balance -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -577,7 +526,7 @@
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
-                    <!-- Interest Percent (SECOND) -->
+                    <!-- Interest (SECOND) -->
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
