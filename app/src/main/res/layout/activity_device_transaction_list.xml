@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:context=".DeviceTransactionListActivity">
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: HEADER SECTION -->
+    <!-- ========================================================================== -->
+
+    <LinearLayout
+        android:id="@+id/headerSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/techcity_blue"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Title Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/titleText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Device Transactions"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white" />
+
+                <!-- Date Label -->
+                <TextView
+                    android:id="@+id/dateLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Today"
+                    android:textSize="14sp"
+                    android:textColor="@color/white"
+                    android:alpha="0.8" />
+
+            </LinearLayout>
+
+            <!-- Menu Button (Date Picker) -->
+            <ImageButton
+                android:id="@+id/menuButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_menu_my_calendar"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Select Date"
+                app:tint="@color/white" />
+
+        </LinearLayout>
+
+        <!-- Summary Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
+
+            <!-- Total Sales -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/totalSalesLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Sales (All)"
+                    android:textSize="10sp"
+                    android:textColor="@color/white"
+                    android:alpha="0.8" />
+
+                <TextView
+                    android:id="@+id/totalSalesAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱0.00"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white" />
+
+            </LinearLayout>
+
+            <!-- Downpayment (visible for HC, Skyro, In-House) -->
+            <LinearLayout
+                android:id="@+id/dpSummaryLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Downpayment"
+                    android:textSize="10sp"
+                    android:textColor="@color/white"
+                    android:alpha="0.8" />
+
+                <TextView
+                    android:id="@+id/dpSummaryAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱0.00"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white" />
+
+            </LinearLayout>
+
+            <!-- Balance (visible for HC, Skyro, In-House) -->
+            <LinearLayout
+                android:id="@+id/balanceSummaryLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Balance"
+                    android:textSize="10sp"
+                    android:textColor="@color/white"
+                    android:alpha="0.8" />
+
+                <TextView
+                    android:id="@+id/balanceSummaryAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱0.00"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white" />
+
+            </LinearLayout>
+
+            <!-- Transaction Count -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transactions"
+                    android:textSize="10sp"
+                    android:textColor="@color/white"
+                    android:alpha="0.8" />
+
+                <TextView
+                    android:id="@+id/transactionCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: HEADER SECTION -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 2: FILTER BUTTONS (Fits screen - no scroll) -->
+    <!-- ========================================================================== -->
+
+    <LinearLayout
+        android:id="@+id/filterButtonsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/white"
+        android:elevation="2dp"
+        app:layout_constraintTop_toBottomOf="@id/headerSection"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- All Button - Blue -->
+        <Button
+            android:id="@+id/filterAllButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="All"
+            android:textSize="11sp"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:backgroundTint="@color/techcity_blue"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <!-- Cash Button - Green -->
+        <Button
+            android:id="@+id/filterCashButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="Cash"
+            android:textSize="11sp"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:backgroundTint="@color/cash_dark_green"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <!-- HC Button - Red -->
+        <Button
+            android:id="@+id/filterHomeCreditButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="HC"
+            android:textSize="11sp"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:backgroundTint="@color/red"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <!-- Skyro Button - Light Blue -->
+        <Button
+            android:id="@+id/filterSkyroButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="Skyro"
+            android:textSize="11sp"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:backgroundTint="@color/skyro_light_blue"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <!-- In-House Button - Purple -->
+        <Button
+            android:id="@+id/filterInHouseButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="In-House"
+            android:textSize="10sp"
+            android:paddingStart="2dp"
+            android:paddingEnd="2dp"
+            android:backgroundTint="@color/purple"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            style="@style/Widget.MaterialComponents.Button" />
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 2: FILTER BUTTONS -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 3: TRANSACTION LIST -->
+    <!-- ========================================================================== -->
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/transactionRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:background="#F5F5F5"
+        app:layout_constraintTop_toBottomOf="@id/filterButtonsLayout"
+        app:layout_constraintBottom_toTopOf="@id/addButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Empty State -->
+    <TextView
+        android:id="@+id/emptyMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No transactions for this date"
+        android:textSize="16sp"
+        android:textColor="@color/gray"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/filterButtonsLayout"
+        app:layout_constraintBottom_toTopOf="@id/addButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/filterButtonsLayout"
+        app:layout_constraintBottom_toTopOf="@id/addButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 3: TRANSACTION LIST -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 4: ADD BUTTON -->
+    <!-- ========================================================================== -->
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/addButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="New Transaction"
+        android:textColor="@color/white"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="@color/white"
+        app:backgroundTint="@color/techcity_blue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 4: ADD BUTTON -->
+    <!-- ========================================================================== -->
+
+</androidx.constraintlayout.widget.ConstraintLayout>

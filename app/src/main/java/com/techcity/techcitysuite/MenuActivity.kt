@@ -86,9 +86,9 @@ class MenuActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Device Transactions button
+        // Device Transactions button - NOW OPENS THE LIST
         binding.devicesTransactionsButton.setOnClickListener {
-            val intent = Intent(this, DeviceTransactionActivity::class.java)
+            val intent = Intent(this, DeviceTransactionListActivity::class.java)
             startActivity(intent)
         }
 

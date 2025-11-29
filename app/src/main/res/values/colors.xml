@@ -42,4 +42,11 @@
     <color name="button_secondary">#FFFFFF</color>
     <color name="button_text_primary">#FFFFFF</color>
     <color name="button_text_secondary">#3F51B5</color>
+
+    <color name="orange">#FF9800</color>
+    <color name="purple">#9C27B0</color>
+
+    <!-- Skyro Light Blue -->
+    <color name="skyro_light_blue">#03A9F4</color>
+
 </resources>

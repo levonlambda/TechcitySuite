@@ -1,5 +1,11 @@
 package com.techcity.techcitysuite
 
+import android.content.Context
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -1084,10 +1090,13 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // END OF PART 8: IMEI SEARCH METHODS
     // ============================================================================
 
-
     // ============================================================================
     // START OF PART 9: BUTTON LISTENERS AND SAVE METHODS
     // ============================================================================
+
+    // NOTE: This is the TESTING version that only creates device_transactions
+    // and does NOT update inventory status. For production, use the version
+    // that includes the inventory update.
 
     private fun setupButtonListeners() {
         binding.cancelButton.setOnClickListener {
@@ -1100,90 +1109,476 @@ class DeviceTransactionActivity : AppCompatActivity() {
     }
 
     private fun saveTransaction() {
-        // Validate required fields
+        // -------------------------------------------------------------------------
+        // STEP 1: Validate Prerequisites
+        // -------------------------------------------------------------------------
+
+        // Get SharedPreferences
+        val prefs = getSharedPreferences(AppConstants.PREFS_NAME, Context.MODE_PRIVATE)
+        val user = prefs.getString(AppConstants.KEY_USER, "") ?: ""
+        val userLocation = prefs.getString(AppConstants.KEY_STORE_LOCATION, "") ?: ""
+
+        // Validate user settings
+        if (user.isEmpty()) {
+            showMessage("Please configure User in Settings first", true)
+            return
+        }
+
+        if (userLocation.isEmpty()) {
+            showMessage("Please configure Store Location in Settings first", true)
+            return
+        }
+
+        // Validate device is found
+        if (foundInventoryItem == null) {
+            showMessage("Please search for a device first", true)
+            return
+        }
+
+        // TESTING MODE: Skip the "already sold" check so we can test with same device
+        // For production, uncomment this validation:
+        /*
+        if (foundInventoryItem!!.status.equals("Sold", ignoreCase = true)) {
+            showMessage("This device has already been sold", true)
+            return
+        }
+        */
+
+        // Validate price
         if (price <= 0) {
             showMessage("Please enter a valid price", true)
             return
         }
 
-        // Build transaction data based on transaction type
-        val transactionData = hashMapOf<String, Any>(
-            "imei" to binding.imeiInput.text.toString().trim(),
-            "deviceDetails" to binding.deviceDetailsInput.text.toString(),
-            "price" to price,
-            "discount" to discount,
-            "transactionType" to transactionType,
-            "timestamp" to System.currentTimeMillis()
-        )
-
-        // Add inventory item ID if found
-        foundInventoryItem?.let {
-            transactionData["inventoryId"] = it.id
-        }
-
+        // Transaction type specific validations
         when (transactionType) {
-            "Cash Transaction" -> {
-                transactionData["paymentSource"] = binding.paymentSourceDropdown.text.toString()
-                transactionData["totalAmount"] = price - discount
+            AppConstants.TRANSACTION_TYPE_CASH -> {
+                val paymentSource = binding.paymentSourceDropdown.text.toString()
+                if (paymentSource.isEmpty()) {
+                    showMessage("Please select a payment source", true)
+                    return
+                }
             }
-            "Home Credit Transaction", "Skyro Transaction" -> {
-                val brandZeroValue = brandZero
+            AppConstants.TRANSACTION_TYPE_HOME_CREDIT, AppConstants.TRANSACTION_TYPE_SKYRO -> {
                 val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
-                val balance = price - (discount + downPayment)
-
-                transactionData["brandZero"] = brandZeroValue
-                transactionData["downPaymentAmount"] = downPayment
-                transactionData["balance"] = balance
-
-                // Add subsidy if Brand Zero is Yes
-                if (brandZeroValue) {
-                    val subsidyPercent = when (deviceType.lowercase()) {
-                        "laptop" -> 0.08
-                        else -> 0.03
-                    }
-                    val subsidyAmount = price * subsidyPercent
-                    transactionData["subsidy"] = subsidyAmount
-                    transactionData["deviceType"] = deviceType
-                }
-
                 if (downPayment > 0) {
-                    transactionData["downPaymentSource"] = binding.hcDownPaymentSourceDropdown.text.toString()
+                    val downPaymentSource = binding.hcDownPaymentSourceDropdown.text.toString()
+                    if (downPaymentSource.isEmpty()) {
+                        showMessage("Please select a downpayment source", true)
+                        return
+                    }
+                }
+                // Calculate balance and validate it's not negative
+                val subsidyAmount = if (brandZero) {
+                    val subsidyPercent = when (deviceType.lowercase()) {
+                        "laptop" -> AppConstants.SUBSIDY_PERCENT_LAPTOP / 100.0
+                        else -> AppConstants.SUBSIDY_PERCENT_PHONE / 100.0
+                    }
+                    price * subsidyPercent
+                } else 0.0
+                val balance = price - discount - downPayment - subsidyAmount
+                if (balance < 0) {
+                    showMessage("Balance cannot be negative", true)
+                    return
                 }
             }
-            "In-House Installment" -> {
-                val interest = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
+            AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
                 val downPayment = binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
-                val balance = (price + interest) - (discount + downPayment)
+                val interestPercent = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
                 val monthsToPay = binding.monthsToPayInput.text.toString().toIntOrNull() ?: 0
-                val monthlyAmount = if (monthsToPay > 0) balance / monthsToPay else 0.0
 
-                transactionData["interest"] = interest
-                transactionData["downPaymentAmount"] = downPayment
-                transactionData["balance"] = balance
-                transactionData["monthsToPay"] = monthsToPay
-                transactionData["monthlyAmount"] = monthlyAmount
+                if (downPayment <= 0) {
+                    showMessage("Downpayment is required for In-House Installment", true)
+                    return
+                }
 
-                if (downPayment > 0) {
-                    transactionData["downPaymentSource"] = binding.ihDownPaymentSourceDropdown.text.toString()
+                val downPaymentSource = binding.ihDownPaymentSourceDropdown.text.toString()
+                if (downPaymentSource.isEmpty()) {
+                    showMessage("Please select a downpayment source", true)
+                    return
+                }
+
+                if (interestPercent < 0 || interestPercent > 100) {
+                    showMessage("Interest must be between 0 and 100%", true)
+                    return
+                }
+
+                if (monthsToPay <= 0) {
+                    showMessage("Months to pay must be greater than 0", true)
+                    return
+                }
+
+                val balance = price - discount - downPayment
+                if (balance <= 0) {
+                    showMessage("Balance must be greater than 0", true)
+                    return
                 }
             }
         }
 
-        // Show progress and save
+        // -------------------------------------------------------------------------
+        // STEP 2: Show Progress
+        // -------------------------------------------------------------------------
         binding.progressBar.visibility = View.VISIBLE
         binding.saveButton.isEnabled = false
 
-        // TODO: Save to Firebase - For now just show success message
-        // This is a placeholder for actual Firebase save logic
-        binding.root.postDelayed({
-            binding.progressBar.visibility = View.GONE
-            showMessage("Transaction saved successfully!", false)
+        // -------------------------------------------------------------------------
+        // STEP 3: Build and Save Transaction
+        // -------------------------------------------------------------------------
+        scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    saveTransactionToFirebase(prefs, user, userLocation)
+                }
 
-            // Return to previous screen after short delay
-            binding.root.postDelayed({
-                finish()
-            }, 1000)
-        }, 500)
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+
+                    if (result.isSuccess) {
+                        showMessage("Transaction saved successfully!", false)
+                        // Return to previous screen after short delay
+                        binding.root.postDelayed({
+                            finish()
+                        }, 1000)
+                    } else {
+                        binding.saveButton.isEnabled = true
+                        showMessage("Failed to save transaction: ${result.exceptionOrNull()?.message}", true)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.saveButton.isEnabled = true
+                    showMessage("Error saving transaction: ${e.message}", true)
+                }
+            }
+        }
+    }
+
+    private suspend fun saveTransactionToFirebase(
+        prefs: android.content.SharedPreferences,
+        user: String,
+        userLocation: String
+    ): Result<String> {
+        return try {
+            // Get current date/time
+            val now = Date()
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val monthFormat = SimpleDateFormat("yyyy-MM", Locale.US)
+            val yearFormat = SimpleDateFormat("yyyy", Locale.US)
+            val displayDateFormat = SimpleDateFormat("M/d/yyyy", Locale.US)
+            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+
+            val dateString = dateFormat.format(now)
+            val monthString = monthFormat.format(now)
+            val yearString = yearFormat.format(now)
+            val dateSoldString = displayDateFormat.format(now)
+            val timeString = timeFormat.format(now)
+
+            // Get device ID
+            val appDeviceId = AppSettingsManager.getDeviceId(this@DeviceTransactionActivity)
+
+            // Get inventory item (already validated as not null)
+            val inventoryItem = foundInventoryItem!!
+
+            // Build account settings snapshot
+            val accountSettingsSnapshot = buildAccountSettingsSnapshot(prefs)
+
+            // Calculate pricing
+            val finalPrice = price - discount
+            val discountPercent = if (price > 0) (discount / price) * 100 else 0.0
+
+            // Get identifier used (from IMEI input field)
+            val identifierUsed = binding.imeiInput.text.toString().trim()
+
+            // Build transaction data as HashMap for Firestore
+            val transactionData = hashMapOf<String, Any?>(
+                // Date and Time Fields
+                "date" to dateString,
+                "month" to monthString,
+                "year" to yearString,
+                "timestamp" to FieldValue.serverTimestamp(),
+                "dateSold" to dateSoldString,
+                "time" to timeString,
+
+                // Sort Order (for custom ordering in list view, 0 = use timestamp order)
+                "sortOrder" to 0,
+
+                // User and Location
+                "user" to user,
+                "userLocation" to userLocation,
+                "deviceId" to appDeviceId,
+
+                // Inventory Reference and Status Tracking
+                "inventoryDocumentId" to inventoryItem.id,
+                "originalStatus" to inventoryItem.status,
+                "originalLastUpdated" to inventoryItem.lastUpdated,
+                "newStatus" to AppConstants.INVENTORY_STATUS_SOLD,
+                "newLastUpdated" to dateSoldString,
+
+                // Device Identification
+                "imei1" to inventoryItem.imei1,
+                "imei2" to inventoryItem.imei2,
+                "serialNumber" to inventoryItem.serialNumber,
+                "identifierUsed" to identifierUsed,
+
+                // Device Details
+                "deviceType" to deviceType,
+                "manufacturer" to inventoryItem.manufacturer,
+                "model" to inventoryItem.model,
+                "ram" to inventoryItem.ram,
+                "storage" to inventoryItem.storage,
+                "color" to inventoryItem.color,
+
+                // Pricing Information - Original
+                "originalRetailPrice" to inventoryItem.retailPrice,
+                "originalDealersPrice" to inventoryItem.dealersPrice,
+
+                // Pricing Information - Transaction
+                "price" to price,
+                "discountAmount" to discount,
+                "discountPercent" to discountPercent,
+                "finalPrice" to finalPrice,
+
+                // Transaction Type
+                "transactionType" to transactionType,
+
+                // Account Settings Snapshot
+                "accountSettingsSnapshot" to hashMapOf(
+                    "cashAccount" to accountSettingsSnapshot.cashAccount,
+                    "gcashAccount" to accountSettingsSnapshot.gcashAccount,
+                    "paymayaAccount" to accountSettingsSnapshot.paymayaAccount,
+                    "qrphAccount" to accountSettingsSnapshot.qrphAccount,
+                    "creditCardAccount" to accountSettingsSnapshot.creditCardAccount,
+                    "otherAccount" to accountSettingsSnapshot.otherAccount
+                ),
+
+                // Transaction Status
+                "status" to AppConstants.STATUS_COMPLETED,
+
+                // Void Information (null for new transactions)
+                "voidReason" to null,
+                "voidedAt" to null,
+                "voidedBy" to null,
+
+                // Audit Trail
+                "createdBy" to user,
+                "createdAt" to FieldValue.serverTimestamp(),
+                "updatedBy" to null,
+                "updatedAt" to null,
+
+                // Notes
+                "notes" to ""
+            )
+
+            // Add payment details based on transaction type
+            when (transactionType) {
+                AppConstants.TRANSACTION_TYPE_CASH -> {
+                    val paymentSource = binding.paymentSourceDropdown.text.toString()
+                    val accountDetails = getAccountDetailsForPaymentSource(paymentSource, prefs)
+
+                    transactionData["cashPayment"] = hashMapOf(
+                        "amountPaid" to finalPrice,
+                        "paymentSource" to paymentSource,
+                        "accountDetails" to hashMapOf(
+                            "accountName" to accountDetails.accountName,
+                            "accountType" to accountDetails.accountType
+                        )
+                    )
+                    transactionData["homeCreditPayment"] = null
+                    transactionData["skyroPayment"] = null
+                    transactionData["inHouseInstallment"] = null
+                }
+
+                AppConstants.TRANSACTION_TYPE_HOME_CREDIT -> {
+                    val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                    val downPaymentSource = binding.hcDownPaymentSourceDropdown.text.toString()
+
+                    // Calculate subsidy
+                    val subsidyPercent = if (brandZero) {
+                        when (deviceType.lowercase()) {
+                            "laptop" -> AppConstants.SUBSIDY_PERCENT_LAPTOP
+                            else -> AppConstants.SUBSIDY_PERCENT_PHONE
+                        }
+                    } else 0.0
+                    val subsidyAmount = if (brandZero) price * (subsidyPercent / 100.0) else 0.0
+
+                    // Calculate balance
+                    val balance = finalPrice - downPayment - subsidyAmount
+
+                    // Get account details for downpayment source (if downpayment > 0)
+                    val accountDetails = if (downPayment > 0) {
+                        getAccountDetailsForPaymentSource(downPaymentSource, prefs)
+                    } else {
+                        AccountDetails()
+                    }
+
+                    transactionData["homeCreditPayment"] = hashMapOf(
+                        "downpaymentAmount" to downPayment,
+                        "downpaymentSource" to if (downPayment > 0) downPaymentSource else "",
+                        "accountDetails" to hashMapOf(
+                            "accountName" to accountDetails.accountName,
+                            "accountType" to accountDetails.accountType
+                        ),
+                        "brandZero" to brandZero,
+                        "brandZeroSubsidy" to subsidyAmount,
+                        "subsidyPercent" to subsidyPercent,
+                        "balance" to balance,
+                        "isBalancePaid" to false,
+                        "balancePaidDate" to null,
+                        "balancePaidBy" to null,
+                        "balancePaidTimestamp" to null
+                    )
+                    transactionData["cashPayment"] = null
+                    transactionData["skyroPayment"] = null
+                    transactionData["inHouseInstallment"] = null
+                }
+
+                AppConstants.TRANSACTION_TYPE_SKYRO -> {
+                    val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                    val downPaymentSource = binding.hcDownPaymentSourceDropdown.text.toString()
+
+                    // Calculate subsidy
+                    val subsidyPercent = if (brandZero) {
+                        when (deviceType.lowercase()) {
+                            "laptop" -> AppConstants.SUBSIDY_PERCENT_LAPTOP
+                            else -> AppConstants.SUBSIDY_PERCENT_PHONE
+                        }
+                    } else 0.0
+                    val subsidyAmount = if (brandZero) price * (subsidyPercent / 100.0) else 0.0
+
+                    // Calculate balance
+                    val balance = finalPrice - downPayment - subsidyAmount
+
+                    // Get account details for downpayment source (if downpayment > 0)
+                    val accountDetails = if (downPayment > 0) {
+                        getAccountDetailsForPaymentSource(downPaymentSource, prefs)
+                    } else {
+                        AccountDetails()
+                    }
+
+                    transactionData["skyroPayment"] = hashMapOf(
+                        "downpaymentAmount" to downPayment,
+                        "downpaymentSource" to if (downPayment > 0) downPaymentSource else "",
+                        "accountDetails" to hashMapOf(
+                            "accountName" to accountDetails.accountName,
+                            "accountType" to accountDetails.accountType
+                        ),
+                        "brandZero" to brandZero,
+                        "brandZeroSubsidy" to subsidyAmount,
+                        "subsidyPercent" to subsidyPercent,
+                        "balance" to balance,
+                        "isBalancePaid" to false,
+                        "balancePaidDate" to null,
+                        "balancePaidBy" to null,
+                        "balancePaidTimestamp" to null
+                    )
+                    transactionData["cashPayment"] = null
+                    transactionData["homeCreditPayment"] = null
+                    transactionData["inHouseInstallment"] = null
+                }
+
+                AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
+                    val downPayment = binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                    val downPaymentSource = binding.ihDownPaymentSourceDropdown.text.toString()
+                    val interestPercent = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
+                    val monthsToPay = binding.monthsToPayInput.text.toString().toIntOrNull() ?: 0
+
+                    // Calculate amounts
+                    val balance = finalPrice - downPayment
+                    val interestAmount = balance * (interestPercent / 100.0)
+                    val totalAmountDue = balance + interestAmount
+                    val monthlyAmount = if (monthsToPay > 0) totalAmountDue / monthsToPay else 0.0
+
+                    // Get account details for downpayment source
+                    val accountDetails = getAccountDetailsForPaymentSource(downPaymentSource, prefs)
+
+                    transactionData["inHouseInstallment"] = hashMapOf(
+                        "downpaymentAmount" to downPayment,
+                        "downpaymentSource" to downPaymentSource,
+                        "accountDetails" to hashMapOf(
+                            "accountName" to accountDetails.accountName,
+                            "accountType" to accountDetails.accountType
+                        ),
+                        "interestPercent" to interestPercent,
+                        "interestAmount" to interestAmount,
+                        "monthsToPay" to monthsToPay,
+                        "monthlyAmount" to monthlyAmount,
+                        "balance" to balance,
+                        "totalAmountDue" to totalAmountDue,
+                        "isBalancePaid" to false,
+                        "remainingBalance" to totalAmountDue,
+                        "lastPaymentDate" to null,
+                        "lastPaymentAmount" to null,
+                        "balancePaidDate" to null,
+                        "balancePaidBy" to null,
+                        "balancePaidTimestamp" to null
+                    )
+                    transactionData["cashPayment"] = null
+                    transactionData["homeCreditPayment"] = null
+                    transactionData["skyroPayment"] = null
+                }
+            }
+
+            // -------------------------------------------------------------------------
+            // STEP 4: Save to Firestore (TESTING MODE - NO INVENTORY UPDATE)
+            // -------------------------------------------------------------------------
+            // This version ONLY creates a new document in device_transactions
+            // It does NOT update the inventory status
+            // -------------------------------------------------------------------------
+
+            val newDocRef = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
+                .add(transactionData)
+                .await()
+
+            Result.success(newDocRef.id)
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get account details for a given payment source
+     */
+    private fun getAccountDetailsForPaymentSource(
+        paymentSource: String,
+        prefs: android.content.SharedPreferences
+    ): AccountDetails {
+        val accountName = when (paymentSource) {
+            AppConstants.PAYMENT_SOURCE_CASH ->
+                prefs.getString(AppConstants.KEY_CASH_ACCOUNT, "") ?: ""
+            AppConstants.PAYMENT_SOURCE_GCASH ->
+                prefs.getString(AppConstants.KEY_GCASH_ACCOUNT, "") ?: ""
+            AppConstants.PAYMENT_SOURCE_PAYMAYA ->
+                prefs.getString(AppConstants.KEY_PAYMAYA_ACCOUNT, "") ?: ""
+            AppConstants.PAYMENT_SOURCE_BANK_TRANSFER ->
+                prefs.getString(AppConstants.KEY_QRPH_ACCOUNT, "") ?: ""
+            AppConstants.PAYMENT_SOURCE_CREDIT_CARD ->
+                prefs.getString(AppConstants.KEY_CREDIT_CARD_ACCOUNT, "") ?: ""
+            AppConstants.PAYMENT_SOURCE_OTHERS ->
+                prefs.getString(AppConstants.KEY_OTHER_ACCOUNT, "") ?: ""
+            else -> ""
+        }
+
+        return AccountDetails(
+            accountName = accountName,
+            accountType = paymentSource
+        )
+    }
+
+    /**
+     * Build account settings snapshot from SharedPreferences
+     */
+    private fun buildAccountSettingsSnapshot(prefs: android.content.SharedPreferences): AccountSettingsSnapshot {
+        return AccountSettingsSnapshot(
+            cashAccount = prefs.getString(AppConstants.KEY_CASH_ACCOUNT, "") ?: "",
+            gcashAccount = prefs.getString(AppConstants.KEY_GCASH_ACCOUNT, "") ?: "",
+            paymayaAccount = prefs.getString(AppConstants.KEY_PAYMAYA_ACCOUNT, "") ?: "",
+            qrphAccount = prefs.getString(AppConstants.KEY_QRPH_ACCOUNT, "") ?: "",
+            creditCardAccount = prefs.getString(AppConstants.KEY_CREDIT_CARD_ACCOUNT, "") ?: "",
+            otherAccount = prefs.getString(AppConstants.KEY_OTHER_ACCOUNT, "") ?: ""
+        )
     }
 
     // ============================================================================

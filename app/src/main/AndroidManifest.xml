@@ -48,6 +48,12 @@
             android:exported="false"
             android:label="Ledgers" />
 
+        <!-- Device Transaction List Activity (NEW) -->
+        <activity
+            android:name="com.techcity.techcitysuite.DeviceTransactionListActivity"
+            android:exported="false"
+            android:label="Device Transactions" />
+
         <!-- Device Transaction Activity -->
         <activity
             android:name="com.techcity.techcitysuite.DeviceTransactionActivity"
