@@ -32,6 +32,14 @@
 
     <style name="Theme.TechcitySuite" parent="Base.Theme.TechcitySuite" />
 
+    <!-- Splash Screen Theme - Minimizes system splash, shows custom splash -->
+    <style name="Theme.TechcitySuite.Splash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@color/techcity_blue</item>
+        <!-- Disable the default system splash screen animation -->
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+
     <!-- Custom Button Style with Blue theme -->
     <style name="Widget.TechCity.Button" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/techcity_blue</item>

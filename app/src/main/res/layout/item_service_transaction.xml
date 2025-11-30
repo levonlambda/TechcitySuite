@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/light_gray"
+    app:strokeWidth="1dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- ================================================================== -->
+        <!-- Row 1: Order Number + Transaction Type + Badge -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Order Number -->
+            <TextView
+                android:id="@+id/orderNumberText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="#1"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/techcity_blue"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Transaction Type -->
+            <TextView
+                android:id="@+id/transactionTypeText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Cash In"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/cash_dark_green" />
+
+            <!-- Transaction Type Badge -->
+            <TextView
+                android:id="@+id/transactionTypeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CASH IN"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/rounded_badge"
+                android:backgroundTint="@color/cash_dark_green"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+
+        </LinearLayout>
+
+        <!-- ================================================================== -->
+        <!-- Row 2: Amount + Fee + Customer Pays -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical">
+
+            <!-- Amount Column -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Amount"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/amountText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱1,000.00"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+
+            <!-- Fee Column -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fee"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/feeText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱15.00"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+
+            <!-- Customer Pays Column -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Customer Pays"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/customerPaysText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱1,015.00"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/cash_dark_green" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ================================================================== -->
+        <!-- Row 3: Source/Destination + Paid With -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical">
+
+            <!-- Source/Destination -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/sourceLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transfer To: "
+                    android:textSize="11sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/sourceText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GCash"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/holo_blue_dark" />
+
+            </LinearLayout>
+
+            <!-- Paid With (only visible when applicable) -->
+            <LinearLayout
+                android:id="@+id/paidWithLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Paid via: "
+                    android:textSize="11sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/paidWithText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cash"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/cash_dark_green" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ================================================================== -->
+        <!-- Row 4: Notes (if any) -->
+        <!-- ================================================================== -->
+        <TextView
+            android:id="@+id/notesText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Notes: Sample note here"
+            android:textSize="11sp"
+            android:textColor="@color/gray"
+            android:textStyle="italic"
+            android:layout_marginTop="4dp"
+            android:visibility="gone"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <!-- ================================================================== -->
+        <!-- Row 5: Date, Time, User -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical">
+
+            <!-- Date -->
+            <TextView
+                android:id="@+id/dateText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="11/29/2025"
+                android:textSize="11sp"
+                android:textColor="@color/gray" />
+
+            <!-- Spacer -->
+            <View
+                android:layout_width="8dp"
+                android:layout_height="1dp" />
+
+            <!-- Time -->
+            <TextView
+                android:id="@+id/timeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2:30 PM"
+                android:textSize="11sp"
+                android:textColor="@color/gray" />
+
+            <!-- Spacer -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- User -->
+            <TextView
+                android:id="@+id/userText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="by TechCity"
+                android:textSize="11sp"
+                android:textColor="@color/gray" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

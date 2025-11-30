@@ -1,5 +1,9 @@
 package com.techcity.techcitysuite
 
+import android.content.Intent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -523,27 +527,9 @@ class TransactionDetailsActivity : AppCompatActivity() {
     // END OF PART 5: UI UPDATE METHODS
     // ============================================================================
 
-
-
     // ============================================================================
-    // START OF PART 6: HELPER METHODS
+    // START OF PART 7: TRANSACTION SAVE METHODS
     // ============================================================================
-
-    private fun formatCurrency(amount: Double): String {
-        return "₱${String.format("%,.2f", amount)}"
-    }
-
-    private fun showMessage(message: String, isError: Boolean) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-
-    // ============================================================================
-    // END OF PART 6: HELPER METHODS
-    // ============================================================================
-
-    // ============================================================================
-// START OF PART 7: TRANSACTION SAVE METHODS
-// ============================================================================
 
     private fun saveTransaction() {
         // Validate input
@@ -1048,11 +1034,10 @@ class TransactionDetailsActivity : AppCompatActivity() {
             else -> amount
         }
 
-        // Process transaction in ledger system
-        // Pass the actual amount customer receives for proper ledger entries
+        // Process transaction in ledger system (legacy - keep for now until fully migrated)
         val transactionNumber = TransactionProcessor.processTransaction(
             transactionType = transactionType,
-            amount = actualCustomerReceives,  // This should be what customer receives
+            amount = actualCustomerReceives,
             customerPays = customerPays,
             sourceOfFunds = sourceOfFunds,
             paidWith = paymentMethod,
@@ -1060,63 +1045,339 @@ class TransactionDetailsActivity : AppCompatActivity() {
             notes = notes
         )
 
-        // COMMENTED OUT FIRESTORE SAVING FOR NOW
-        /*
-        // Create transaction object for Firebase (keeping existing functionality)
-        val transaction = hashMapOf(
-            "transactionType" to transactionType,
-            "sequenceNumber" to transactionNumber,  // Use the ledger transaction number
-            "amount" to amount,
-            "fee" to fee,
-            "customerPays" to customerPays,
-            "customerReceives" to customerReceives,
-            "feeOption" to feeOption,
-            "sourceOfFunds" to sourceOfFunds,
-            "notes" to notes,
-            "timestamp" to System.currentTimeMillis(),
-            "date" to SimpleDateFormat("M/d/yyyy", Locale.US).format(Date()),
-            "time" to SimpleDateFormat("HH:mm:ss", Locale.US).format(Date()),
-            "status" to "completed"
-        )
+        // Get user settings from SharedPreferences
+        val prefs = getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE)
+        val user = prefs.getString(AppConstants.KEY_USER, "") ?: ""
+        val userLocation = prefs.getString(AppConstants.KEY_STORE_LOCATION, "") ?: ""
 
-        // Add payment method if specified
-        if (paymentMethod != null) {
-            transaction["paymentMethod"] = paymentMethod
+        // Validate user settings
+        if (user.isEmpty()) {
+            binding.progressBar.visibility = View.GONE
+            binding.saveButton.isEnabled = true
+            showMessage("User not configured. Please set up in Settings.", true)
+            return
         }
 
-        // Save to Firestore
-        db.collection("transactions")
-            .add(transaction)
-            .addOnSuccessListener { documentReference ->
-                binding.progressBar.visibility = View.GONE
-                showMessage("Transaction saved successfully!", false)
+        // Get device ID
+        val deviceId = android.provider.Settings.Secure.getString(
+            contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        )
 
-                // Clear fields and finish after a delay
-                binding.root.postDelayed({
-                    finish()
-                }, 1500)
+        // Get current date/time in Philippine timezone
+        val philippineTimeZone = TimeZone.getTimeZone("GMT+08:00")
+        val now = Date()
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        dateFormat.timeZone = philippineTimeZone
+        val dateValue = dateFormat.format(now)
+
+        val monthFormat = SimpleDateFormat("yyyy-MM", Locale.US)
+        monthFormat.timeZone = philippineTimeZone
+        val monthValue = monthFormat.format(now)
+
+        val yearFormat = SimpleDateFormat("yyyy", Locale.US)
+        yearFormat.timeZone = philippineTimeZone
+        val yearValue = yearFormat.format(now)
+
+        val displayDateFormat = SimpleDateFormat("M/d/yyyy", Locale.US)
+        displayDateFormat.timeZone = philippineTimeZone
+        val dateSaved = displayDateFormat.format(now)
+
+        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+        timeFormat.timeZone = philippineTimeZone
+        val timeValue = timeFormat.format(now)
+
+        // =====================================================================
+        // CALCULATE EMBEDDED LEDGER ENTRIES
+        // =====================================================================
+        val ledgerEntries = calculateLedgerEntries(
+            transactionType = transactionType,
+            amount = amount,
+            customerPays = customerPays,
+            actualCustomerReceives = actualCustomerReceives,
+            feeOption = feeOption,
+            sourceOfFunds = sourceOfFunds,
+            paymentMethod = paymentMethod,
+            isPaidWithChecked = binding.paymentMethodCheckbox.isChecked,
+            notes = notes
+        )
+
+        // Build transaction document for Firebase
+        val transactionData = hashMapOf(
+            // Date and Time
+            "date" to dateValue,
+            "month" to monthValue,
+            "year" to yearValue,
+            "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+            "dateSaved" to dateSaved,
+            "time" to timeValue,
+
+            // User and Device
+            "user" to user,
+            "userLocation" to userLocation,
+            "deviceId" to deviceId,
+
+            // Transaction Details
+            "transactionType" to transactionType,
+            "amount" to amount,
+            "fee" to fee,
+            "feeOption" to feeOption,
+            "customerPays" to customerPays,
+            "customerReceives" to actualCustomerReceives,
+
+            // Source and Payment
+            "sourceOfFunds" to sourceOfFunds,
+            "paidWith" to paymentMethod,
+            "isPaidWithChecked" to binding.paymentMethodCheckbox.isChecked,
+
+            // Embedded Ledger Entries
+            "creditLedgerType" to ledgerEntries.creditLedgerType,
+            "creditAmount" to ledgerEntries.creditAmount,
+            "creditDescription" to ledgerEntries.creditDescription,
+            "debitLedgerType" to ledgerEntries.debitLedgerType,
+            "debitAmount" to ledgerEntries.debitAmount,
+            "debitDescription" to ledgerEntries.debitDescription,
+
+            // Transaction Numbering
+            "ledgerTransactionNumber" to transactionNumber,
+            "sortOrder" to 0,
+
+            // Status and Notes
+            "status" to "completed",
+            "notes" to notes,
+
+            // Audit Trail
+            "createdBy" to user,
+            "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+        )
+
+        // Save to Firebase service_transactions collection
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    db.collection("service_transactions")
+                        .add(transactionData)
+                        .await()
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    showMessage("Transaction #$transactionNumber saved!", false)
+
+                    // Navigate to ServiceTransactionListActivity after a short delay
+                    binding.root.postDelayed({
+                        val intent = Intent(this@TransactionDetailsActivity, ServiceTransactionListActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                        startActivity(intent)
+                        finish()
+                    }, 1000)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.saveButton.isEnabled = true
+                    // Still saved to ledger, just not to Firebase
+                    showMessage("Saved to ledger. Firebase error: ${e.message}", true)
+
+                    // Still navigate to list after delay since ledger was updated
+                    binding.root.postDelayed({
+                        val intent = Intent(this@TransactionDetailsActivity, ServiceTransactionListActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                        startActivity(intent)
+                        finish()
+                    }, 1500)
+                }
             }
-            .addOnFailureListener { e ->
-                binding.progressBar.visibility = View.GONE
-                binding.saveButton.isEnabled = true
-                showMessage("Error saving transaction: ${e.message}", true)
-            }
-        */
-
-        // FOR TESTING: Just save to ledger without Firestore
-        // Simulate success after processing ledger
-        binding.progressBar.visibility = View.GONE
-        showMessage("Transaction #$transactionNumber saved to ledger!", false)
-
-        // Clear fields and finish after a delay
-        binding.root.postDelayed({
-            finish()
-        }, 1000)
+        }
     }
 
-// ============================================================================
-// END OF PART 7: TRANSACTION SAVE METHODS
-// ============================================================================
+    /**
+     * Data class to hold calculated ledger entries
+     */
+    private data class LedgerEntryData(
+        val creditLedgerType: String,
+        val creditAmount: Double,
+        val creditDescription: String,
+        val debitLedgerType: String,
+        val debitAmount: Double,
+        val debitDescription: String
+    )
+
+    /**
+     * Calculate the credit and debit ledger entries based on transaction type and parameters.
+     *
+     * Double-Entry Bookkeeping Logic:
+     * - CREDIT: Money coming INTO a ledger (increases balance)
+     * - DEBIT: Money going OUT OF a ledger (decreases balance)
+     *
+     * Transaction Type Flows:
+     *
+     * CASH IN:
+     *   Customer pays cash → We transfer to their e-wallet
+     *   Credit: Cash (or paidWith if checked) = customerPays
+     *   Debit: sourceOfFunds (GCash/PayMaya/Others) = actualCustomerReceives
+     *
+     * CASH OUT:
+     *   Customer receives cash ← We withdraw from their e-wallet
+     *   Credit: sourceOfFunds (GCash/PayMaya/Others) = amount
+     *   Debit: Cash = actualCustomerReceives
+     *
+     * MOBILE LOADING:
+     *   Customer pays cash → We send load from GCash/Reloader SIM
+     *   Credit: Cash (or paidWith if checked) = customerPays
+     *   Debit: sourceOfFunds (GCash/Reloader SIM→Others) = actualCustomerReceives
+     *
+     * SKYRO PAYMENT:
+     *   Customer pays cash → We pay Skyro via e-wallet
+     *   Credit: Cash (or paidWith if checked) = customerPays
+     *   Debit: sourceOfFunds (GCash/PayMaya/Others) = amount (full payment amount)
+     *
+     * HOME CREDIT PAYMENT:
+     *   Customer pays cash → We pay Home Credit via e-wallet
+     *   Credit: Cash (or paidWith if checked) = customerPays
+     *   Debit: sourceOfFunds (GCash/PayMaya/Others) = amount (full payment amount)
+     *
+     * MISC PAYMENT:
+     *   Customer pays → We record the payment (no fee)
+     *   Credit: sourceOfFunds (Cash/GCash/PayMaya/Others) = amount
+     *   Debit: Others = amount (expense/miscellaneous)
+     */
+    private fun calculateLedgerEntries(
+        transactionType: String,
+        amount: Double,
+        customerPays: Double,
+        actualCustomerReceives: Double,
+        feeOption: String,
+        sourceOfFunds: String,
+        paymentMethod: String?,
+        isPaidWithChecked: Boolean,
+        notes: String
+    ): LedgerEntryData {
+
+        // Determine the credit ledger (where money comes from - customer payment)
+        val defaultCreditLedger = if (isPaidWithChecked && paymentMethod != null) {
+            paymentMethod
+        } else {
+            "Cash"
+        }
+
+        return when (transactionType) {
+            "Cash In" -> {
+                // Customer pays cash/e-wallet → We transfer to their e-wallet
+                LedgerEntryData(
+                    creditLedgerType = defaultCreditLedger,
+                    creditAmount = customerPays,
+                    creditDescription = "Cash In to $sourceOfFunds",
+                    debitLedgerType = sourceOfFunds,
+                    debitAmount = actualCustomerReceives,
+                    debitDescription = "Cash In from ${defaultCreditLedger}"
+                )
+            }
+
+            "Cash Out" -> {
+                // Customer gives us e-wallet → We give them cash
+                LedgerEntryData(
+                    creditLedgerType = sourceOfFunds,
+                    creditAmount = amount,
+                    creditDescription = "Cash Out from $sourceOfFunds",
+                    debitLedgerType = "Cash",
+                    debitAmount = actualCustomerReceives,
+                    debitDescription = "Cash Out to customer"
+                )
+            }
+
+            "Mobile Loading Service" -> {
+                // Customer pays cash → We send load from source
+                // Map "Reloader SIM" to "Others" for ledger purposes
+                val debitLedger = if (sourceOfFunds == "Reloader SIM") "Others" else sourceOfFunds
+
+                LedgerEntryData(
+                    creditLedgerType = defaultCreditLedger,
+                    creditAmount = customerPays,
+                    creditDescription = "Mobile Loading Service",
+                    debitLedgerType = debitLedger,
+                    debitAmount = actualCustomerReceives,
+                    debitDescription = "Load sent via $sourceOfFunds"
+                )
+            }
+
+            "Skyro Payment" -> {
+                // Customer pays cash → We pay Skyro via e-wallet
+                // Debit the full amount (not customerReceives) because we pay the full bill
+                LedgerEntryData(
+                    creditLedgerType = defaultCreditLedger,
+                    creditAmount = customerPays,
+                    creditDescription = "Skyro Payment",
+                    debitLedgerType = sourceOfFunds,
+                    debitAmount = amount,  // Full amount paid to Skyro
+                    debitDescription = "Skyro Payment via $sourceOfFunds"
+                )
+            }
+
+            "Home Credit Payment" -> {
+                // Customer pays cash → We pay Home Credit via e-wallet
+                // Debit the full amount (not customerReceives) because we pay the full bill
+                LedgerEntryData(
+                    creditLedgerType = defaultCreditLedger,
+                    creditAmount = customerPays,
+                    creditDescription = "Home Credit Payment",
+                    debitLedgerType = sourceOfFunds,
+                    debitAmount = amount,  // Full amount paid to Home Credit
+                    debitDescription = "Home Credit Payment via $sourceOfFunds"
+                )
+            }
+
+            "Misc Payment" -> {
+                // Miscellaneous payment - no fee, just record the transaction
+                // Credit: Where the money came from
+                // Debit: Goes to Others (miscellaneous expense)
+                LedgerEntryData(
+                    creditLedgerType = sourceOfFunds,
+                    creditAmount = amount,
+                    creditDescription = if (notes.isNotEmpty()) notes else "Misc Payment",
+                    debitLedgerType = "Others",
+                    debitAmount = amount,
+                    debitDescription = if (notes.isNotEmpty()) notes else "Misc Payment"
+                )
+            }
+
+            else -> {
+                // Fallback - should not happen
+                LedgerEntryData(
+                    creditLedgerType = "Cash",
+                    creditAmount = customerPays,
+                    creditDescription = transactionType,
+                    debitLedgerType = sourceOfFunds,
+                    debitAmount = amount,
+                    debitDescription = transactionType
+                )
+            }
+        }
+    }
+
+    // ============================================================================
+    // END OF PART 7: TRANSACTION SAVE METHODS
+    // ============================================================================
+
+    // ============================================================================
+    // START OF PART 6: HELPER METHODS
+    // ============================================================================
+
+    private fun formatCurrency(amount: Double): String {
+        return "₱${String.format("%,.2f", amount)}"
+    }
+
+    private fun showMessage(message: String, isError: Boolean) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    // ============================================================================
+    // END OF PART 6: HELPER METHODS
+    // ============================================================================
+
+
 
 
     override fun onDestroy() {

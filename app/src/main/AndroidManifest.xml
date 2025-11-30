@@ -14,15 +14,21 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TechcitySuite">
 
-        <!-- Menu Activity - This is now the launcher -->
+        <!-- Splash Screen - Now the launcher -->
         <activity
-            android:name="com.techcity.techcitysuite.MenuActivity"
-            android:exported="true">
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.TechcitySuite.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Menu Activity - No longer the launcher -->
+        <activity
+            android:name=".MenuActivity"
+            android:exported="false" />
 
         <!-- Your existing IMEI Search Activity (keeping the original name) -->
         <activity
@@ -76,6 +82,14 @@
             android:name="com.techcity.techcitysuite.AccessoryTransactionListActivity"
             android:exported="false"
             android:label="Accessory Transactions" />
+
+        <!-- Add this inside the <application> tag in AndroidManifest.xml -->
+
+        <activity
+            android:name=".ServiceTransactionListActivity"
+            android:exported="false"
+            android:label="Service Transactions"
+            android:theme="@style/Theme.TechcitySuite" />
 
     </application>
 

@@ -80,10 +80,11 @@ class MenuActivity : AppCompatActivity() {
     // ============================================================================
 
     private fun setupMenuButtons() {
-        // Phone Inventory Checker button (your existing IMEI search)
+        // Phone Inventory Checker button - DISABLED
+        binding.inventoryButton.isEnabled = false
+        binding.inventoryButton.alpha = 0.5f
         binding.inventoryButton.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
+            Toast.makeText(this, "Phone Inventory is currently disabled", Toast.LENGTH_SHORT).show()
         }
 
         // Device Transactions button - NOW OPENS THE LIST
@@ -94,7 +95,7 @@ class MenuActivity : AppCompatActivity() {
 
         // Service Transactions button (Cash In/Out, etc.)
         binding.transactionsButton.setOnClickListener {
-            val intent = Intent(this, TransactionTypeActivity::class.java)
+            val intent = Intent(this, ServiceTransactionListActivity::class.java)
             startActivity(intent)
         }
 
@@ -110,11 +111,11 @@ class MenuActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Account Receivable button (placeholder for future)
+        // Account Receivable button - DISABLED
+        binding.accountReceivableButton.isEnabled = false
+        binding.accountReceivableButton.alpha = 0.5f
         binding.accountReceivableButton.setOnClickListener {
-            // TODO: Implement AccountReceivableActivity
-            // val intent = Intent(this, AccountReceivableActivity::class.java)
-            // startActivity(intent)
+            Toast.makeText(this, "Account Receivable is currently disabled", Toast.LENGTH_SHORT).show()
         }
     }
 
