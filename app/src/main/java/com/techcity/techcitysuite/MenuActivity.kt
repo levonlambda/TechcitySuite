@@ -104,9 +104,9 @@ class MenuActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Accessories Transactions button
+        // Accessories Transactions button - NOW OPENS LIST ACTIVITY
         binding.accessoriesTransactionsButton.setOnClickListener {
-            val intent = Intent(this, AccessoryTransactionActivity::class.java)
+            val intent = Intent(this, AccessoryTransactionListActivity::class.java)
             startActivity(intent)
         }
 

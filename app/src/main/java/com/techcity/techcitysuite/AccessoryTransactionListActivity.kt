@@ -21,20 +21,20 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.techcity.techcitysuite.databinding.ActivityDeviceTransactionListBinding
-import com.techcity.techcitysuite.databinding.ItemDeviceTransactionBinding
+import com.techcity.techcitysuite.databinding.ActivityAccessoryTransactionListBinding
+import com.techcity.techcitysuite.databinding.ItemAccessoryTransactionBinding
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 
-class DeviceTransactionListActivity : AppCompatActivity() {
+class AccessoryTransactionListActivity : AppCompatActivity() {
 
     // ============================================================================
     // START OF PART 1: PROPERTIES AND INITIALIZATION
     // ============================================================================
 
-    private lateinit var binding: ActivityDeviceTransactionListBinding
+    private lateinit var binding: ActivityAccessoryTransactionListBinding
     private lateinit var db: FirebaseFirestore
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
@@ -44,9 +44,9 @@ class DeviceTransactionListActivity : AppCompatActivity() {
     // Selected date for filtering
     private var selectedDate: String = ""
 
-    // List of transactions (using a data class that includes the server timestamp)
-    private var transactions: MutableList<DeviceTransactionDisplay> = mutableListOf()
-    private var adapter: DeviceTransactionAdapter? = null
+    // List of transactions
+    private var transactions: MutableList<AccessoryTransactionDisplay> = mutableListOf()
+    private var adapter: AccessoryTransactionAdapter? = null
 
     // ItemTouchHelper for drag and drop
     private lateinit var itemTouchHelper: ItemTouchHelper
@@ -70,11 +70,14 @@ class DeviceTransactionListActivity : AppCompatActivity() {
     private val COLOR_SKYRO = R.color.skyro_light_blue
     private val COLOR_IN_HOUSE = R.color.purple
 
+    // Firebase collection name
+    private val COLLECTION_ACCESSORY_TRANSACTIONS = "accessory_transactions"
+
     // Data class to hold transaction with server timestamp for local time conversion
-    data class DeviceTransactionDisplay(
-        val transaction: DeviceTransaction,
+    data class AccessoryTransactionDisplay(
+        val transaction: AccessoryTransaction,
         val serverTimestamp: Timestamp?,
-        var sortOrder: Int = 0  // For custom ordering
+        var sortOrder: Int = 0
     )
 
     // ============================================================================
@@ -90,7 +93,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // Initialize View Binding
-        binding = ActivityDeviceTransactionListBinding.inflate(layoutInflater)
+        binding = ActivityAccessoryTransactionListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         // Initialize Firestore
@@ -181,7 +184,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     ItemTouchHelper.ACTION_STATE_DRAG -> {
                         // Item is being dragged - change border color to blue
                         viewHolder?.let {
-                            if (it is DeviceTransactionAdapter.ViewHolder) {
+                            if (it is AccessoryTransactionAdapter.ViewHolder) {
                                 it.setDragging(true)
                             }
                         }
@@ -189,7 +192,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     ItemTouchHelper.ACTION_STATE_SWIPE -> {
                         // Item is being swiped
                         viewHolder?.let {
-                            if (it is DeviceTransactionAdapter.ViewHolder) {
+                            if (it is AccessoryTransactionAdapter.ViewHolder) {
                                 it.setSwiping(true)
                             }
                         }
@@ -201,7 +204,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                 super.clearView(recyclerView, viewHolder)
 
                 // Dragging/swiping ended - reset appearance
-                if (viewHolder is DeviceTransactionAdapter.ViewHolder) {
+                if (viewHolder is AccessoryTransactionAdapter.ViewHolder) {
                     viewHolder.setDragging(false)
                     viewHolder.setSwiping(false)
                 }
@@ -224,7 +227,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     if (dX < 0) {  // Swiping left
                         // Draw blue background (matching Ledger Activity)
                         paint.color = ContextCompat.getColor(
-                            this@DeviceTransactionListActivity,
+                            this@AccessoryTransactionListActivity,
                             R.color.techcity_blue
                         )
                         c.drawRect(
@@ -237,7 +240,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
 
                         // Draw delete icon
                         val deleteIcon = ContextCompat.getDrawable(
-                            this@DeviceTransactionListActivity,
+                            this@AccessoryTransactionListActivity,
                             android.R.drawable.ic_menu_delete
                         )
 
@@ -266,14 +269,13 @@ class DeviceTransactionListActivity : AppCompatActivity() {
     /**
      * Show delete confirmation dialog
      */
-    private fun showDeleteConfirmationDialog(item: DeviceTransactionDisplay, position: Int) {
+    private fun showDeleteConfirmationDialog(item: AccessoryTransactionDisplay, position: Int) {
         val transaction = item.transaction
 
         // Build message showing what will be deleted
         val message = StringBuilder()
         message.append("Delete this transaction?\n\n")
-        message.append("Device: ${transaction.manufacturer} ${transaction.model}\n")
-        message.append("Variant: ${transaction.ram} + ${transaction.storage}\n")
+        message.append("Accessory: ${transaction.accessoryName}\n")
         message.append("Price: ${formatCurrency(transaction.finalPrice)}\n")
         message.append("Type: ${transaction.transactionType}\n\n")
         message.append("This action cannot be undone.")
@@ -305,7 +307,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
+                    db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
                         .document(documentId)
                         .delete()
                         .await()
@@ -397,8 +399,8 @@ class DeviceTransactionListActivity : AppCompatActivity() {
 
     private fun setupAddButton() {
         binding.addButton.setOnClickListener {
-            // Open DeviceTransactionActivity to create new transaction
-            val intent = Intent(this, DeviceTransactionActivity::class.java)
+            // Open AccessoryTransactionActivity to create new transaction
+            val intent = Intent(this, AccessoryTransactionActivity::class.java)
             startActivity(intent)
         }
     }
@@ -438,7 +440,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     applyFilter()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()  // Log to Logcat
+                e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
                     binding.emptyMessage.text = "Error loading transactions: ${e.message}"
@@ -449,13 +451,12 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun fetchTransactionsFromFirebase(): List<DeviceTransactionDisplay> {
+    private suspend fun fetchTransactionsFromFirebase(): List<AccessoryTransactionDisplay> {
         // Convert selected date from M/d/yyyy to yyyy-MM-dd for query
         val queryDate = convertDisplayDateToQueryDate(selectedDate)
 
         // Query by date and status, order by timestamp ASCENDING (first entry at top)
-        // Note: sortOrder is handled in code after fetching to support documents without this field
-        val querySnapshot = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
+        val querySnapshot = db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
             .whereEqualTo("date", queryDate)
             .whereEqualTo("status", AppConstants.STATUS_COMPLETED)
             .orderBy("timestamp", Query.Direction.ASCENDING)
@@ -464,7 +465,6 @@ class DeviceTransactionListActivity : AppCompatActivity() {
 
         val results = querySnapshot.documents.mapNotNull { document ->
             try {
-                // Manual mapping since we have nested objects
                 val data = document.data ?: return@mapNotNull null
 
                 // Get the server timestamp for local time conversion
@@ -473,7 +473,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                 // Get sortOrder (default to 0 if not set)
                 val sortOrder = (data["sortOrder"] as? Number)?.toInt() ?: 0
 
-                val transaction = DeviceTransaction(
+                val transaction = AccessoryTransaction(
                     id = document.id,
                     date = data["date"] as? String ?: "",
                     month = data["month"] as? String ?: "",
@@ -483,25 +483,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     user = data["user"] as? String ?: "",
                     userLocation = data["userLocation"] as? String ?: "",
                     deviceId = data["deviceId"] as? String ?: "",
-                    inventoryDocumentId = data["inventoryDocumentId"] as? String ?: "",
-                    originalStatus = data["originalStatus"] as? String ?: "",
-                    originalLastUpdated = data["originalLastUpdated"] as? String ?: "",
-                    newStatus = data["newStatus"] as? String ?: "",
-                    newLastUpdated = data["newLastUpdated"] as? String ?: "",
-                    imei1 = data["imei1"] as? String ?: "",
-                    imei2 = data["imei2"] as? String ?: "",
-                    serialNumber = data["serialNumber"] as? String ?: "",
-                    identifierUsed = data["identifierUsed"] as? String ?: "",
-                    deviceType = data["deviceType"] as? String ?: "",
-                    manufacturer = data["manufacturer"] as? String ?: "",
-                    model = data["model"] as? String ?: "",
-                    ram = data["ram"] as? String ?: "",
-                    storage = data["storage"] as? String ?: "",
-                    color = data["color"] as? String ?: "",
-                    originalRetailPrice = (data["originalRetailPrice"] as? Number)?.toDouble()
-                        ?: 0.0,
-                    originalDealersPrice = (data["originalDealersPrice"] as? Number)?.toDouble()
-                        ?: 0.0,
+                    accessoryName = data["accessoryName"] as? String ?: "",
                     price = (data["price"] as? Number)?.toDouble() ?: 0.0,
                     discountAmount = (data["discountAmount"] as? Number)?.toDouble() ?: 0.0,
                     discountPercent = (data["discountPercent"] as? Number)?.toDouble() ?: 0.0,
@@ -513,18 +495,17 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     inHouseInstallment = parseInHouseInstallment(data["inHouseInstallment"] as? Map<*, *>),
                     status = data["status"] as? String ?: "",
                     createdBy = data["createdBy"] as? String ?: "",
-                    notes = data["notes"] as? String ?: ""
+                    notes = data["notes"] as? String ?: "",
+                    sortOrder = sortOrder
                 )
 
-                DeviceTransactionDisplay(transaction, serverTimestamp, sortOrder)
+                AccessoryTransactionDisplay(transaction, serverTimestamp, sortOrder)
             } catch (e: Exception) {
                 null
             }
         }
 
         // Sort results: first by sortOrder (if set), then by timestamp
-        // Documents with sortOrder > 0 have been manually reordered
-        // Documents with sortOrder = 0 use their natural timestamp order
         return results.sortedWith(compareBy({ it.sortOrder }, { it.serverTimestamp?.seconds ?: 0 }))
     }
 
@@ -542,46 +523,40 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         )
     }
 
-    private fun parseHomeCreditPayment(data: Map<*, *>?): HomeCreditPaymentDetails? {
+    private fun parseHomeCreditPayment(data: Map<*, *>?): AccessoryHomeCreditPaymentDetails? {
         if (data == null) return null
         val accountData = data["accountDetails"] as? Map<*, *>
-        return HomeCreditPaymentDetails(
+        return AccessoryHomeCreditPaymentDetails(
             downpaymentAmount = (data["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0,
             downpaymentSource = data["downpaymentSource"] as? String ?: "",
             accountDetails = AccountDetails(
                 accountName = accountData?.get("accountName") as? String ?: "",
                 accountType = accountData?.get("accountType") as? String ?: ""
             ),
-            brandZero = data["brandZero"] as? Boolean ?: false,
-            brandZeroSubsidy = (data["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0,
-            subsidyPercent = (data["subsidyPercent"] as? Number)?.toDouble() ?: 0.0,
             balance = (data["balance"] as? Number)?.toDouble() ?: 0.0,
             isBalancePaid = data["isBalancePaid"] as? Boolean ?: false
         )
     }
 
-    private fun parseSkyroPayment(data: Map<*, *>?): SkyroPaymentDetails? {
+    private fun parseSkyroPayment(data: Map<*, *>?): AccessorySkyroPaymentDetails? {
         if (data == null) return null
         val accountData = data["accountDetails"] as? Map<*, *>
-        return SkyroPaymentDetails(
+        return AccessorySkyroPaymentDetails(
             downpaymentAmount = (data["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0,
             downpaymentSource = data["downpaymentSource"] as? String ?: "",
             accountDetails = AccountDetails(
                 accountName = accountData?.get("accountName") as? String ?: "",
                 accountType = accountData?.get("accountType") as? String ?: ""
             ),
-            brandZero = data["brandZero"] as? Boolean ?: false,
-            brandZeroSubsidy = (data["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0,
-            subsidyPercent = (data["subsidyPercent"] as? Number)?.toDouble() ?: 0.0,
             balance = (data["balance"] as? Number)?.toDouble() ?: 0.0,
             isBalancePaid = data["isBalancePaid"] as? Boolean ?: false
         )
     }
 
-    private fun parseInHouseInstallment(data: Map<*, *>?): InHouseInstallmentDetails? {
+    private fun parseInHouseInstallment(data: Map<*, *>?): AccessoryInHouseInstallmentDetails? {
         if (data == null) return null
         val accountData = data["accountDetails"] as? Map<*, *>
-        return InHouseInstallmentDetails(
+        return AccessoryInHouseInstallmentDetails(
             downpaymentAmount = (data["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0,
             downpaymentSource = data["downpaymentSource"] as? String ?: "",
             accountDetails = AccountDetails(
@@ -629,7 +604,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         displayTransactions(filteredList.toMutableList())
     }
 
-    private fun updateSummary(list: List<DeviceTransactionDisplay>) {
+    private fun updateSummary(list: List<AccessoryTransactionDisplay>) {
         val totalSales = list.sumOf { it.transaction.finalPrice }
         val count = list.size
 
@@ -693,7 +668,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         }
     }
 
-    private fun displayTransactions(list: MutableList<DeviceTransactionDisplay>) {
+    private fun displayTransactions(list: MutableList<AccessoryTransactionDisplay>) {
         if (list.isEmpty()) {
             binding.emptyMessage.text = "No transactions for this date"
             binding.emptyMessage.visibility = View.VISIBLE
@@ -703,7 +678,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             binding.emptyMessage.visibility = View.GONE
             binding.transactionRecyclerView.visibility = View.VISIBLE
 
-            adapter = DeviceTransactionAdapter(
+            adapter = AccessoryTransactionAdapter(
                 items = list,
                 toggledEntries = toggledEntries,
                 onItemClick = { item ->
@@ -741,7 +716,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     // Only update documents whose sortOrder has changed
                     currentList.forEachIndexed { index, item ->
                         if (item.sortOrder != index) {
-                            db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
+                            db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
                                 .document(item.transaction.id)
                                 .update("sortOrder", index)
                                 .await()
@@ -919,15 +894,16 @@ class DeviceTransactionListActivity : AppCompatActivity() {
     // END OF PART 7: HELPER METHODS
     // ============================================================================
 
+
     // ============================================================================
     // START OF PART 8: RECYCLERVIEW ADAPTER (WITH SWIPE-TO-DELETE SUPPORT)
     // ============================================================================
 
-    inner class DeviceTransactionAdapter(
-        private val items: MutableList<DeviceTransactionDisplay>,
+    inner class AccessoryTransactionAdapter(
+        private val items: MutableList<AccessoryTransactionDisplay>,
         private val toggledEntries: MutableSet<String>,
-        private val onItemClick: (DeviceTransactionDisplay) -> Unit
-    ) : RecyclerView.Adapter<DeviceTransactionAdapter.ViewHolder>() {
+        private val onItemClick: (AccessoryTransactionDisplay) -> Unit
+    ) : RecyclerView.Adapter<AccessoryTransactionAdapter.ViewHolder>() {
 
         /**
          * Swap items for drag and drop reordering
@@ -960,9 +936,9 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         /**
          * Get current items list
          */
-        fun getItems(): List<DeviceTransactionDisplay> = items
+        fun getItems(): List<AccessoryTransactionDisplay> = items
 
-        inner class ViewHolder(private val binding: ItemDeviceTransactionBinding) :
+        inner class ViewHolder(private val binding: ItemAccessoryTransactionBinding) :
             RecyclerView.ViewHolder(binding.root) {
 
             init {
@@ -980,14 +956,12 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             fun setDragging(isDragging: Boolean) {
                 if (isDragging) {
                     // Change stroke color to blue when dragging
-                    binding.cardView.strokeColor =
-                        ContextCompat.getColor(itemView.context, android.R.color.holo_blue_dark)
+                    binding.cardView.strokeColor = ContextCompat.getColor(itemView.context, android.R.color.holo_blue_dark)
                     binding.cardView.strokeWidth = 4
                     binding.cardView.cardElevation = 8f
                 } else {
                     // Reset to normal state
-                    binding.cardView.strokeColor =
-                        ContextCompat.getColor(itemView.context, R.color.light_gray)
+                    binding.cardView.strokeColor = ContextCompat.getColor(itemView.context, R.color.light_gray)
                     binding.cardView.strokeWidth = 2
                     binding.cardView.cardElevation = 2f
                 }
@@ -1004,7 +978,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                 }
             }
 
-            fun bind(item: DeviceTransactionDisplay, orderNumber: Int) {
+            fun bind(item: AccessoryTransactionDisplay, orderNumber: Int) {
                 val transaction = item.transaction
 
                 // Set order number
@@ -1021,35 +995,8 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     )
                 }
 
-                // Set manufacturer and model
-                binding.manufacturerText.text = transaction.manufacturer
-                binding.modelText.text = transaction.model
-
-                // Set variant (RAM + Storage - Color)
-                val ramDisplay = if (transaction.ram.contains("GB", ignoreCase = true)) {
-                    transaction.ram
-                } else {
-                    "${transaction.ram}GB"
-                }
-                val storageDisplay = if (transaction.storage.contains("GB", ignoreCase = true)) {
-                    transaction.storage
-                } else {
-                    "${transaction.storage}GB"
-                }
-                binding.variantText.text = "$ramDisplay + $storageDisplay - ${transaction.color}"
-
-                // Set IMEI or Serial Number (right side, blue color)
-                val identifier = when {
-                    transaction.imei1.isNotEmpty() -> "IMEI: ${transaction.imei1}"
-                    transaction.serialNumber.isNotEmpty() -> "S/N: ${transaction.serialNumber}"
-                    else -> ""
-                }
-                if (identifier.isNotEmpty()) {
-                    binding.imeiText.text = identifier
-                    binding.imeiText.visibility = View.VISIBLE
-                } else {
-                    binding.imeiText.visibility = View.GONE
-                }
+                // Set accessory name
+                binding.accessoryNameText.text = transaction.accessoryName
 
                 // Set price
                 binding.priceText.text = formatCurrency(transaction.finalPrice)
@@ -1073,19 +1020,14 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                 when (transaction.transactionType) {
                     AppConstants.TRANSACTION_TYPE_CASH -> {
                         binding.financingDetailsLayout.visibility = View.GONE
-                        binding.brandZeroLayout.visibility = View.GONE
                         transaction.cashPayment?.let { cash ->
                             binding.paymentInfoBadge.text = "via ${cash.paymentSource}"
                             binding.paymentInfoBadge.setTextColor(
-                                ContextCompat.getColor(
-                                    itemView.context,
-                                    getPaymentSourceColor(cash.paymentSource)
-                                )
+                                ContextCompat.getColor(itemView.context, getPaymentSourceColor(cash.paymentSource))
                             )
                             binding.paymentInfoBadge.visibility = View.VISIBLE
                         }
                     }
-
                     AppConstants.TRANSACTION_TYPE_HOME_CREDIT -> {
                         binding.paymentInfoBadge.visibility = View.GONE
                         binding.financingDetailsLayout.visibility = View.VISIBLE
@@ -1097,33 +1039,20 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                             if (hc.downpaymentSource.isNotEmpty() && hc.downpaymentAmount > 0) {
                                 binding.downpaymentSourceBadge.text = hc.downpaymentSource
                                 binding.downpaymentSourceBadge.backgroundTintList =
-                                    ContextCompat.getColorStateList(
-                                        itemView.context,
-                                        getPaymentSourceColor(hc.downpaymentSource)
-                                    )
+                                    ContextCompat.getColorStateList(itemView.context, getPaymentSourceColor(hc.downpaymentSource))
                                 binding.downpaymentSourceBadge.visibility = View.VISIBLE
                             } else {
                                 binding.downpaymentSourceBadge.visibility = View.GONE
                             }
 
-                            // Brand Zero
-                            if (hc.brandZero && hc.brandZeroSubsidy > 0) {
-                                binding.brandZeroLayout.visibility = View.VISIBLE
-                                binding.subsidyText.text = formatCurrency(hc.brandZeroSubsidy)
-                            } else {
-                                binding.brandZeroLayout.visibility = View.GONE
-                            }
-
                             // Balance
                             binding.balanceText.text = formatCurrency(hc.balance)
-                            val balanceColor =
-                                if (hc.isBalancePaid) R.color.cash_dark_green else R.color.red
+                            val balanceColor = if (hc.isBalancePaid) R.color.cash_dark_green else R.color.red
                             binding.balanceText.setTextColor(
                                 ContextCompat.getColor(itemView.context, balanceColor)
                             )
                         }
                     }
-
                     AppConstants.TRANSACTION_TYPE_SKYRO -> {
                         binding.paymentInfoBadge.visibility = View.GONE
                         binding.financingDetailsLayout.visibility = View.VISIBLE
@@ -1135,36 +1064,22 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                             if (skyro.downpaymentSource.isNotEmpty() && skyro.downpaymentAmount > 0) {
                                 binding.downpaymentSourceBadge.text = skyro.downpaymentSource
                                 binding.downpaymentSourceBadge.backgroundTintList =
-                                    ContextCompat.getColorStateList(
-                                        itemView.context,
-                                        getPaymentSourceColor(skyro.downpaymentSource)
-                                    )
+                                    ContextCompat.getColorStateList(itemView.context, getPaymentSourceColor(skyro.downpaymentSource))
                                 binding.downpaymentSourceBadge.visibility = View.VISIBLE
                             } else {
                                 binding.downpaymentSourceBadge.visibility = View.GONE
                             }
 
-                            // Brand Zero
-                            if (skyro.brandZero && skyro.brandZeroSubsidy > 0) {
-                                binding.brandZeroLayout.visibility = View.VISIBLE
-                                binding.subsidyText.text = formatCurrency(skyro.brandZeroSubsidy)
-                            } else {
-                                binding.brandZeroLayout.visibility = View.GONE
-                            }
-
                             // Balance
                             binding.balanceText.text = formatCurrency(skyro.balance)
-                            val balanceColor =
-                                if (skyro.isBalancePaid) R.color.cash_dark_green else R.color.red
+                            val balanceColor = if (skyro.isBalancePaid) R.color.cash_dark_green else R.color.red
                             binding.balanceText.setTextColor(
                                 ContextCompat.getColor(itemView.context, balanceColor)
                             )
                         }
                     }
-
                     AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
                         binding.paymentInfoBadge.visibility = View.GONE
-                        binding.brandZeroLayout.visibility = View.GONE
                         binding.financingDetailsLayout.visibility = View.VISIBLE
                         transaction.inHouseInstallment?.let { ih ->
                             // Downpayment
@@ -1174,10 +1089,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                             if (ih.downpaymentSource.isNotEmpty() && ih.downpaymentAmount > 0) {
                                 binding.downpaymentSourceBadge.text = ih.downpaymentSource
                                 binding.downpaymentSourceBadge.backgroundTintList =
-                                    ContextCompat.getColorStateList(
-                                        itemView.context,
-                                        getPaymentSourceColor(ih.downpaymentSource)
-                                    )
+                                    ContextCompat.getColorStateList(itemView.context, getPaymentSourceColor(ih.downpaymentSource))
                                 binding.downpaymentSourceBadge.visibility = View.VISIBLE
                             } else {
                                 binding.downpaymentSourceBadge.visibility = View.GONE
@@ -1185,17 +1097,14 @@ class DeviceTransactionListActivity : AppCompatActivity() {
 
                             // Balance (remaining balance for in-house)
                             binding.balanceText.text = formatCurrency(ih.remainingBalance)
-                            val balanceColor =
-                                if (ih.isBalancePaid) R.color.cash_dark_green else R.color.red
+                            val balanceColor = if (ih.isBalancePaid) R.color.cash_dark_green else R.color.red
                             binding.balanceText.setTextColor(
                                 ContextCompat.getColor(itemView.context, balanceColor)
                             )
                         }
                     }
-
                     else -> {
                         binding.financingDetailsLayout.visibility = View.GONE
-                        binding.brandZeroLayout.visibility = View.GONE
                         binding.paymentInfoBadge.visibility = View.GONE
                     }
                 }
@@ -1205,15 +1114,14 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                 val localTime = convertServerTimestampToLocalTime(item.serverTimestamp)
 
                 // Use converted values, fallback to stored values if conversion fails
-                binding.dateText.text =
-                    if (localDate.isNotEmpty()) localDate else transaction.dateSold
+                binding.dateText.text = if (localDate.isNotEmpty()) localDate else transaction.dateSold
                 binding.timeText.text = if (localTime.isNotEmpty()) localTime else transaction.time
                 binding.userText.text = "by ${transaction.user}"
             }
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding = ItemDeviceTransactionBinding.inflate(
+            val binding = ItemAccessoryTransactionBinding.inflate(
                 LayoutInflater.from(parent.context),
                 parent,
                 false
@@ -1228,7 +1136,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         override fun getItemCount(): Int = items.size
     }
 
-// ============================================================================
-// END OF PART 8: RECYCLERVIEW ADAPTER (WITH SWIPE-TO-DELETE SUPPORT)
-// ============================================================================
+    // ============================================================================
+    // END OF PART 8: RECYCLERVIEW ADAPTER (WITH SWIPE-TO-DELETE SUPPORT)
+    // ============================================================================
 }

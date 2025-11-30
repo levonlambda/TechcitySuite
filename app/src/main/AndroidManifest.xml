@@ -72,6 +72,11 @@
             android:exported="false"
             android:label="Program Settings" />
 
+        <activity
+            android:name="com.techcity.techcitysuite.AccessoryTransactionListActivity"
+            android:exported="false"
+            android:label="Accessory Transactions" />
+
     </application>
 
 </manifest>
