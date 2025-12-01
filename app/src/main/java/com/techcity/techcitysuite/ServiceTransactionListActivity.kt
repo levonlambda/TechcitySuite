@@ -479,11 +479,15 @@ class ServiceTransactionListActivity : AppCompatActivity() {
                     }
                 }
 
-                // Sort: by sortOrder (if set), then by timestamp
-                loadedTransactions.sortWith(compareBy(
-                    { it.sortOrder },
-                    { it.serverTimestamp?.seconds ?: 0L }
-                ))
+                // Sort:
+                // - Documents with sortOrder > 0 have been manually reordered (appear first in that order)
+                // - Documents with sortOrder = 0 are new/unordered (appear at the end by timestamp)
+                loadedTransactions.sortWith(
+                    compareBy(
+                        { if (it.sortOrder == 0) Int.MAX_VALUE else it.sortOrder },
+                        { it.serverTimestamp?.seconds ?: 0L }
+                    )
+                )
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
@@ -608,14 +612,16 @@ class ServiceTransactionListActivity : AppCompatActivity() {
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
+                    // Use 1-based indexing so sortOrder=0 means "not manually ordered"
                     currentList.forEachIndexed { index, item ->
-                        if (item.sortOrder != index) {
+                        val newSortOrder = index + 1  // 1-based: 1, 2, 3, ...
+                        if (item.sortOrder != newSortOrder) {
                             db.collection(COLLECTION_SERVICE_TRANSACTIONS)
                                 .document(item.transaction.id)
-                                .update("sortOrder", index)
+                                .update("sortOrder", newSortOrder)
                                 .await()
 
-                            item.sortOrder = index
+                            item.sortOrder = newSortOrder
                         }
                     }
                 }

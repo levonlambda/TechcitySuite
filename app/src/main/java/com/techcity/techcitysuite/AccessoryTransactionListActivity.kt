@@ -505,8 +505,15 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
             }
         }
 
-        // Sort results: first by sortOrder (if set), then by timestamp
-        return results.sortedWith(compareBy({ it.sortOrder }, { it.serverTimestamp?.seconds ?: 0 }))
+        // Sort results:
+        // - Documents with sortOrder > 0 have been manually reordered (appear first in that order)
+        // - Documents with sortOrder = 0 are new/unordered (appear at the end by timestamp)
+        return results.sortedWith(
+            compareBy(
+                { if (it.sortOrder == 0) Int.MAX_VALUE else it.sortOrder },
+                { it.serverTimestamp?.seconds ?: 0 }
+            )
+        )
     }
 
     // Helper functions to parse nested payment objects
@@ -714,15 +721,17 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
             try {
                 withContext(Dispatchers.IO) {
                     // Only update documents whose sortOrder has changed
+                    // Use 1-based indexing so sortOrder=0 means "not manually ordered"
                     currentList.forEachIndexed { index, item ->
-                        if (item.sortOrder != index) {
+                        val newSortOrder = index + 1  // 1-based: 1, 2, 3, ...
+                        if (item.sortOrder != newSortOrder) {
                             db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
                                 .document(item.transaction.id)
-                                .update("sortOrder", index)
+                                .update("sortOrder", newSortOrder)
                                 .await()
 
                             // Update local sortOrder to reflect the new value
-                            item.sortOrder = index
+                            item.sortOrder = newSortOrder
                         }
                     }
                 }

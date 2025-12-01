@@ -149,9 +149,13 @@ class TransactionDetailsActivity : AppCompatActivity() {
                 // Set initial fee (will be calculated for Mobile Loading)
                 if (transactionType == "Mobile Loading Service") {
                     binding.feeInput.setText("₱0")
-                } else {
-                    // Fixed fee of 15 pesos for Skyro and Home Credit
+                } else if (transactionType == "Skyro Payment") {
+                    // Fixed fee of 15 pesos for Skyro
                     transactionFee = 15.0
+                    binding.feeInput.setText(formatCurrency(transactionFee))
+                } else if (transactionType == "Home Credit Payment") {
+                    // Fixed fee of 5 pesos for Home Credit
+                    transactionFee = 5.0
                     binding.feeInput.setText(formatCurrency(transactionFee))
                 }
             }
@@ -403,9 +407,14 @@ class TransactionDetailsActivity : AppCompatActivity() {
             }
         }
 
-        // Fixed fee for Skyro and Home Credit
-        if (transactionType == "Skyro Payment" || transactionType == "Home Credit Payment") {
+        // Fixed fee for Skyro Payment
+        if (transactionType == "Skyro Payment") {
             return 15.0
+        }
+
+        // Fixed fee for Home Credit Payment
+        if (transactionType == "Home Credit Payment") {
+            return 5.0
         }
 
         // If Free option is selected, no fee
@@ -470,8 +479,10 @@ class TransactionDetailsActivity : AppCompatActivity() {
     private fun calculateFeeAndTotal() {
         if (amount <= 0) {
             // For fixed fee services, still show fee even with 0 amount
-            if (transactionType == "Skyro Payment" || transactionType == "Home Credit Payment") {
+            if (transactionType == "Skyro Payment") {
                 transactionFee = 15.0
+            } else if (transactionType == "Home Credit Payment") {
+                transactionFee = 5.0
             } else {
                 transactionFee = 0.0
             }
@@ -645,23 +656,23 @@ class TransactionDetailsActivity : AppCompatActivity() {
         dialogTransactionType.setTextColor(transactionTypeColor)
 
         // Calculate dynamic margin based on specific transaction types
-        val marginInDp = when (transactionType) {
-            "Cash In" -> 135
-            "Cash Out" -> 130
-            "Misc Payment" -> 110
-            "Skyro Payment" -> 90
-            "Mobile Loading Service" -> 60
-            "Home Credit Payment" -> 60
-            else -> 95
-        }
-
-        // Convert dp to pixels
-        val marginInPx = (marginInDp * resources.displayMetrics.density).toInt()
-
-        // Apply dynamic margin to transaction type
-        val layoutParams = dialogTransactionType.layoutParams as android.view.ViewGroup.MarginLayoutParams
-        layoutParams.marginEnd = marginInPx
-        dialogTransactionType.layoutParams = layoutParams
+//        val marginInDp = when (transactionType) {
+//            "Cash In" -> 135
+//            "Cash Out" -> 130
+//            "Misc Payment" -> 110
+//            "Skyro Payment" -> 90
+//            "Mobile Loading Service" -> 60
+//            "Home Credit Payment" -> 60
+//            else -> 95
+//        }
+//
+//        // Convert dp to pixels
+//        val marginInPx = (marginInDp * resources.displayMetrics.density).toInt()
+//
+//        // Apply dynamic margin to transaction type
+//        val layoutParams = dialogTransactionType.layoutParams as android.view.ViewGroup.MarginLayoutParams
+//        layoutParams.marginEnd = marginInPx
+//        dialogTransactionType.layoutParams = layoutParams
 
         // Set amount
         dialogAmount.text = formatCurrency(amount)
@@ -674,8 +685,8 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
         // Calculate customer pays (Total)
         val customerPays = when (feeOption) {
-            "Add Fee" -> amount + fee
-            "Deduct Fee" -> amount
+            "Add" -> amount + fee
+            "Deduct" -> amount
             "Free" -> amount
             else -> amount + fee
         }
