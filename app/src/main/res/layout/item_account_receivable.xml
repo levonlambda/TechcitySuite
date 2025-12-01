@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="2dp"
+    app:strokeColor="@color/light_gray">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- ================================================================== -->
+        <!-- Row 1: Order Number, Date Sold, Source Badge, Transaction Type Badge, Checkbox -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Order Number -->
+            <TextView
+                android:id="@+id/orderNumberText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="#1"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/techcity_blue"
+                android:layout_marginEnd="6dp" />
+
+            <!-- Date Sold -->
+            <TextView
+                android:id="@+id/dateSoldText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="11/30/2025"
+                android:textSize="12sp"
+                android:textColor="@color/gray"
+                android:layout_marginEnd="6dp" />
+
+            <!-- Source Badge (Device or Accessory) -->
+            <TextView
+                android:id="@+id/sourceBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Device"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/rounded_badge_small"
+                android:backgroundTint="@color/techcity_blue"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp" />
+
+            <!-- Spacer -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Transaction Type Badge -->
+            <TextView
+                android:id="@+id/transactionTypeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Home Credit"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/rounded_badge"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Checkbox -->
+            <CheckBox
+                android:id="@+id/selectCheckbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="@color/cash_dark_green"
+                android:minWidth="0dp"
+                android:minHeight="0dp" />
+
+        </LinearLayout>
+
+        <!-- ================================================================== -->
+        <!-- Row 2: Item Name + Customer Name -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="6dp">
+
+            <TextView
+                android:id="@+id/itemNameText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tecno Camon 40 Pro 5G"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Customer Name (only visible for In-House) -->
+            <TextView
+                android:id="@+id/customerNameText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text=" - Customer Name"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#9C27B0"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- ================================================================== -->
+        <!-- Row 3: Item Details (Variant for devices, hidden for accessories) -->
+        <!-- ================================================================== -->
+        <TextView
+            android:id="@+id/itemDetailsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="12 + 256 - Galaxy Black"
+            android:textSize="12sp"
+            android:textColor="@color/gray"
+            android:layout_marginTop="2dp"
+            android:visibility="gone" />
+
+        <!-- ================================================================== -->
+        <!-- Row 4: Final Price, Downpayment, Payments (In-House), BZ Subsidy, Balance (4-5 columns) -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical">
+
+            <!-- Final Price Column -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Final Price"
+                    android:textSize="9sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/finalPriceText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱14,999"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+
+            <!-- Downpayment Column -->
+            <LinearLayout
+                android:id="@+id/downpaymentLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DP"
+                    android:textSize="9sp"
+                    android:textColor="@color/gray" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/downpaymentText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="₱1,500"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/black" />
+
+                    <!-- Downpayment Source Badge -->
+                    <TextView
+                        android:id="@+id/downpaymentSourceBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ca"
+                        android:textSize="7sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white"
+                        android:background="@drawable/rounded_badge_small"
+                        android:paddingStart="3dp"
+                        android:paddingEnd="3dp"
+                        android:paddingTop="1dp"
+                        android:paddingBottom="1dp"
+                        android:layout_marginStart="2dp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Payments Column (For In-House transactions) -->
+            <LinearLayout
+                android:id="@+id/paymentsLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Payments"
+                    android:textSize="9sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/paymentsText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱4,200"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/cash_dark_green" />
+
+            </LinearLayout>
+
+            <!-- Brand Zero Subsidy Column -->
+            <LinearLayout
+                android:id="@+id/brandZeroLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="BZ Sub"
+                    android:textSize="9sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/brandZeroText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱450"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/cash_dark_green" />
+
+            </LinearLayout>
+
+            <!-- Balance Column -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Balance"
+                    android:textSize="9sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/balanceText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₱13,049"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/red" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ================================================================== -->
+        <!-- Row 5: User -->
+        <!-- ================================================================== -->
+        <TextView
+            android:id="@+id/userText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="by Kapatagan"
+            android:textSize="10sp"
+            android:textColor="@color/gray"
+            android:layout_marginTop="6dp"
+            android:gravity="end" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

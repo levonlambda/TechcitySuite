@@ -28,7 +28,7 @@
     <string name="accessories_transactions">Accessory Transaction</string>
     <string name="add_accessories_inventory">Charger, Tempered Glass, Smartwatch, Etc</string>
     <string name="service_transactions">Service Transaction</string>
-    <string name="record_service_transactions">Home Credit Payment, Skyro Payment, E-Load</string>
+    <string name="record_service_transactions">Cash In/Out, Home Credit, Skyro Payments</string>
     <string name="cash_transactions">Cash Transactions</string>
     <string name="record_cash_transactions">Record Cash In/Out transactions</string>
     <string name="ledgers">Ledgers</string>

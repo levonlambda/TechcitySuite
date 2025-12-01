@@ -91,6 +91,17 @@
             android:label="Service Transactions"
             android:theme="@style/Theme.TechcitySuite" />
 
+        <!-- Account Receivable Activity -->
+        <activity
+            android:name="com.techcity.techcitysuite.AccountReceivableActivity"
+            android:exported="false"
+            android:label="Account Receivable" />
+
+        <activity
+            android:name="com.techcity.techcitysuite.InHousePaymentActivity"
+            android:exported="false"
+            android:label="In-House Payment" />
+
     </application>
 
 </manifest>

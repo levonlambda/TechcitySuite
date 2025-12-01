@@ -5,7 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:paddingBottom="32dp"
+    android:clipToPadding="false">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -484,6 +486,35 @@
                     android:textColor="#9C27B0"
                     android:layout_marginBottom="16dp" />
 
+                <!-- Customer Name (NEW FIELD - ONLY ADDITION) -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Customer Name"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/ihCustomerNameLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter customer name"
+                    app:boxStrokeColor="#FF9800"
+                    app:hintTextColor="#FF9800"
+                    android:layout_marginBottom="12dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/ihCustomerNameInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName|textCapWords"
+                        android:textStyle="bold" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <!-- Row 1: Down Payment and Interest in Horizontal Layout -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -734,7 +765,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginTop="24dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="48dp"
             app:layout_constraintTop_toBottomOf="@id/cardsBarrier"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">

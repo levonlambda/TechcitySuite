@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    tools:context=".ServiceTransactionListActivity">
+    android:background="#F5F5F5"
+    tools:context=".AccountReceivableActivity">
 
     <!-- ========================================================================== -->
     <!-- START OF PART 1: HEADER SECTION -->
@@ -15,69 +15,61 @@
         android:id="@+id/headerSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/techcity_blue"
         android:orientation="vertical"
+        android:background="@color/techcity_blue"
+        android:padding="16dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Title Section -->
+        <!-- Title Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="16dp"
-            android:paddingBottom="8dp">
+            android:gravity="center_vertical">
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/titleText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:text="Account Receivable"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/white" />
 
-                <TextView
-                    android:id="@+id/titleText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Service Transactions"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white" />
-
-                <!-- Date Label -->
-                <TextView
-                    android:id="@+id/dateLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Today"
-                    android:textSize="14sp"
-                    android:textColor="@color/white"
-                    android:alpha="0.8" />
-
-            </LinearLayout>
-
-            <!-- Menu Button (Date Picker) -->
+            <!-- Refresh Button -->
             <ImageButton
-                android:id="@+id/menuButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@android:drawable/ic_menu_my_calendar"
+                android:id="@+id/refreshButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Select Date"
+                android:src="@android:drawable/ic_popup_sync"
+                android:contentDescription="Refresh"
                 app:tint="@color/white" />
 
         </LinearLayout>
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/subtitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Unpaid balances from all dates"
+            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:alpha="0.8"
+            android:layout_marginTop="4dp" />
 
         <!-- Summary Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="16dp">
+            android:paddingTop="16dp">
 
-            <!-- Total Amount -->
+            <!-- Total Receivable -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -85,28 +77,27 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/totalAmountLabel"
+                    android:id="@+id/totalReceivableLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Total Amount (All)"
+                    android:text="Total Receivable"
                     android:textSize="10sp"
                     android:textColor="@color/white"
                     android:alpha="0.8" />
 
                 <TextView
-                    android:id="@+id/totalAmountValue"
+                    android:id="@+id/totalReceivableAmount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="₱0.00"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/white" />
 
             </LinearLayout>
 
-            <!-- Total Fee -->
+            <!-- Selected Total -->
             <LinearLayout
-                android:id="@+id/feeSummaryLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -116,17 +107,17 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Total Fee"
+                    android:text="Selected Total"
                     android:textSize="10sp"
                     android:textColor="@color/white"
                     android:alpha="0.8" />
 
                 <TextView
-                    android:id="@+id/totalFeeValue"
+                    android:id="@+id/selectedTotalAmount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="₱0.00"
-                    android:textSize="12sp"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/white" />
 
@@ -143,17 +134,17 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Transactions"
+                    android:text="Entries"
                     android:textSize="10sp"
                     android:textColor="@color/white"
                     android:alpha="0.8" />
 
                 <TextView
-                    android:id="@+id/transactionCount"
+                    android:id="@+id/entryCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="0"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/white" />
 
@@ -172,8 +163,9 @@
     <!-- START OF PART 2: FILTER BUTTONS -->
     <!-- ========================================================================== -->
 
+    <!-- Transaction Type Filter Row -->
     <LinearLayout
-        android:id="@+id/filterButtonsLayout"
+        android:id="@+id/transactionTypeFilterRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -184,119 +176,68 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- All Button -->
+        <!-- All Button - Blue -->
         <Button
             android:id="@+id/filterAllButton"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
             android:text="All"
-            android:textSize="10sp"
-            android:layout_marginEnd="2dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
+            android:textSize="11sp"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:backgroundTint="@color/techcity_blue"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             android:minWidth="0dp"
             style="@style/Widget.MaterialComponents.Button" />
 
-        <!-- Cash In Button -->
+        <!-- HC Button - Red -->
         <Button
-            android:id="@+id/filterCashInButton"
+            android:id="@+id/filterHomeCreditButton"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
-            android:text="In"
-            android:textSize="10sp"
-            android:layout_marginEnd="2dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:backgroundTint="@color/cash_dark_green"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:minWidth="0dp"
-            style="@style/Widget.MaterialComponents.Button" />
-
-        <!-- Cash Out Button -->
-        <Button
-            android:id="@+id/filterCashOutButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="Out"
-            android:textSize="10sp"
-            android:layout_marginEnd="2dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
+            android:text="HC"
+            android:textSize="11sp"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:backgroundTint="@color/red"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             android:minWidth="0dp"
             style="@style/Widget.MaterialComponents.Button" />
 
-        <!-- Load Button -->
-        <Button
-            android:id="@+id/filterLoadButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="Load"
-            android:textSize="10sp"
-            android:layout_marginEnd="2dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:backgroundTint="@color/mobile_loading_purple"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:minWidth="0dp"
-            style="@style/Widget.MaterialComponents.Button" />
-
-        <!-- Skyro Button -->
+        <!-- Skyro Button - Light Blue -->
         <Button
             android:id="@+id/filterSkyroButton"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
             android:text="Skyro"
-            android:textSize="9sp"
-            android:layout_marginEnd="2dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
+            android:textSize="11sp"
+            android:layout_marginEnd="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
             android:backgroundTint="@color/skyro_light_blue"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             android:minWidth="0dp"
             style="@style/Widget.MaterialComponents.Button" />
 
-        <!-- HC Button -->
+        <!-- In-House Button - Purple -->
         <Button
-            android:id="@+id/filterHCButton"
+            android:id="@+id/filterInHouseButton"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
-            android:text="HC"
-            android:textSize="10sp"
-            android:layout_marginEnd="2dp"
-            android:paddingStart="2dp"
-            android:paddingEnd="2dp"
-            android:backgroundTint="@color/red"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:minWidth="0dp"
-            style="@style/Widget.MaterialComponents.Button" />
-
-        <!-- Misc Button -->
-        <Button
-            android:id="@+id/filterMiscButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:text="Misc"
+            android:text="In-House"
             android:textSize="10sp"
             android:paddingStart="2dp"
             android:paddingEnd="2dp"
-            android:backgroundTint="@android:color/darker_gray"
+            android:backgroundTint="@color/purple"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             android:minWidth="0dp"
@@ -314,17 +255,15 @@
     <!-- ========================================================================== -->
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/transactionRecyclerView"
+        android:id="@+id/receivableRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="100dp"
+        android:padding="8dp"
+        android:paddingBottom="80dp"
         android:clipToPadding="false"
         android:background="#F5F5F5"
-        app:layout_constraintTop_toBottomOf="@id/filterButtonsLayout"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/transactionTypeFilterRow"
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -333,12 +272,12 @@
         android:id="@+id/emptyMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No transactions for this date"
+        android:text="No unpaid balances"
         android:textSize="16sp"
         android:textColor="@color/gray"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/filterButtonsLayout"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/transactionTypeFilterRow"
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -348,8 +287,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/filterButtonsLayout"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/transactionTypeFilterRow"
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -359,25 +298,66 @@
 
 
     <!-- ========================================================================== -->
-    <!-- START OF PART 4: ADD BUTTON -->
+    <!-- START OF PART 4: BOTTOM ACTION BAR -->
     <!-- ========================================================================== -->
 
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/addButton"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/bottomActionBar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="48dp"
-        android:text="New Transaction"
-        android:textColor="@color/white"
-        app:icon="@android:drawable/ic_input_add"
-        app:iconTint="@color/white"
-        app:backgroundTint="@color/techcity_blue"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="@color/white"
+        android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Selected Count -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/selectedCountText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 selected"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
+
+            <TextView
+                android:id="@+id/selectedAmountText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="₱0.00"
+                android:textSize="12sp"
+                android:textColor="@color/gray" />
+
+        </LinearLayout>
+
+        <!-- Mark as Paid Button -->
+        <Button
+            android:id="@+id/markAsPaidButton"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="Mark as Paid"
+            android:textSize="14sp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:backgroundTint="@color/cash_dark_green"
+            android:enabled="false"
+            android:alpha="0.5"
+            style="@style/Widget.MaterialComponents.Button" />
+
+    </LinearLayout>
 
     <!-- ========================================================================== -->
-    <!-- END OF PART 4: ADD BUTTON -->
+    <!-- END OF PART 4: BOTTOM ACTION BAR -->
     <!-- ========================================================================== -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

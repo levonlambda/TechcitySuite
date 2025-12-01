@@ -49,4 +49,9 @@
     <!-- Skyro Light Blue -->
     <color name="skyro_light_blue">#03A9F4</color>
 
+    <!-- Payment Source Colors (for Account Receivable / In-House Payment) -->
+    <color name="gcash_blue">#007DFE</color>
+    <color name="paymaya_green">#00B4A2</color>
+    <color name="others_gray">#757575</color>
+
 </resources>

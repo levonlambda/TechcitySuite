@@ -7,6 +7,9 @@ import com.google.firebase.Timestamp
  * Contains downpayment info, interest calculation, payment terms, and balance tracking
  */
 data class InHouseInstallmentDetails(
+    // Customer information
+    val customerName: String = "",  // NEW: Customer name for In-House transactions
+
     // Downpayment information
     val downpaymentAmount: Double = 0.0,
     val downpaymentSource: String = "",
@@ -36,5 +39,5 @@ data class InHouseInstallmentDetails(
     val balancePaidTimestamp: Timestamp? = null
 ) {
     // No-argument constructor required for Firestore
-    constructor() : this(0.0)
+    constructor() : this("")
 }

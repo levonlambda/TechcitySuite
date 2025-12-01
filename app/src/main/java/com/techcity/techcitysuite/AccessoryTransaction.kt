@@ -79,6 +79,7 @@ data class AccessorySkyroPaymentDetails(
  * In-House Installment details for accessories
  */
 data class AccessoryInHouseInstallmentDetails(
+    val customerName: String = "",            // Customer name for In-House
     val downpaymentAmount: Double = 0.0,
     val downpaymentSource: String = "",
     val accountDetails: AccountDetails? = null,
@@ -91,5 +92,5 @@ data class AccessoryInHouseInstallmentDetails(
     val isBalancePaid: Boolean = false,
     val remainingBalance: Double = 0.0
 ) {
-    constructor() : this(0.0)
+    constructor() : this("")
 }

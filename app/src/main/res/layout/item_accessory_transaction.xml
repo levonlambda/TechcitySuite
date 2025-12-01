@@ -236,6 +236,36 @@
         </LinearLayout>
 
         <!-- ================================================================== -->
+        <!-- Row 3.5: Customer Name (Only for In-House transactions) -->
+        <!-- ================================================================== -->
+        <LinearLayout
+            android:id="@+id/customerNameLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Customer: "
+                android:textSize="11sp"
+                android:textColor="@color/gray" />
+
+            <TextView
+                android:id="@+id/customerNameText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Juan Dela Cruz"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/purple" />
+
+        </LinearLayout>
+
+        <!-- ================================================================== -->
         <!-- Row 4: Date, Time, and User -->
         <!-- ================================================================== -->
         <LinearLayout

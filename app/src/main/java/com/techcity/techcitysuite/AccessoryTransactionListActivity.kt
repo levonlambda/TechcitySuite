@@ -319,6 +319,9 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                     // Remove from local list
                     adapter?.removeItem(position)
 
+                    // IMPORTANT: Also remove from the main transactions list
+                    transactions.removeAll { it.transaction.id == documentId }
+
                     // Update summary
                     val currentList = adapter?.getItems() ?: emptyList()
                     updateSummary(currentList)
@@ -505,8 +508,15 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
             }
         }
 
-        // Sort results: first by sortOrder (if set), then by timestamp
-        return results.sortedWith(compareBy({ it.sortOrder }, { it.serverTimestamp?.seconds ?: 0 }))
+        // Sort results:
+        // - Documents with sortOrder > 0 have been manually reordered (appear first in that order)
+        // - Documents with sortOrder = 0 are new/unordered (appear at the end by timestamp)
+        return results.sortedWith(
+            compareBy(
+                { if (it.sortOrder == 0) Int.MAX_VALUE else it.sortOrder },
+                { it.serverTimestamp?.seconds ?: 0 }
+            )
+        )
     }
 
     // Helper functions to parse nested payment objects
@@ -557,6 +567,7 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
         if (data == null) return null
         val accountData = data["accountDetails"] as? Map<*, *>
         return AccessoryInHouseInstallmentDetails(
+            customerName = data["customerName"] as? String ?: "",
             downpaymentAmount = (data["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0,
             downpaymentSource = data["downpaymentSource"] as? String ?: "",
             accountDetails = AccountDetails(
@@ -714,15 +725,17 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
             try {
                 withContext(Dispatchers.IO) {
                     // Only update documents whose sortOrder has changed
+                    // Use 1-based indexing so sortOrder=0 means "not manually ordered"
                     currentList.forEachIndexed { index, item ->
-                        if (item.sortOrder != index) {
+                        val newSortOrder = index + 1  // 1-based: 1, 2, 3, ...
+                        if (item.sortOrder != newSortOrder) {
                             db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
                                 .document(item.transaction.id)
-                                .update("sortOrder", index)
+                                .update("sortOrder", newSortOrder)
                                 .await()
 
                             // Update local sortOrder to reflect the new value
-                            item.sortOrder = index
+                            item.sortOrder = newSortOrder
                         }
                     }
                 }
@@ -1020,6 +1033,7 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                 when (transaction.transactionType) {
                     AppConstants.TRANSACTION_TYPE_CASH -> {
                         binding.financingDetailsLayout.visibility = View.GONE
+                        binding.customerNameLayout.visibility = View.GONE
                         transaction.cashPayment?.let { cash ->
                             binding.paymentInfoBadge.text = "via ${cash.paymentSource}"
                             binding.paymentInfoBadge.setTextColor(
@@ -1031,6 +1045,7 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                     AppConstants.TRANSACTION_TYPE_HOME_CREDIT -> {
                         binding.paymentInfoBadge.visibility = View.GONE
                         binding.financingDetailsLayout.visibility = View.VISIBLE
+                        binding.customerNameLayout.visibility = View.GONE
                         transaction.homeCreditPayment?.let { hc ->
                             // Downpayment
                             binding.downpaymentText.text = formatCurrency(hc.downpaymentAmount)
@@ -1056,6 +1071,7 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                     AppConstants.TRANSACTION_TYPE_SKYRO -> {
                         binding.paymentInfoBadge.visibility = View.GONE
                         binding.financingDetailsLayout.visibility = View.VISIBLE
+                        binding.customerNameLayout.visibility = View.GONE
                         transaction.skyroPayment?.let { skyro ->
                             // Downpayment
                             binding.downpaymentText.text = formatCurrency(skyro.downpaymentAmount)
@@ -1101,11 +1117,20 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                             binding.balanceText.setTextColor(
                                 ContextCompat.getColor(itemView.context, balanceColor)
                             )
+
+                            // Customer name (only for In-House)
+                            if (ih.customerName.isNotEmpty()) {
+                                binding.customerNameLayout.visibility = View.VISIBLE
+                                binding.customerNameText.text = ih.customerName
+                            } else {
+                                binding.customerNameLayout.visibility = View.GONE
+                            }
                         }
                     }
                     else -> {
                         binding.financingDetailsLayout.visibility = View.GONE
                         binding.paymentInfoBadge.visibility = View.GONE
+                        binding.customerNameLayout.visibility = View.GONE
                     }
                 }
 
@@ -1139,4 +1164,5 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
     // ============================================================================
     // END OF PART 8: RECYCLERVIEW ADAPTER (WITH SWIPE-TO-DELETE SUPPORT)
     // ============================================================================
+
 }

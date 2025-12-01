@@ -1494,6 +1494,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     val accountDetails = getAccountDetailsForPaymentSource(downPaymentSource, prefs)
 
                     transactionData["inHouseInstallment"] = hashMapOf(
+                        "customerName" to binding.ihCustomerNameInput.text.toString().trim(),
                         "downpaymentAmount" to downPayment,
                         "downpaymentSource" to downPaymentSource,
                         "accountDetails" to hashMapOf(

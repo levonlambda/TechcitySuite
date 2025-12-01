@@ -299,6 +299,9 @@ class DeviceTransactionListActivity : AppCompatActivity() {
     /**
      * Delete transaction from Firebase
      */
+    /**
+     * Delete transaction from Firebase
+     */
     private fun deleteTransactionFromFirebase(documentId: String, position: Int) {
         binding.progressBar.visibility = View.VISIBLE
 
@@ -314,8 +317,12 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
 
-                    // Remove from local list
+                    // Remove from adapter's local list
                     adapter?.removeItem(position)
+
+                    // IMPORTANT: Also remove from the main transactions list
+                    // This ensures the item stays deleted when filters are changed
+                    transactions.removeAll { it.transaction.id == documentId }
 
                     // Update summary
                     val currentList = adapter?.getItems() ?: emptyList()
@@ -522,10 +529,15 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             }
         }
 
-        // Sort results: first by sortOrder (if set), then by timestamp
-        // Documents with sortOrder > 0 have been manually reordered
-        // Documents with sortOrder = 0 use their natural timestamp order
-        return results.sortedWith(compareBy({ it.sortOrder }, { it.serverTimestamp?.seconds ?: 0 }))
+        // Sort results:
+        // - Documents with sortOrder > 0 have been manually reordered (appear first in that order)
+        // - Documents with sortOrder = 0 are new/unordered (appear at the end by timestamp)
+        return results.sortedWith(
+            compareBy(
+                { if (it.sortOrder == 0) Int.MAX_VALUE else it.sortOrder },
+                { it.serverTimestamp?.seconds ?: 0 }
+            )
+        )
     }
 
     // Helper functions to parse nested payment objects
@@ -582,6 +594,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         if (data == null) return null
         val accountData = data["accountDetails"] as? Map<*, *>
         return InHouseInstallmentDetails(
+            customerName = data["customerName"] as? String ?: "",
             downpaymentAmount = (data["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0,
             downpaymentSource = data["downpaymentSource"] as? String ?: "",
             accountDetails = AccountDetails(
@@ -739,15 +752,17 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             try {
                 withContext(Dispatchers.IO) {
                     // Only update documents whose sortOrder has changed
+                    // Use 1-based indexing so sortOrder=0 means "not manually ordered"
                     currentList.forEachIndexed { index, item ->
-                        if (item.sortOrder != index) {
+                        val newSortOrder = index + 1  // 1-based: 1, 2, 3, ...
+                        if (item.sortOrder != newSortOrder) {
                             db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
                                 .document(item.transaction.id)
-                                .update("sortOrder", index)
+                                .update("sortOrder", newSortOrder)
                                 .await()
 
                             // Update local sortOrder to reflect the new value
-                            item.sortOrder = index
+                            item.sortOrder = newSortOrder
                         }
                     }
                 }
@@ -1025,6 +1040,15 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                 binding.manufacturerText.text = transaction.manufacturer
                 binding.modelText.text = transaction.model
 
+                // Show customer name beside model for In-House transactions
+                val customerName = transaction.inHouseInstallment?.customerName ?: ""
+                if (transaction.transactionType == AppConstants.TRANSACTION_TYPE_IN_HOUSE && customerName.isNotEmpty()) {
+                    binding.customerNameText.text = " - $customerName"
+                    binding.customerNameText.visibility = View.VISIBLE
+                } else {
+                    binding.customerNameText.visibility = View.GONE
+                }
+
                 // Set variant (RAM + Storage - Color)
                 val ramDisplay = if (transaction.ram.contains("GB", ignoreCase = true)) {
                     transaction.ram
@@ -1228,7 +1252,8 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         override fun getItemCount(): Int = items.size
     }
 
-// ============================================================================
-// END OF PART 8: RECYCLERVIEW ADAPTER (WITH SWIPE-TO-DELETE SUPPORT)
-// ============================================================================
+    // ============================================================================
+    // END OF PART 8: RECYCLERVIEW ADAPTER (WITH SWIPE-TO-DELETE SUPPORT)
+    // ============================================================================
+
 }

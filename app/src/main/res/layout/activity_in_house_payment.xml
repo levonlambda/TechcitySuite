@@ -1,0 +1,889 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5"
+    tools:context=".InHousePaymentActivity">
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: HEADER SECTION -->
+    <!-- ========================================================================== -->
+
+    <LinearLayout
+        android:id="@+id/headerSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/techcity_blue"
+        android:padding="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Title Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Back Button using TextView -->
+            <TextView
+                android:id="@+id/backButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:text="←"
+                android:textSize="24sp"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/titleText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="In-House Payment"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/white" />
+
+        </LinearLayout>
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/subtitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Manage installment payments"
+            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:alpha="0.8"
+            android:layout_marginTop="4dp"
+            android:layout_marginStart="48dp" />
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: HEADER SECTION -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 2: SCROLLABLE CONTENT -->
+    <!-- ========================================================================== -->
+
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/headerSection"
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Item Details Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/itemDetailsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/light_gray"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Item Details"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/techcity_blue"
+                        android:layout_marginBottom="8dp" />
+
+                    <!-- Item Name + Customer Name on same line -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/itemNameText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tecno Camon 40 Pro 5G"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black" />
+
+                        <!-- Customer Name (only visible for In-House with customer) -->
+                        <TextView
+                            android:id="@+id/customerNameText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text=" - Customer Name"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#9C27B0"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+
+                    <!-- Item Details (Variant) -->
+                    <TextView
+                        android:id="@+id/itemDetailsText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="12 + 256 - Galaxy Black"
+                        android:textSize="13sp"
+                        android:textColor="@color/gray"
+                        android:layout_marginTop="2dp" />
+
+                    <!-- Date Sold and Source -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Date Sold: "
+                            android:textSize="12sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/dateSoldText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="11/30/2025"
+                            android:textSize="12sp"
+                            android:textColor="@color/black" />
+
+                        <!-- Source Badge -->
+                        <TextView
+                            android:id="@+id/sourceBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Device"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white"
+                            android:background="@drawable/rounded_badge_small"
+                            android:backgroundTint="@color/techcity_blue"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:paddingTop="2dp"
+                            android:paddingBottom="2dp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Transaction Details Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/transactionDetailsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/light_gray"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Transaction Details"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/techcity_blue"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Original Price Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Original Price"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/originalPriceText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱30,000.00"
+                            android:textSize="14sp"
+                            android:textColor="@color/black" />
+
+                    </LinearLayout>
+
+                    <!-- Discount Row -->
+                    <LinearLayout
+                        android:id="@+id/discountLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Discount"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/discountText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-₱1,000.00"
+                            android:textSize="14sp"
+                            android:textColor="@color/red" />
+
+                    </LinearLayout>
+
+                    <!-- Final Price Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Final Price"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/finalPriceText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱29,000.00"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black" />
+
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_gray"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Downpayment Row -->
+                    <LinearLayout
+                        android:id="@+id/downpaymentLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Downpayment"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <!-- Source Badge BEFORE amount -->
+                            <TextView
+                                android:id="@+id/downpaymentSourceBadge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Cash"
+                                android:textSize="9sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/white"
+                                android:background="@drawable/rounded_badge_small"
+                                android:backgroundTint="@color/cash_dark_green"
+                                android:paddingStart="6dp"
+                                android:paddingEnd="6dp"
+                                android:paddingTop="2dp"
+                                android:paddingBottom="2dp"
+                                android:layout_marginEnd="6dp" />
+
+                            <TextView
+                                android:id="@+id/downpaymentText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="₱1,000.00"
+                                android:textSize="14sp"
+                                android:textColor="@color/black" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- Interest Rate Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Interest Rate"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/interestRateText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="4.5%"
+                            android:textSize="14sp"
+                            android:textColor="@color/black" />
+
+                    </LinearLayout>
+
+                    <!-- Interest Amount Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Interest Amount"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/interestAmountText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱1,272.95"
+                            android:textSize="14sp"
+                            android:textColor="@color/black" />
+
+                    </LinearLayout>
+
+                    <!-- Divider before Balance -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_gray"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Balance Row (Total to be paid) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Balance"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black" />
+
+                        <TextView
+                            android:id="@+id/balanceAfterInterestText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱21,000.00"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/techcity_blue" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Balance Summary Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/balanceSummaryCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/light_gray"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Balance Summary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/techcity_blue"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Original Balance Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Original Balance"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/originalBalanceText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱28,727.05"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black" />
+
+                    </LinearLayout>
+
+                    <!-- Total Paid Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Total Paid"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/totalPaidText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱0.00"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/cash_dark_green" />
+
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/light_gray"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Remaining Balance Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Remaining Balance"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black" />
+
+                        <TextView
+                            android:id="@+id/remainingBalanceText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱28,727.05"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/red" />
+
+                    </LinearLayout>
+
+                    <!-- Monthly Amount Info -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Monthly Amount"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/monthlyAmountText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₱4,787.84"
+                            android:textSize="13sp"
+                            android:textColor="@color/techcity_blue" />
+
+                    </LinearLayout>
+
+                    <!-- Months Info -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Term"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray" />
+
+                        <TextView
+                            android:id="@+id/monthsToPayText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="6 months"
+                            android:textSize="13sp"
+                            android:textColor="@color/gray" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Payment History Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/paymentHistoryCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/light_gray"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Header Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Payment History"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/techcity_blue" />
+
+                        <TextView
+                            android:id="@+id/paymentCountText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 payments"
+                            android:textSize="12sp"
+                            android:textColor="@color/gray" />
+
+                    </LinearLayout>
+
+                    <!-- Payment History List -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/paymentHistoryRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                    <!-- Empty State -->
+                    <TextView
+                        android:id="@+id/emptyPaymentText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No payments recorded yet"
+                        android:textSize="13sp"
+                        android:textColor="@color/gray"
+                        android:gravity="center"
+                        android:padding="16dp"
+                        android:visibility="visible" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Add Payment Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/addPaymentCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/techcity_blue"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Add New Payment"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/techcity_blue"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Payment Amount Input -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/paymentAmountLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Payment Amount"
+                        app:prefixText="₱"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/paymentAmountInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal"
+                            android:maxLines="1" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Quick Amount Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <Button
+                            android:id="@+id/monthlyAmountButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="Monthly"
+                            android:textSize="12sp"
+                            android:textColor="@color/white"
+                            android:layout_marginEnd="4dp"
+                            android:backgroundTint="@color/techcity_blue"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            style="@style/Widget.MaterialComponents.Button" />
+
+                        <Button
+                            android:id="@+id/remainingAmountButton"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="Full Balance"
+                            android:textSize="12sp"
+                            android:textColor="@color/white"
+                            android:layout_marginStart="4dp"
+                            android:backgroundTint="@color/cash_dark_green"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            style="@style/Widget.MaterialComponents.Button" />
+
+                    </LinearLayout>
+
+                    <!-- Payment Source Dropdown -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/paymentSourceLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Payment Source"
+                        android:layout_marginTop="12dp"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+                        <AutoCompleteTextView
+                            android:id="@+id/paymentSourceDropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:text="Cash" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 2: SCROLLABLE CONTENT -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 3: BOTTOM ACTION BAR -->
+    <!-- ========================================================================== -->
+
+    <LinearLayout
+        android:id="@+id/bottomActionBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="@color/white"
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Cancel Button -->
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Cancel"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <!-- Save Payment Button -->
+        <Button
+            android:id="@+id/savePaymentButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Save Payment"
+            android:textSize="14sp"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="@color/techcity_blue"
+            style="@style/Widget.MaterialComponents.Button" />
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 3: BOTTOM ACTION BAR -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 4: PROGRESS OVERLAY -->
+    <!-- ========================================================================== -->
+
+    <FrameLayout
+        android:id="@+id/progressOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 4: PROGRESS OVERLAY -->
+    <!-- ========================================================================== -->
+
+</androidx.constraintlayout.widget.ConstraintLayout>

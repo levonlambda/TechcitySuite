@@ -62,16 +62,39 @@
 
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/modelText"
-                    android:layout_width="wrap_content"
+                <!-- Model + Customer Name on same line -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Galaxy S24 Ultra"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/modelText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Galaxy S24 Ultra"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+
+                    <!-- Customer Name (only visible for In-House) -->
+                    <TextView
+                        android:id="@+id/customerNameText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text=" - Customer Name"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#9C27B0"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:visibility="gone" />
+
+                </LinearLayout>
 
             </LinearLayout>
 

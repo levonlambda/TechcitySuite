@@ -111,11 +111,10 @@ class MenuActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Account Receivable button - DISABLED
-        binding.accountReceivableButton.isEnabled = false
-        binding.accountReceivableButton.alpha = 0.5f
+        // Account Receivable button - NOW ENABLED
         binding.accountReceivableButton.setOnClickListener {
-            Toast.makeText(this, "Account Receivable is currently disabled", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, AccountReceivableActivity::class.java)
+            startActivity(intent)
         }
     }
 
