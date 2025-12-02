@@ -677,12 +677,12 @@
 
                     </LinearLayout>
 
-                    <!-- Payment History List -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/paymentHistoryRecyclerView"
+                    <!-- Payment History Container (LinearLayout instead of RecyclerView) -->
+                    <LinearLayout
+                        android:id="@+id/paymentHistoryContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false" />
+                        android:orientation="vertical" />
 
                     <!-- Empty State -->
                     <TextView

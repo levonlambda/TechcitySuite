@@ -24,6 +24,9 @@ object AppConstants {
     const val KEY_CREDIT_CARD_ACCOUNT = "credit_card_account"
     const val KEY_OTHER_ACCOUNT = "other_account"
 
+    // Feature Settings
+    const val KEY_ACCOUNT_RECEIVABLE_ENABLED = "account_receivable_enabled"
+
     // ============================================================================
     // FIREBASE COLLECTION NAMES
     // ============================================================================

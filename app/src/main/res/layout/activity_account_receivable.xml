@@ -307,6 +307,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="12dp"
+        android:layout_marginBottom="48dp"
         android:background="@color/white"
         android:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"

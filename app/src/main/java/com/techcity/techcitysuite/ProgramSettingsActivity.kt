@@ -25,6 +25,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         private const val KEY_QRPH_ACCOUNT = "qrph_account"
         private const val KEY_CREDIT_CARD_ACCOUNT = "credit_card_account"
         private const val KEY_OTHER_ACCOUNT = "other_account"
+        private const val KEY_ACCOUNT_RECEIVABLE_ENABLED = "account_receivable_enabled"
     }
 
     // ============================================================================
@@ -71,6 +72,9 @@ class ProgramSettingsActivity : AppCompatActivity() {
         binding.qrphAccountInput.setText(prefs.getString(KEY_QRPH_ACCOUNT, ""))
         binding.creditCardAccountInput.setText(prefs.getString(KEY_CREDIT_CARD_ACCOUNT, ""))
         binding.otherAccountInput.setText(prefs.getString(KEY_OTHER_ACCOUNT, ""))
+
+        // Load feature settings (default to true/enabled)
+        binding.accountReceivableSwitch.isChecked = prefs.getBoolean(KEY_ACCOUNT_RECEIVABLE_ENABLED, true)
     }
 
     private fun saveSettings() {
@@ -86,6 +90,9 @@ class ProgramSettingsActivity : AppCompatActivity() {
         editor.putString(KEY_QRPH_ACCOUNT, binding.qrphAccountInput.text.toString().trim())
         editor.putString(KEY_CREDIT_CARD_ACCOUNT, binding.creditCardAccountInput.text.toString().trim())
         editor.putString(KEY_OTHER_ACCOUNT, binding.otherAccountInput.text.toString().trim())
+
+        // Save feature settings
+        editor.putBoolean(KEY_ACCOUNT_RECEIVABLE_ENABLED, binding.accountReceivableSwitch.isChecked)
 
         editor.apply()
 

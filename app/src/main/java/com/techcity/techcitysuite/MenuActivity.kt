@@ -46,9 +46,26 @@ class MenuActivity : AppCompatActivity() {
         setupKebabMenu()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Re-check feature settings when returning from settings
+        updateFeatureVisibility()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+    }
+
+    private fun updateFeatureVisibility() {
+        val prefs = getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE)
+        val accountReceivableEnabled = prefs.getBoolean(AppConstants.KEY_ACCOUNT_RECEIVABLE_ENABLED, true)
+
+        if (accountReceivableEnabled) {
+            binding.accountReceivableCard.visibility = View.VISIBLE
+        } else {
+            binding.accountReceivableCard.visibility = View.GONE
+        }
     }
 
     // ============================================================================

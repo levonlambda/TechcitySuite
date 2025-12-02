@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -46,7 +47,7 @@ class InHousePaymentActivity : AppCompatActivity() {
     private var itemName: String = ""
     private var itemDetails: String = ""
     private var dateSold: String = ""
-    private var customerName: String = ""  // NEW: Customer name for In-House
+    private var customerName: String = ""  // Customer name for In-House
 
     // Transaction details
     private var originalPrice: Double = 0.0
@@ -70,12 +71,14 @@ class InHousePaymentActivity : AppCompatActivity() {
     /**
      * Data class for payment records
      * This structure is used for both reading from and writing to Firebase
+     * The timestamp field ensures uniqueness for arrayUnion operations
      */
     data class PaymentRecord(
         val date: String,
         val amount: Double,
         val remainingAfter: Double,
-        val source: String = "Cash"
+        val source: String = "Cash",
+        val timestamp: Long = 0L  // Unique identifier to prevent arrayUnion deduplication
     )
 
     // ============================================================================
@@ -161,9 +164,6 @@ class InHousePaymentActivity : AppCompatActivity() {
             val selectedSource = paymentSources[position]
             updatePaymentSourceColor(selectedSource)
         }
-
-        // Payment history RecyclerView
-        binding.paymentHistoryRecyclerView.layoutManager = LinearLayoutManager(this)
 
         // Source badge
         binding.sourceBadge.text = if (source == "device") "Device" else "Accessory"
@@ -295,7 +295,7 @@ class InHousePaymentActivity : AppCompatActivity() {
                     monthlyAmount = (inHouseData["monthlyAmount"] as? Number)?.toDouble() ?: 0.0
                     monthsToPay = (inHouseData["monthsToPay"] as? Number)?.toInt() ?: 0
 
-                    // BACKWARD COMPATIBILITY: Parse payments array if it exists
+                    // Parse payments array
                     val paymentsData = inHouseData["payments"] as? List<*>
                     payments.clear()
 
@@ -307,10 +307,14 @@ class InHousePaymentActivity : AppCompatActivity() {
                                     date = payment["date"] as? String ?: "",
                                     amount = (payment["amount"] as? Number)?.toDouble() ?: 0.0,
                                     remainingAfter = (payment["remainingAfter"] as? Number)?.toDouble() ?: 0.0,
-                                    source = payment["source"] as? String ?: "Cash"
+                                    source = payment["source"] as? String ?: "Cash",
+                                    timestamp = (payment["timestamp"] as? Number)?.toLong() ?: 0L
                                 )
                             )
                         }
+
+                        // Sort payments by timestamp (oldest first) for proper display order
+                        payments.sortBy { it.timestamp }
                     }
 
                     // Calculate the CORRECT original balance including interest
@@ -423,13 +427,46 @@ class InHousePaymentActivity : AppCompatActivity() {
         val paymentCount = payments.size
         binding.paymentCountText.text = "$paymentCount payment${if (paymentCount != 1) "s" else ""}"
 
+        // Clear previous payment views
+        binding.paymentHistoryContainer.removeAllViews()
+
         if (payments.isEmpty()) {
             binding.emptyPaymentText.visibility = View.VISIBLE
-            binding.paymentHistoryRecyclerView.visibility = View.GONE
+            binding.paymentHistoryContainer.visibility = View.GONE
         } else {
             binding.emptyPaymentText.visibility = View.GONE
-            binding.paymentHistoryRecyclerView.visibility = View.VISIBLE
-            binding.paymentHistoryRecyclerView.adapter = PaymentHistoryAdapter(payments)
+            binding.paymentHistoryContainer.visibility = View.VISIBLE
+
+            // Add each payment as a view using item binding
+            payments.forEachIndexed { index, payment ->
+                val itemBinding = ItemPaymentHistoryBinding.inflate(
+                    LayoutInflater.from(this),
+                    binding.paymentHistoryContainer,
+                    false
+                )
+
+                // Payment number
+                itemBinding.paymentNumberText.text = "${index + 1}"
+
+                // Date
+                itemBinding.paymentDateText.text = payment.date
+
+                // Source badge
+                itemBinding.paymentSourceBadge.text = payment.source
+                itemBinding.paymentSourceBadge.backgroundTintList = ContextCompat.getColorStateList(
+                    this,
+                    getPaymentSourceColor(payment.source)
+                )
+
+                // Amount
+                itemBinding.paymentAmountText.text = formatCurrency(payment.amount)
+
+                // Remaining after
+                itemBinding.remainingAfterText.text = "Bal: ${formatCurrency(payment.remainingAfter)}"
+
+                // Add to container
+                binding.paymentHistoryContainer.addView(itemBinding.root)
+            }
         }
     }
 
@@ -499,13 +536,14 @@ class InHousePaymentActivity : AppCompatActivity() {
         val newRemaining = remainingBalance - amount
         val isFullyPaid = newRemaining <= 0
 
-        // Create payment record
+        // Create payment record with unique timestamp to prevent arrayUnion deduplication
         val today = SimpleDateFormat("M/d/yyyy", Locale.US).format(Date())
         val paymentRecord = hashMapOf(
             "date" to today,
             "amount" to amount,
             "remainingAfter" to newRemaining,
-            "source" to paymentSource
+            "source" to paymentSource,
+            "timestamp" to System.currentTimeMillis()  // Unique identifier for each payment
         )
 
         scope.launch {
@@ -515,12 +553,14 @@ class InHousePaymentActivity : AppCompatActivity() {
 
                     // Build update map
                     val updates = hashMapOf<String, Any>(
-                        "inHouseInstallment.balance" to newRemaining,  // Use "balance" field name
+                        "inHouseInstallment.remainingBalance" to newRemaining,
                         "inHouseInstallment.payments" to FieldValue.arrayUnion(paymentRecord)
                     )
 
-                    // BACKWARD COMPATIBILITY: Set originalBalance if this is the first payment
-                    // and originalBalance wasn't set before
+                    // BACKWARD COMPATIBILITY: Also update "balance" field
+                    updates["inHouseInstallment.balance"] = newRemaining
+
+                    // Set originalBalance if this is the first payment and it wasn't set before
                     if (payments.isEmpty() && originalBalance > 0) {
                         updates["inHouseInstallment.originalBalance"] = originalBalance
                     }

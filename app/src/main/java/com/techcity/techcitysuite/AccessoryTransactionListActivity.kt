@@ -1011,6 +1011,19 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                 // Set accessory name
                 binding.accessoryNameText.text = transaction.accessoryName
 
+                // Show customer name for In-House transactions
+                if (transaction.transactionType == AppConstants.TRANSACTION_TYPE_IN_HOUSE) {
+                    val customerName = transaction.inHouseInstallment?.customerName ?: ""
+                    if (customerName.isNotEmpty()) {
+                        binding.customerNameText.text = " - $customerName"
+                        binding.customerNameText.visibility = View.VISIBLE
+                    } else {
+                        binding.customerNameText.visibility = View.GONE
+                    }
+                } else {
+                    binding.customerNameText.visibility = View.GONE
+                }
+
                 // Set price
                 binding.priceText.text = formatCurrency(transaction.finalPrice)
 
@@ -1033,7 +1046,6 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                 when (transaction.transactionType) {
                     AppConstants.TRANSACTION_TYPE_CASH -> {
                         binding.financingDetailsLayout.visibility = View.GONE
-                        binding.customerNameLayout.visibility = View.GONE
                         transaction.cashPayment?.let { cash ->
                             binding.paymentInfoBadge.text = "via ${cash.paymentSource}"
                             binding.paymentInfoBadge.setTextColor(
@@ -1045,7 +1057,6 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                     AppConstants.TRANSACTION_TYPE_HOME_CREDIT -> {
                         binding.paymentInfoBadge.visibility = View.GONE
                         binding.financingDetailsLayout.visibility = View.VISIBLE
-                        binding.customerNameLayout.visibility = View.GONE
                         transaction.homeCreditPayment?.let { hc ->
                             // Downpayment
                             binding.downpaymentText.text = formatCurrency(hc.downpaymentAmount)
@@ -1071,7 +1082,6 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                     AppConstants.TRANSACTION_TYPE_SKYRO -> {
                         binding.paymentInfoBadge.visibility = View.GONE
                         binding.financingDetailsLayout.visibility = View.VISIBLE
-                        binding.customerNameLayout.visibility = View.GONE
                         transaction.skyroPayment?.let { skyro ->
                             // Downpayment
                             binding.downpaymentText.text = formatCurrency(skyro.downpaymentAmount)
@@ -1117,20 +1127,11 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                             binding.balanceText.setTextColor(
                                 ContextCompat.getColor(itemView.context, balanceColor)
                             )
-
-                            // Customer name (only for In-House)
-                            if (ih.customerName.isNotEmpty()) {
-                                binding.customerNameLayout.visibility = View.VISIBLE
-                                binding.customerNameText.text = ih.customerName
-                            } else {
-                                binding.customerNameLayout.visibility = View.GONE
-                            }
                         }
                     }
                     else -> {
                         binding.financingDetailsLayout.visibility = View.GONE
                         binding.paymentInfoBadge.visibility = View.GONE
-                        binding.customerNameLayout.visibility = View.GONE
                     }
                 }
 

@@ -773,14 +773,15 @@ class DeviceTransactionActivity : AppCompatActivity() {
         val downPayment = binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
         val interestPercent = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
 
-        // Calculate base amount (Price - Discount - Down Payment)
-        val baseAmount = price - discount - downPayment
+        // Calculate final price (Price - Discount)
+        val finalPrice = price - discount
 
-        // Calculate interest amount from percent
-        val interestAmount = baseAmount * (interestPercent / 100)
+        // Calculate interest amount on FINAL PRICE (not on amount after downpayment)
+        // This matches the InHousePaymentActivity calculation
+        val interestAmount = finalPrice * (interestPercent / 100)
 
-        // Calculate balance = base amount + interest amount
-        val balance = baseAmount + interestAmount
+        // Calculate balance = (Final Price - Down Payment) + Interest Amount
+        val balance = (finalPrice - downPayment) + interestAmount
 
         binding.ihBalanceInput.setText(formatCurrency(balance))
     }

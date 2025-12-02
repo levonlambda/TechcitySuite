@@ -20,7 +20,7 @@
         android:padding="12dp">
 
         <!-- ================================================================== -->
-        <!-- Row 1: Order Number, Accessory Name and Transaction Type Badge -->
+        <!-- Row 1: Order Number, Accessory Name + Customer Name, Transaction Type Badge -->
         <!-- ================================================================== -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -28,7 +28,7 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- Order Number + Accessory Name -->
+            <!-- Order Number + Accessory Name + Customer Name -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -48,15 +48,28 @@
 
                 <TextView
                     android:id="@+id/accessoryNameText"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Phone Case - iPhone 15 Pro Max"
                     android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
-                    android:maxLines="2"
+                    android:maxLines="1"
                     android:ellipsize="end" />
+
+                <!-- Customer Name (only visible for In-House) -->
+                <TextView
+                    android:id="@+id/customerNameText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text=" - Customer Name"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#9C27B0"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:visibility="gone" />
 
             </LinearLayout>
 
@@ -232,36 +245,6 @@
                     android:textColor="@color/red" />
 
             </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- ================================================================== -->
-        <!-- Row 3.5: Customer Name (Only for In-House transactions) -->
-        <!-- ================================================================== -->
-        <LinearLayout
-            android:id="@+id/customerNameLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="6dp"
-            android:gravity="center_vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Customer: "
-                android:textSize="11sp"
-                android:textColor="@color/gray" />
-
-            <TextView
-                android:id="@+id/customerNameText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Juan Dela Cruz"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="@color/purple" />
 
         </LinearLayout>
 
