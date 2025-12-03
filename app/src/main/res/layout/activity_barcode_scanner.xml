@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    tools:context=".BarcodeScannerActivity">
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: CAMERA PREVIEW -->
+    <!-- ========================================================================== -->
+
+    <!-- Camera Preview -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: CAMERA PREVIEW -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 2: OVERLAY AND VIEWFINDER -->
+    <!-- ========================================================================== -->
+
+    <!-- Semi-transparent overlay at top -->
+    <View
+        android:id="@+id/topOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/viewfinderFrame" />
+
+    <!-- Viewfinder frame (transparent center) -->
+    <View
+        android:id="@+id/viewfinderFrame"
+        android:layout_width="320dp"
+        android:layout_height="220dp"
+        android:background="@drawable/viewfinder_frame"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.35" />
+
+    <!-- Semi-transparent overlay at bottom -->
+    <View
+        android:id="@+id/bottomOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        app:layout_constraintTop_toBottomOf="@id/viewfinderFrame"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Left overlay -->
+    <View
+        android:id="@+id/leftOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        app:layout_constraintTop_toBottomOf="@id/topOverlay"
+        app:layout_constraintBottom_toTopOf="@id/bottomOverlay"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/viewfinderFrame" />
+
+    <!-- Right overlay -->
+    <View
+        android:id="@+id/rightOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        app:layout_constraintTop_toBottomOf="@id/topOverlay"
+        app:layout_constraintBottom_toTopOf="@id/bottomOverlay"
+        app:layout_constraintStart_toEndOf="@id/viewfinderFrame"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 2: OVERLAY AND VIEWFINDER -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 3: TOP BAR -->
+    <!-- ========================================================================== -->
+
+    <!-- Top bar with back button and title -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="#80000000"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Back Button -->
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_arrow_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            app:tint="@color/white" />
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Scan Barcode"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:layout_marginEnd="40dp" />
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 3: TOP BAR -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 4: INSTRUCTION TEXT AND STATUS -->
+    <!-- ========================================================================== -->
+
+    <!-- Status card below viewfinder - expanded for barcode list -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/statusCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginHorizontal="24dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#DD000000"
+        app:layout_constraintTop_toBottomOf="@id/viewfinderFrame"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/instructionText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Point camera at barcode\nScanning automatically..."
+            android:textSize="13sp"
+            android:textColor="@color/white"
+            android:lineSpacingExtra="2dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:fontFamily="monospace" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 4: INSTRUCTION TEXT AND STATUS -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 5: BOTTOM CONTROLS -->
+    <!-- ========================================================================== -->
+
+    <!-- Bottom control bar - added marginBottom for navigation bar clearance -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingTop="24dp"
+        android:paddingBottom="48dp"
+        android:paddingHorizontal="24dp"
+        android:background="#80000000"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Flash toggle button -->
+        <ImageButton
+            android:id="@+id/flashButton"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@android:drawable/btn_star_big_off"
+            android:background="@drawable/circle_button_background"
+            android:contentDescription="Toggle Flash"
+            android:scaleType="centerInside"
+            android:padding="12dp" />
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="48dp"
+            android:layout_height="0dp" />
+
+        <!-- Select/Done button (shows detected barcodes) -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/captureButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_check"
+            android:contentDescription="Select Barcode"
+            app:backgroundTint="#3F51B5"
+            app:tint="@color/white"
+            app:fabSize="normal"
+            android:alpha="0.6" />
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="48dp"
+            android:layout_height="0dp" />
+
+        <!-- Placeholder for symmetry -->
+        <View
+            android:layout_width="56dp"
+            android:layout_height="56dp" />
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 5: BOTTOM CONTROLS -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 6: PROGRESS INDICATOR -->
+    <!-- ========================================================================== -->
+
+    <!-- Progress bar is no longer needed for continuous scanning -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:visibility="gone"
+        android:indeterminateTint="@color/white"
+        app:layout_constraintTop_toTopOf="@id/viewfinderFrame"
+        app:layout_constraintBottom_toBottomOf="@id/viewfinderFrame"
+        app:layout_constraintStart_toStartOf="@id/viewfinderFrame"
+        app:layout_constraintEnd_toEndOf="@id/viewfinderFrame" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 6: PROGRESS INDICATOR -->
+    <!-- ========================================================================== -->
+
+</androidx.constraintlayout.widget.ConstraintLayout>

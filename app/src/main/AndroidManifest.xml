@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- After INTERNET permission -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -101,6 +104,14 @@
             android:name="com.techcity.techcitysuite.InHousePaymentActivity"
             android:exported="false"
             android:label="In-House Payment" />
+
+        <!-- Inside <application> tag -->
+        <activity
+            android:name="com.techcity.techcitysuite.BarcodeScannerActivity"
+            android:exported="false"
+            android:label="Scan Barcode"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TechcitySuite" />
 
     </application>
 

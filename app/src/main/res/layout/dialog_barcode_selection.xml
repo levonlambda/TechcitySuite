@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: DIALOG HEADER -->
+    <!-- ========================================================================== -->
+
+    <!-- Dialog Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Barcode"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#3F51B5"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Subtitle showing count -->
+    <TextView
+        android:id="@+id/barcodeCountText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Multiple barcodes detected"
+        android:textSize="14sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0"
+        android:layout_marginBottom="8dp" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: DIALOG HEADER -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 2: BARCODE LIST -->
+    <!-- ========================================================================== -->
+
+    <!-- RecyclerView for barcode list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/barcodeRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="400dp"
+        android:scrollbars="vertical" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 2: BARCODE LIST -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 3: DIALOG FOOTER -->
+    <!-- ========================================================================== -->
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Hint text -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tap a barcode to select it"
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_gravity="center" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 3: DIALOG FOOTER -->
+    <!-- ========================================================================== -->
+
+</LinearLayout>

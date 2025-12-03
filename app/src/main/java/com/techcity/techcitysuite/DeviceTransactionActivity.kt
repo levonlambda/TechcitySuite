@@ -1,6 +1,8 @@
 package com.techcity.techcitysuite
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import java.text.SimpleDateFormat
@@ -12,6 +14,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.firebase.firestore.FirebaseFirestore
@@ -72,6 +75,24 @@ class DeviceTransactionActivity : AppCompatActivity() {
         "Others"
     )
 
+    // Barcode scanner result launcher
+    private val barcodeScannerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val barcodeValue = result.data?.getStringExtra(BarcodeScannerActivity.RESULT_BARCODE_VALUE)
+            val barcodeType = result.data?.getStringExtra(BarcodeScannerActivity.RESULT_BARCODE_TYPE)
+
+            if (!barcodeValue.isNullOrEmpty()) {
+                // Set the scanned barcode value to the IMEI input field
+                binding.imeiInput.setText(barcodeValue)
+
+                // Automatically trigger search
+                searchByIMEI()
+            }
+        }
+    }
+
     // ============================================================================
     // END OF PART 1: PROPERTIES AND INITIALIZATION
     // ============================================================================
@@ -98,6 +119,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
         setupInHouseListeners()
         setupButtonListeners()
         setupSearchButton()
+        setupBarcodeButton()
 
         // Disable save button and transaction type until valid IMEI is selected
         binding.saveButton.isEnabled = false
@@ -865,6 +887,20 @@ class DeviceTransactionActivity : AppCompatActivity() {
     // END OF PART 7: SEARCH BUTTON SETUP
     // ============================================================================
 
+    // ============================================================================
+    // START OF PART 7B: BARCODE BUTTON SETUP
+    // ============================================================================
+
+    private fun setupBarcodeButton() {
+        binding.barcodeButton.setOnClickListener {
+            val intent = Intent(this, BarcodeScannerActivity::class.java)
+            barcodeScannerLauncher.launch(intent)
+        }
+    }
+
+    // ============================================================================
+    // END OF PART 7B: BARCODE BUTTON SETUP
+    // ============================================================================
 
     // ============================================================================
     // START OF PART 8: IMEI SEARCH METHODS
