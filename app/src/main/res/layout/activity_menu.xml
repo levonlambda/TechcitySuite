@@ -383,6 +383,73 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ========================================================================== -->
+            <!-- MENU SECTION TO ADD BETWEEN LEDGER CARD AND ACCOUNT RECEIVABLE CARD -->
+            <!-- Copy this entire section and paste it after the closing tag of ledgerCard -->
+            <!-- and before the opening tag of accountReceivableCard -->
+            <!-- ========================================================================== -->
+
+            <!-- End of Day Report Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/endOfDayCard"
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/endOfDayButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:id="@+id/endOfDayIcon"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:src="@android:drawable/ic_menu_agenda"
+                        android:contentDescription="End of Day Icon"
+                        app:tint="#009688"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                    <TextView
+                        android:id="@+id/endOfDayTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="End of Day"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        app:layout_constraintTop_toTopOf="@id/endOfDayIcon"
+                        app:layout_constraintStart_toEndOf="@id/endOfDayIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="Daily transaction summary reports"
+                        android:textSize="12sp"
+                        android:textColor="@color/gray"
+                        app:layout_constraintTop_toBottomOf="@id/endOfDayTitle"
+                        app:layout_constraintStart_toEndOf="@id/endOfDayIcon"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="2dp" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ========================================================================== -->
+            <!-- END OF EOD CARD SECTION -->
+            <!-- ========================================================================== -->
+
             <!-- Account Receivable Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/accountReceivableCard"

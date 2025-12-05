@@ -113,6 +113,16 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.TechcitySuite" />
 
+        <activity
+            android:name="com.techcity.techcitysuite.EndOfDayListActivity"
+            android:exported="false"
+            android:label="End of Day Reports" />
+
+        <activity
+            android:name="com.techcity.techcitysuite.EndOfDayReportActivity"
+            android:exported="false"
+            android:label="End of Day Report" />
+
     </application>
 
 </manifest>
