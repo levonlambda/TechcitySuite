@@ -411,9 +411,9 @@
                         android:id="@+id/endOfDayIcon"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:src="@android:drawable/ic_menu_agenda"
+                        android:src="@drawable/ic_assessment"
                         android:contentDescription="End of Day Icon"
-                        app:tint="#009688"
+                        app:tint="#9C27B0"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent" />

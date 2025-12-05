@@ -154,8 +154,8 @@ class TransactionDetailsActivity : AppCompatActivity() {
                     transactionFee = 15.0
                     binding.feeInput.setText(formatCurrency(transactionFee))
                 } else if (transactionType == "Home Credit Payment") {
-                    // Fixed fee of 5 pesos for Home Credit
-                    transactionFee = 5.0
+                    // Home Credit fee depends on payment method (default GCash = 0)
+                    transactionFee = 0.0
                     binding.feeInput.setText(formatCurrency(transactionFee))
                 }
             }
@@ -272,6 +272,11 @@ class TransactionDetailsActivity : AppCompatActivity() {
         // Add item click listener for color changes
         binding.sourceOfFundsDropdown.setOnItemClickListener { _, _, position, _ ->
             updateSourceOfFundsColor(sources[position])
+
+            // Recalculate fee when payment method changes for Home Credit Payment
+            if (transactionType == "Home Credit Payment") {
+                calculateFeeAndTotal()
+            }
         }
 
         // Set initial color
@@ -412,9 +417,14 @@ class TransactionDetailsActivity : AppCompatActivity() {
             return 15.0
         }
 
-        // Fixed fee for Home Credit Payment
+        // Fee for Home Credit Payment based on payment method
         if (transactionType == "Home Credit Payment") {
-            return 5.0
+            val paymentMethod = binding.sourceOfFundsDropdown.text.toString()
+            return when (paymentMethod) {
+                "PayMaya" -> 5.0
+                "GCash", "Others" -> 0.0
+                else -> 0.0
+            }
         }
 
         // If Free option is selected, no fee
@@ -482,7 +492,13 @@ class TransactionDetailsActivity : AppCompatActivity() {
             if (transactionType == "Skyro Payment") {
                 transactionFee = 15.0
             } else if (transactionType == "Home Credit Payment") {
-                transactionFee = 5.0
+                // Home Credit fee depends on payment method
+                val paymentMethod = binding.sourceOfFundsDropdown.text.toString()
+                transactionFee = when (paymentMethod) {
+                    "PayMaya" -> 5.0
+                    "GCash", "Others" -> 0.0
+                    else -> 0.0
+                }
             } else {
                 transactionFee = 0.0
             }
@@ -516,22 +532,22 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
     private fun updateDisplay() {
 
-        // ============================================================================
-        // END OF PART 4: FEE CALCULATION METHODS
-        // ============================================================================
+    // ============================================================================
+    // END OF PART 4: FEE CALCULATION METHODS
+    // ============================================================================
 
 
 
-        // ============================================================================
-        // START OF PART 5: UI UPDATE METHODS
-        // ============================================================================
+    // ============================================================================
+    // START OF PART 5: UI UPDATE METHODS
+    // ============================================================================
 
-        // Update fee display
-        binding.feeInput.setText(formatCurrency(transactionFee))
+    // Update fee display
+    binding.feeInput.setText(formatCurrency(transactionFee))
 
-        // Update customer pays field
-        binding.customerPaysInput.setText(formatCurrency(customerPays))
-    }
+    // Update customer pays field
+    binding.customerPaysInput.setText(formatCurrency(customerPays))
+}
 
 
     // ============================================================================

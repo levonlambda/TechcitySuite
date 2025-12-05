@@ -114,11 +114,6 @@ class EndOfDayListActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        // Back button
-        binding.backButton.setOnClickListener {
-            finish()
-        }
-
         // Previous month button
         binding.prevMonthButton.setOnClickListener {
             navigateMonth(-1)

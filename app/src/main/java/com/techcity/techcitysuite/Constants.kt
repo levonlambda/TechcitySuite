@@ -26,6 +26,8 @@ object AppConstants {
 
     // Feature Settings
     const val KEY_ACCOUNT_RECEIVABLE_ENABLED = "account_receivable_enabled"
+    const val KEY_END_OF_DAY_ENABLED = "end_of_day_enabled"
+    const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
 
     // ============================================================================
     // FIREBASE COLLECTION NAMES

@@ -168,7 +168,7 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                     val item = adapter?.getItems()?.get(position)
 
                     item?.let {
-                        showDeleteConfirmationDialog(it, position)
+                        attemptDelete(it, position)
                     }
                 }
             }
@@ -264,6 +264,116 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
 
         itemTouchHelper = ItemTouchHelper(callback)
         itemTouchHelper.attachToRecyclerView(binding.transactionRecyclerView)
+    }
+
+    /**
+     * Attempt to delete - checks if password is required for past dates
+     */
+    private fun attemptDelete(item: AccessoryTransactionDisplay, position: Int) {
+        val today = getCurrentDatePhilippines()
+
+        // Check if the selected date is NOT today
+        if (selectedDate != today) {
+            // Past date - show password dialog first
+            showPasswordDialogForDelete(item, position)
+        } else {
+            // Same day - show delete confirmation directly
+            showDeleteConfirmationDialog(item, position)
+        }
+    }
+
+    /**
+     * Show password dialog before allowing delete of past date entries
+     */
+    private fun showPasswordDialogForDelete(item: AccessoryTransactionDisplay, position: Int) {
+        // Inflate the dialog layout
+        val dialogView = layoutInflater.inflate(R.layout.dialog_password, null)
+
+        // Get references to dialog views
+        val passwordInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.passwordInput)
+        val errorMessage = dialogView.findViewById<android.widget.TextView>(R.id.errorMessage)
+        val submitButton = dialogView.findViewById<android.widget.Button>(R.id.submitButton)
+        val cancelButton = dialogView.findViewById<android.widget.Button>(R.id.cancelButton)
+        val progressBar = dialogView.findViewById<android.widget.ProgressBar>(R.id.progressBar)
+        val buttonsLayout = dialogView.findViewById<android.widget.LinearLayout>(R.id.buttonsLayout)
+
+        // Create the dialog
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        // Cancel button
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+            // Restore the swiped item
+            adapter?.notifyItemChanged(position)
+        }
+
+        // Submit button
+        submitButton.setOnClickListener {
+            val password = passwordInput.text.toString()
+
+            // Validate password is not empty
+            if (password.isEmpty()) {
+                errorMessage.text = "Please enter a password"
+                errorMessage.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+
+            // Hide error and show progress
+            errorMessage.visibility = View.GONE
+            progressBar.visibility = View.VISIBLE
+            buttonsLayout.visibility = View.GONE
+            passwordInput.isEnabled = false
+
+            // Verify password
+            scope.launch {
+                try {
+                    val isValid = AppSettingsManager.verifyPassword(password)
+
+                    if (isValid) {
+                        dialog.dismiss()
+                        // Password correct - show delete confirmation
+                        showDeleteConfirmationDialog(item, position)
+                    } else {
+                        // Show error
+                        progressBar.visibility = View.GONE
+                        buttonsLayout.visibility = View.VISIBLE
+                        passwordInput.isEnabled = true
+                        errorMessage.text = "Incorrect password"
+                        errorMessage.visibility = View.VISIBLE
+                        passwordInput.setText("")
+                        passwordInput.requestFocus()
+                    }
+                } catch (e: Exception) {
+                    progressBar.visibility = View.GONE
+                    buttonsLayout.visibility = View.VISIBLE
+                    passwordInput.isEnabled = true
+                    errorMessage.text = "Error verifying password"
+                    errorMessage.visibility = View.VISIBLE
+                    Toast.makeText(this@AccessoryTransactionListActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Handle Enter key on password input
+        passwordInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                submitButton.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
+        // Handle dialog cancel (back button)
+        dialog.setOnCancelListener {
+            adapter?.notifyItemChanged(position)
+        }
+
+        // Show the dialog
+        dialog.show()
     }
 
     /**

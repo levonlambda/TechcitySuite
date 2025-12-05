@@ -59,12 +59,31 @@ class MenuActivity : AppCompatActivity() {
 
     private fun updateFeatureVisibility() {
         val prefs = getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE)
-        val accountReceivableEnabled = prefs.getBoolean(AppConstants.KEY_ACCOUNT_RECEIVABLE_ENABLED, true)
 
+        // Account Receivable visibility
+        val accountReceivableEnabled = prefs.getBoolean(AppConstants.KEY_ACCOUNT_RECEIVABLE_ENABLED, true)
         if (accountReceivableEnabled) {
             binding.accountReceivableCard.visibility = View.VISIBLE
         } else {
             binding.accountReceivableCard.visibility = View.GONE
+        }
+
+        // End of Day visibility
+        val endOfDayEnabled = prefs.getBoolean(AppConstants.KEY_END_OF_DAY_ENABLED, true)
+        if (endOfDayEnabled) {
+            binding.endOfDayCard.visibility = View.VISIBLE
+        } else {
+            binding.endOfDayCard.visibility = View.GONE
+        }
+
+        // Phone Inventory visibility
+        val phoneInventoryEnabled = prefs.getBoolean(AppConstants.KEY_PHONE_INVENTORY_ENABLED, false)
+        if (phoneInventoryEnabled) {
+            binding.inventoryCard.visibility = View.VISIBLE
+            binding.inventoryButton.isEnabled = true
+            binding.inventoryButton.alpha = 1.0f
+        } else {
+            binding.inventoryCard.visibility = View.GONE
         }
     }
 

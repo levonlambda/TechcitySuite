@@ -26,6 +26,8 @@ class ProgramSettingsActivity : AppCompatActivity() {
         private const val KEY_CREDIT_CARD_ACCOUNT = "credit_card_account"
         private const val KEY_OTHER_ACCOUNT = "other_account"
         private const val KEY_ACCOUNT_RECEIVABLE_ENABLED = "account_receivable_enabled"
+        private const val KEY_END_OF_DAY_ENABLED = "end_of_day_enabled"
+        private const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
     }
 
     // ============================================================================
@@ -75,6 +77,8 @@ class ProgramSettingsActivity : AppCompatActivity() {
 
         // Load feature settings (default to true/enabled)
         binding.accountReceivableSwitch.isChecked = prefs.getBoolean(KEY_ACCOUNT_RECEIVABLE_ENABLED, true)
+        binding.endOfDaySwitch.isChecked = prefs.getBoolean(KEY_END_OF_DAY_ENABLED, true)
+        binding.phoneInventorySwitch.isChecked = prefs.getBoolean(KEY_PHONE_INVENTORY_ENABLED, false)
     }
 
     private fun saveSettings() {
@@ -93,6 +97,8 @@ class ProgramSettingsActivity : AppCompatActivity() {
 
         // Save feature settings
         editor.putBoolean(KEY_ACCOUNT_RECEIVABLE_ENABLED, binding.accountReceivableSwitch.isChecked)
+        editor.putBoolean(KEY_END_OF_DAY_ENABLED, binding.endOfDaySwitch.isChecked)
+        editor.putBoolean(KEY_PHONE_INVENTORY_ENABLED, binding.phoneInventorySwitch.isChecked)
 
         editor.apply()
 
