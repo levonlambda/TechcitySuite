@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -37,6 +38,9 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAccessoryTransactionListBinding
     private lateinit var db: FirebaseFirestore
     private val scope = CoroutineScope(Dispatchers.Main + Job())
+
+    // Firestore real-time listener
+    private var transactionListener: ListenerRegistration? = null
 
     // Current filter
     private var currentFilter: TransactionTypeFilter = TransactionTypeFilter.ALL
@@ -110,19 +114,24 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
         setupAddButton()
         setupMenuButton()
 
-        // Load transactions
+        // Load transactions with real-time listener
         loadTransactions()
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh list when returning from creating a new transaction
-        loadTransactions()
+        // Real-time listener handles updates automatically
+        // Only reload if listener was removed
+        if (transactionListener == null) {
+            loadTransactions()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+        // Remove the real-time listener
+        transactionListener?.remove()
     }
 
     // ============================================================================
@@ -541,42 +550,47 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
         // Clear toggled entries when loading new data
         toggledEntries.clear()
 
-        scope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    fetchTransactionsFromFirebase()
-                }
+        // Remove any existing listener
+        transactionListener?.remove()
 
-                withContext(Dispatchers.Main) {
-                    binding.progressBar.visibility = View.GONE
-                    transactions = result.toMutableList()
-                    applyFilter()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    binding.progressBar.visibility = View.GONE
-                    binding.emptyMessage.text = "Error loading transactions: ${e.message}"
-                    binding.emptyMessage.visibility = View.VISIBLE
-                    showMessage("Error: ${e.message}", true)
-                }
-            }
-        }
-    }
-
-    private suspend fun fetchTransactionsFromFirebase(): List<AccessoryTransactionDisplay> {
         // Convert selected date from M/d/yyyy to yyyy-MM-dd for query
         val queryDate = convertDisplayDateToQueryDate(selectedDate)
 
-        // Query by date and status, order by timestamp ASCENDING (first entry at top)
-        val querySnapshot = db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
+        // Set up real-time listener
+        transactionListener = db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
             .whereEqualTo("date", queryDate)
             .whereEqualTo("status", AppConstants.STATUS_COMPLETED)
             .orderBy("timestamp", Query.Direction.ASCENDING)
-            .get()
-            .await()
+            .addSnapshotListener { snapshots, error ->
+                binding.progressBar.visibility = View.GONE
 
-        val results = querySnapshot.documents.mapNotNull { document ->
+                if (error != null) {
+                    binding.emptyMessage.text = "Error loading transactions: ${error.message}"
+                    binding.emptyMessage.visibility = View.VISIBLE
+                    binding.transactionRecyclerView.visibility = View.GONE
+                    showMessage("Error: ${error.message}", true)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots == null || snapshots.isEmpty) {
+                    transactions.clear()
+                    applyFilter()
+                    return@addSnapshotListener
+                }
+
+                // Use existing parsing logic
+                val results = parseSnapshotDocuments(snapshots.documents)
+                transactions = results.toMutableList()
+                applyFilter()
+            }
+    }
+
+    /**
+     * Parse Firestore documents into AccessoryTransactionDisplay list
+     * (Extracted from fetchTransactionsFromFirebase for reuse)
+     */
+    private fun parseSnapshotDocuments(documents: List<com.google.firebase.firestore.DocumentSnapshot>): List<AccessoryTransactionDisplay> {
+        val results = documents.mapNotNull { document ->
             try {
                 val data = document.data ?: return@mapNotNull null
 
@@ -624,7 +638,7 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
         return results.sortedWith(
             compareBy(
                 { if (it.sortOrder == 0) Int.MAX_VALUE else it.sortOrder },
-                { it.serverTimestamp?.seconds ?: 0 }
+                { it.serverTimestamp?.seconds ?: 0L }
             )
         )
     }

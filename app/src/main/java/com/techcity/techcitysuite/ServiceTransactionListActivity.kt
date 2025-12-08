@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -37,6 +38,9 @@ class ServiceTransactionListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityServiceTransactionListBinding
     private lateinit var db: FirebaseFirestore
     private val scope = CoroutineScope(Dispatchers.Main + Job())
+
+    // Firestore real-time listener
+    private var transactionListener: ListenerRegistration? = null
 
     // Firebase collection name
     private val COLLECTION_SERVICE_TRANSACTIONS = "service_transactions"
@@ -104,19 +108,24 @@ class ServiceTransactionListActivity : AppCompatActivity() {
         selectedDate = getCurrentDatePhilippines()
         updateDateLabel()
 
-        // Load transactions for today
+        // Load transactions with real-time listener
         loadTransactions()
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when returning to this activity
-        loadTransactions()
+        // Real-time listener handles updates automatically
+        // Only reload if listener was removed
+        if (transactionListener == null) {
+            loadTransactions()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+        // Remove the real-time listener
+        transactionListener?.remove()
     }
 
     // ============================================================================
@@ -522,23 +531,31 @@ class ServiceTransactionListActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
         binding.emptyMessage.visibility = View.GONE
 
+        // Remove any existing listener
+        transactionListener?.remove()
+
         // Convert selected date to query format (yyyy-MM-dd)
         val queryDate = convertDisplayDateToQueryFormat(selectedDate)
 
-        scope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    db.collection(COLLECTION_SERVICE_TRANSACTIONS)
-                        .whereEqualTo("date", queryDate)
-                        .whereEqualTo("status", "completed")
-                        .orderBy("timestamp", Query.Direction.ASCENDING)
-                        .get()
-                        .await()
+        // Set up real-time listener
+        transactionListener = db.collection(COLLECTION_SERVICE_TRANSACTIONS)
+            .whereEqualTo("date", queryDate)
+            .whereEqualTo("status", "completed")
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+            .addSnapshotListener { result, error ->
+
+                if (error != null) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.emptyMessage.text = "Error loading transactions"
+                    binding.emptyMessage.visibility = View.VISIBLE
+                    binding.transactionRecyclerView.visibility = View.GONE
+                    showMessage("Error loading transactions: ${error.message}", true)
+                    return@addSnapshotListener
                 }
 
                 val loadedTransactions = mutableListOf<ServiceTransactionDisplay>()
 
-                for (document in result.documents) {
+                for (document in result?.documents ?: emptyList()) {
                     try {
                         val data = document.data ?: continue
 
@@ -600,33 +617,21 @@ class ServiceTransactionListActivity : AppCompatActivity() {
                     )
                 )
 
-                withContext(Dispatchers.Main) {
-                    binding.progressBar.visibility = View.GONE
-                    transactions = loadedTransactions
+                binding.progressBar.visibility = View.GONE
+                transactions = loadedTransactions
 
-                    if (transactions.isEmpty()) {
-                        binding.emptyMessage.text = "No transactions for this date"
-                        binding.emptyMessage.visibility = View.VISIBLE
-                        binding.transactionRecyclerView.visibility = View.GONE
-                        adapter = null
-                        updateSummary(emptyList())
-                    } else {
-                        binding.emptyMessage.visibility = View.GONE
-                        binding.transactionRecyclerView.visibility = View.VISIBLE
-                        applyFilter()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    binding.progressBar.visibility = View.GONE
-                    binding.emptyMessage.text = "Error loading transactions"
+                if (transactions.isEmpty()) {
+                    binding.emptyMessage.text = "No transactions for this date"
                     binding.emptyMessage.visibility = View.VISIBLE
                     binding.transactionRecyclerView.visibility = View.GONE
-                    showMessage("Error loading transactions: ${e.message}", true)
+                    adapter = null
+                    updateSummary(emptyList())
+                } else {
+                    binding.emptyMessage.visibility = View.GONE
+                    binding.transactionRecyclerView.visibility = View.VISIBLE
+                    applyFilter()
                 }
             }
-        }
     }
 
     // ============================================================================

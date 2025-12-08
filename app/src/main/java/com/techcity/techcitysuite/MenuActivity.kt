@@ -1,10 +1,15 @@
 package com.techcity.techcitysuite
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.techcity.techcitysuite.databinding.ActivityMenuBinding
 import kotlinx.coroutines.*
 
@@ -16,6 +21,10 @@ class MenuActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMenuBinding
     private val scope = CoroutineScope(Dispatchers.Main + Job())
+
+    // Firestore listener for device transactions
+    private var deviceTransactionListener: ListenerRegistration? = null
+    private var listenerStartTime: Long = 0
 
     // ============================================================================
     // END OF PART 1: PROPERTIES AND INITIALIZATION
@@ -44,6 +53,15 @@ class MenuActivity : AppCompatActivity() {
 
         // Set up kebab menu
         setupKebabMenu()
+
+        // Create notification channels
+        NotificationHelper.createNotificationChannels(this)
+
+        // Request notification permission (Android 13+)
+        requestNotificationPermission()
+
+        // Start listening for device transactions
+        setupDeviceTransactionListener()
     }
 
     override fun onResume() {
@@ -55,6 +73,8 @@ class MenuActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
+        // Remove the device transaction listener
+        deviceTransactionListener?.remove()
     }
 
     private fun updateFeatureVisibility() {
@@ -273,5 +293,68 @@ class MenuActivity : AppCompatActivity() {
 
     // ============================================================================
     // END OF PART 5: KEBAB MENU AND PASSWORD DIALOG
+    // ============================================================================
+
+    // ============================================================================
+    // START OF PART 6: NOTIFICATION METHODS
+    // ============================================================================
+
+    /**
+     * Request notification permission for Android 13+
+     */
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!NotificationHelper.hasNotificationPermission(this)) {
+                requestPermissions(
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    1001
+                )
+            }
+        }
+    }
+
+    /**
+     * Setup Firestore listener for device transactions
+     */
+    private fun setupDeviceTransactionListener() {
+        val db = Firebase.firestore
+
+        // Record when listener starts - only notify for documents created after this
+        listenerStartTime = System.currentTimeMillis()
+
+        deviceTransactionListener = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    return@addSnapshotListener
+                }
+
+                snapshots?.documentChanges?.forEach { change ->
+                    if (change.type == DocumentChange.Type.ADDED) {
+                        val data = change.document.data
+
+                        // Get the document creation time
+                        val createdAt = data["createdAt"] as? com.google.firebase.Timestamp
+                        val createdTimeMillis = createdAt?.toDate()?.time ?: 0
+
+                        // Only notify for documents created AFTER the listener started
+                        if (createdTimeMillis > listenerStartTime) {
+                            val model = data["model"] as? String ?: "Unknown"
+                            val price = (data["finalPrice"] as? Number)?.toDouble() ?: 0.0
+                            val transactionType = data["transactionType"] as? String ?: "Unknown"
+
+                            NotificationHelper.showDeviceTransactionNotification(
+                                this,
+                                model,
+                                price,
+                                transactionType
+                            )
+                        }
+                    }
+                }
+            }
+    }
+
+    // ============================================================================
+    // END OF PART 6: NOTIFICATION METHODS
     // ============================================================================
 }
