@@ -175,7 +175,6 @@ class EndOfDayReportActivity : AppCompatActivity() {
     // END OF PART 2: DATA CLASSES
     // ============================================================================
 
-
     // ============================================================================
     // START OF PART 3: LIFECYCLE METHODS
     // ============================================================================
@@ -191,6 +190,8 @@ class EndOfDayReportActivity : AppCompatActivity() {
         setupUI()
 
         val intentDate = intent.getStringExtra("selected_date")
+        val documentId = intent.getStringExtra("document_id")
+
         if (intentDate != null) {
             selectedDate = intentDate
         } else {
@@ -198,6 +199,15 @@ class EndOfDayReportActivity : AppCompatActivity() {
         }
         queryDate = convertDisplayDateToQueryDate(selectedDate)
         updateDateLabel()
+
+        // Check if a saved report exists for this date and load it
+        if (documentId != null) {
+            // We have a document ID from the list - load it directly
+            loadExistingReportById(documentId)
+        } else {
+            // New report or from date picker - check if one exists
+            checkForExistingReport()
+        }
     }
 
     override fun onDestroy() {
@@ -205,10 +215,347 @@ class EndOfDayReportActivity : AppCompatActivity() {
         scope.cancel()
     }
 
+    /**
+     * Check if a saved report already exists for the selected date.
+     * If so, load and display it automatically.
+     */
+    private fun checkForExistingReport() {
+        binding.progressBar.visibility = View.VISIBLE
+        binding.statusMessage.text = "Checking for existing report..."
+
+        scope.launch {
+            try {
+                val existingReport = withContext(Dispatchers.IO) {
+                    db.collection(COLLECTION_DAILY_SUMMARIES)
+                        .document(queryDate)
+                        .get()
+                        .await()
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+
+                    if (existingReport.exists()) {
+                        // Load the existing report data
+                        loadExistingReport(existingReport.data)
+                    } else {
+                        // No existing report - show default message
+                        binding.statusMessage.text = "Select a date and tap Generate"
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.statusMessage.text = "Select a date and tap Generate"
+                }
+            }
+        }
+    }
+
+    /**
+     * Load an existing report by document ID (when opened from list)
+     */
+    private fun loadExistingReportById(documentId: String) {
+        binding.progressBar.visibility = View.VISIBLE
+        binding.statusMessage.text = "Loading report..."
+
+        scope.launch {
+            try {
+                val existingReport = withContext(Dispatchers.IO) {
+                    db.collection(COLLECTION_DAILY_SUMMARIES)
+                        .document(documentId)
+                        .get()
+                        .await()
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+
+                    if (existingReport.exists()) {
+                        loadExistingReport(existingReport.data)
+                    } else {
+                        binding.statusMessage.text = "Report not found. Tap Generate to create a new one."
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.statusMessage.text = "Error loading report: ${e.message}"
+                }
+            }
+        }
+    }
+
+    /**
+     * Load and display an existing saved report from Firebase data
+     */
+    private fun loadExistingReport(data: Map<String, Any>?) {
+        if (data == null) {
+            binding.statusMessage.text = "Select a date and tap Generate"
+            return
+        }
+
+        try {
+            // Extract transaction counts
+            val counts = data["transactionCounts"] as? Map<*, *>
+            val deviceCount = (counts?.get("devices") as? Number)?.toInt() ?: 0
+            val accessoryCount = (counts?.get("accessories") as? Number)?.toInt() ?: 0
+            val serviceCount = (counts?.get("services") as? Number)?.toInt() ?: 0
+
+            // Extract transaction IDs
+            val transactionIds = data["transactionIds"] as? Map<*, *>
+            val deviceIds = (transactionIds?.get("devices") as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            val accessoryIds = (transactionIds?.get("accessories") as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            val serviceIds = (transactionIds?.get("services") as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+
+            // Extract sales summary
+            val salesSummary = data["salesSummary"] as? Map<*, *>
+            val deviceSalesData = salesSummary?.get("devices") as? Map<*, *>
+            val accessorySalesData = salesSummary?.get("accessories") as? Map<*, *>
+            val serviceSalesData = salesSummary?.get("services") as? Map<*, *>
+
+            // Parse device sales
+            val deviceSales = parseSalesSummary(deviceSalesData)
+            val accessorySales = parseSalesSummary(accessorySalesData)
+            val serviceSummary = parseServiceSummaryFromSaved(serviceSalesData)
+
+            // Extract cash flow summary
+            val cashFlowSummary = data["cashFlowSummary"] as? Map<*, *>
+            val deviceCashFlow = parseCashFlowSummary(cashFlowSummary?.get("devices") as? Map<*, *>)
+            val accessoryCashFlow = parseCashFlowSummary(cashFlowSummary?.get("accessories") as? Map<*, *>)
+            val serviceCashFlow = parseServiceCashFlowSummary(cashFlowSummary?.get("services") as? Map<*, *>)
+
+            // Extract grand totals
+            val grandTotals = data["grandTotals"] as? Map<*, *>
+            val totalProductSales = (grandTotals?.get("productSales") as? Number)?.toDouble() ?: 0.0
+            val totalServiceFees = (grandTotals?.get("serviceFees") as? Number)?.toDouble() ?: 0.0
+            val totalMiscIncome = (grandTotals?.get("miscIncome") as? Number)?.toDouble() ?: 0.0
+            val totalRevenue = (grandTotals?.get("totalRevenue") as? Number)?.toDouble() ?: 0.0
+            val totalReceivablesCreated = (grandTotals?.get("receivablesCreated") as? Number)?.toDouble() ?: 0.0
+
+            // Extract revenue breakdown
+            val revenueBreakdown = data["revenueBreakdown"] as? Map<*, *>
+            val revenueCash = (revenueBreakdown?.get("cash") as? Number)?.toDouble() ?: 0.0
+            val revenueGcash = (revenueBreakdown?.get("gcash") as? Number)?.toDouble() ?: 0.0
+            val revenuePaymaya = (revenueBreakdown?.get("paymaya") as? Number)?.toDouble() ?: 0.0
+            val revenueBankTransfer = (revenueBreakdown?.get("bankTransfer") as? Number)?.toDouble() ?: 0.0
+            val revenueCreditCard = (revenueBreakdown?.get("creditCard") as? Number)?.toDouble() ?: 0.0
+            val revenueOthers = (revenueBreakdown?.get("others") as? Number)?.toDouble() ?: 0.0
+
+            // Build ledger summary
+            val ledgerSummary = buildLedgerSummaryFromCashFlow(deviceCashFlow, accessoryCashFlow, serviceCashFlow)
+
+            // Calculate brand zero subsidy
+            val totalBrandZeroSubsidy = deviceCashFlow.brandZeroSubsidy + accessoryCashFlow.brandZeroSubsidy
+
+            // Create the report data object
+            reportData = DailySummaryData(
+                date = queryDate,
+                displayDate = selectedDate,
+                generatedAt = data["generatedAt"] as? String ?: "",
+                generatedBy = data["generatedBy"] as? String ?: "",
+                deviceCount = deviceCount,
+                accessoryCount = accessoryCount,
+                serviceCount = serviceCount,
+                deviceTransactionIds = deviceIds,
+                accessoryTransactionIds = accessoryIds,
+                serviceTransactionIds = serviceIds,
+                deviceSales = deviceSales,
+                accessorySales = accessorySales,
+                serviceSummary = serviceSummary,
+                deviceCashFlow = deviceCashFlow,
+                accessoryCashFlow = accessoryCashFlow,
+                serviceCashFlow = serviceCashFlow,
+                totalProductSales = totalProductSales,
+                totalServiceFees = totalServiceFees,
+                totalMiscIncome = totalMiscIncome,
+                totalRevenue = totalRevenue,
+                totalReceivablesCreated = totalReceivablesCreated,
+                totalBrandZeroSubsidy = totalBrandZeroSubsidy,
+                ledgerSummary = ledgerSummary,
+                revenueCash = revenueCash,
+                revenueGcash = revenueGcash,
+                revenuePaymaya = revenuePaymaya,
+                revenueBankTransfer = revenueBankTransfer,
+                revenueCreditCard = revenueCreditCard,
+                revenueOthers = revenueOthers
+            )
+
+            isReportGenerated = true
+            displayReport(reportData!!)
+
+            // Show the report content and hide the loading message
+            binding.scrollView.visibility = View.VISIBLE
+            binding.statusMessage.visibility = View.GONE
+            binding.saveButton.isEnabled = true
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            binding.statusMessage.text = "Error loading saved report. Tap Generate to create a new one."
+        }
+    }
+
+    /**
+     * Parse SalesSummary from saved Firebase data
+     */
+    private fun parseSalesSummary(data: Map<*, *>?): SalesSummary {
+        if (data == null) return SalesSummary(
+            totalSales = 0.0,
+            cashSales = TransactionBreakdown(0, 0.0),
+            homeCreditSales = InstallmentBreakdown(0, 0.0, 0.0, 0.0),
+            skyroSales = InstallmentBreakdown(0, 0.0, 0.0, 0.0),
+            inHouseSales = InstallmentBreakdown(0, 0.0, 0.0, 0.0)
+        )
+
+        val cashData = data["cash"] as? Map<*, *>
+        val hcData = data["homeCredit"] as? Map<*, *>
+        val skyroData = data["skyro"] as? Map<*, *>
+        val inHouseData = data["inHouse"] as? Map<*, *>
+
+        return SalesSummary(
+            totalSales = (data["totalSales"] as? Number)?.toDouble() ?: 0.0,
+            cashSales = TransactionBreakdown(
+                count = (cashData?.get("count") as? Number)?.toInt() ?: 0,
+                amount = (cashData?.get("amount") as? Number)?.toDouble() ?: 0.0
+            ),
+            homeCreditSales = InstallmentBreakdown(
+                count = (hcData?.get("count") as? Number)?.toInt() ?: 0,
+                amount = (hcData?.get("amount") as? Number)?.toDouble() ?: 0.0,
+                downpayment = (hcData?.get("downpayment") as? Number)?.toDouble() ?: 0.0,
+                balance = (hcData?.get("balance") as? Number)?.toDouble() ?: 0.0
+            ),
+            skyroSales = InstallmentBreakdown(
+                count = (skyroData?.get("count") as? Number)?.toInt() ?: 0,
+                amount = (skyroData?.get("amount") as? Number)?.toDouble() ?: 0.0,
+                downpayment = (skyroData?.get("downpayment") as? Number)?.toDouble() ?: 0.0,
+                balance = (skyroData?.get("balance") as? Number)?.toDouble() ?: 0.0
+            ),
+            inHouseSales = InstallmentBreakdown(
+                count = (inHouseData?.get("count") as? Number)?.toInt() ?: 0,
+                amount = (inHouseData?.get("amount") as? Number)?.toDouble() ?: 0.0,
+                downpayment = (inHouseData?.get("downpayment") as? Number)?.toDouble() ?: 0.0,
+                balance = (inHouseData?.get("balance") as? Number)?.toDouble() ?: 0.0
+            )
+        )
+    }
+
+    /**
+     * Parse ServiceSummary from saved Firebase data (minimal version for loading)
+     */
+    private fun parseServiceSummaryFromSaved(data: Map<*, *>?): ServiceSummary {
+        val totalFees = (data?.get("totalFees") as? Number)?.toDouble() ?: 0.0
+        val totalVolume = (data?.get("totalVolume") as? Number)?.toDouble() ?: 0.0
+
+        return ServiceSummary(
+            totalFees = totalFees,
+            totalVolume = totalVolume,
+            cashIn = ServiceTypeBreakdown(0, 0.0, 0.0),
+            cashOut = ServiceTypeBreakdown(0, 0.0, 0.0),
+            mobileLoading = ServiceTypeBreakdown(0, 0.0, 0.0),
+            skyroPayment = ServiceTypeBreakdown(0, 0.0, 0.0),
+            hcPayment = ServiceTypeBreakdown(0, 0.0, 0.0),
+            miscPayment = MiscPaymentBreakdown(0, 0.0)
+        )
+    }
+
+    /**
+     * Parse CashFlowSummary from saved Firebase data
+     */
+    private fun parseCashFlowSummary(data: Map<*, *>?): CashFlowSummary {
+        if (data == null) return CashFlowSummary(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+        return CashFlowSummary(
+            cash = (data["cash"] as? Number)?.toDouble() ?: 0.0,
+            gcash = (data["gcash"] as? Number)?.toDouble() ?: 0.0,
+            paymaya = (data["paymaya"] as? Number)?.toDouble() ?: 0.0,
+            bankTransfer = (data["bankTransfer"] as? Number)?.toDouble() ?: 0.0,
+            creditCard = (data["creditCard"] as? Number)?.toDouble() ?: 0.0,
+            others = (data["others"] as? Number)?.toDouble() ?: 0.0,
+            hcReceivable = (data["hcReceivable"] as? Number)?.toDouble() ?: 0.0,
+            skyroReceivable = (data["skyroReceivable"] as? Number)?.toDouble() ?: 0.0,
+            inHouseReceivable = (data["inHouseReceivable"] as? Number)?.toDouble() ?: 0.0,
+            brandZeroSubsidy = (data["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0
+        )
+    }
+
+    /**
+     * Parse ServiceCashFlowSummary from saved Firebase data
+     */
+    private fun parseServiceCashFlowSummary(data: Map<*, *>?): ServiceCashFlowSummary {
+        if (data == null) return ServiceCashFlowSummary(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+        return ServiceCashFlowSummary(
+            cashInflow = (data["cashInflow"] as? Number)?.toDouble() ?: 0.0,
+            cashOutflow = (data["cashOutflow"] as? Number)?.toDouble() ?: 0.0,
+            gcashInflow = (data["gcashInflow"] as? Number)?.toDouble() ?: 0.0,
+            gcashOutflow = (data["gcashOutflow"] as? Number)?.toDouble() ?: 0.0,
+            paymayaInflow = (data["paymayaInflow"] as? Number)?.toDouble() ?: 0.0,
+            paymayaOutflow = (data["paymayaOutflow"] as? Number)?.toDouble() ?: 0.0,
+            othersInflow = (data["othersInflow"] as? Number)?.toDouble() ?: 0.0,
+            othersOutflow = (data["othersOutflow"] as? Number)?.toDouble() ?: 0.0
+        )
+    }
+
+    /**
+     * Build LedgerSummaryData from cash flow summaries
+     */
+    private fun buildLedgerSummaryFromCashFlow(
+        deviceCashFlow: CashFlowSummary,
+        accessoryCashFlow: CashFlowSummary,
+        serviceCashFlow: ServiceCashFlowSummary
+    ): LedgerSummaryData {
+        val serviceNetCash = serviceCashFlow.cashInflow - serviceCashFlow.cashOutflow
+        val serviceNetGcash = serviceCashFlow.gcashInflow - serviceCashFlow.gcashOutflow
+        val serviceNetPaymaya = serviceCashFlow.paymayaInflow - serviceCashFlow.paymayaOutflow
+        val serviceNetOthers = serviceCashFlow.othersInflow - serviceCashFlow.othersOutflow
+
+        return LedgerSummaryData(
+            cash = LedgerBreakdown(
+                device = deviceCashFlow.cash,
+                accessory = accessoryCashFlow.cash,
+                service = serviceNetCash,
+                total = deviceCashFlow.cash + accessoryCashFlow.cash + serviceNetCash
+            ),
+            gcash = LedgerBreakdown(
+                device = deviceCashFlow.gcash,
+                accessory = accessoryCashFlow.gcash,
+                service = serviceNetGcash,
+                total = deviceCashFlow.gcash + accessoryCashFlow.gcash + serviceNetGcash
+            ),
+            paymaya = LedgerBreakdown(
+                device = deviceCashFlow.paymaya,
+                accessory = accessoryCashFlow.paymaya,
+                service = serviceNetPaymaya,
+                total = deviceCashFlow.paymaya + accessoryCashFlow.paymaya + serviceNetPaymaya
+            ),
+            bankTransfer = LedgerBreakdown(
+                device = deviceCashFlow.bankTransfer,
+                accessory = accessoryCashFlow.bankTransfer,
+                service = 0.0,
+                total = deviceCashFlow.bankTransfer + accessoryCashFlow.bankTransfer
+            ),
+            others = LedgerBreakdown(
+                device = deviceCashFlow.others,
+                accessory = accessoryCashFlow.others,
+                service = serviceNetOthers,
+                total = deviceCashFlow.others + accessoryCashFlow.others + serviceNetOthers
+            ),
+            receivables = ReceivablesBreakdown(
+                homeCredit = deviceCashFlow.hcReceivable + accessoryCashFlow.hcReceivable,
+                skyro = deviceCashFlow.skyroReceivable + accessoryCashFlow.skyroReceivable,
+                inHouse = deviceCashFlow.inHouseReceivable + accessoryCashFlow.inHouseReceivable,
+                total = deviceCashFlow.hcReceivable + accessoryCashFlow.hcReceivable +
+                        deviceCashFlow.skyroReceivable + accessoryCashFlow.skyroReceivable +
+                        deviceCashFlow.inHouseReceivable + accessoryCashFlow.inHouseReceivable
+            )
+        )
+    }
+
     // ============================================================================
     // END OF PART 3: LIFECYCLE METHODS
     // ============================================================================
-
 
     // ============================================================================
     // START OF PART 4: UI SETUP

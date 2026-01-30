@@ -177,9 +177,12 @@ class EndOfDayListActivity : AppCompatActivity() {
         datePickerDialog.show()
     }
 
-    private fun openReportActivity(date: String) {
+    private fun openReportActivity(date: String, documentId: String? = null) {
         val intent = Intent(this, EndOfDayReportActivity::class.java)
         intent.putExtra("selected_date", date)
+        if (documentId != null) {
+            intent.putExtra("document_id", documentId)
+        }
         startActivity(intent)
     }
 
@@ -217,8 +220,8 @@ class EndOfDayListActivity : AppCompatActivity() {
                         binding.reportCountLabel.text = "${reports.size} report${if (reports.size > 1) "s" else ""} generated"
 
                         adapter = EODReportAdapter(reports) { report ->
-                            // Open report for viewing
-                            openReportActivity(report.displayDate)
+                            // Open report for viewing - pass document ID for existing reports
+                            openReportActivity(report.displayDate, report.documentId)
                         }
                         binding.reportsRecyclerView.adapter = adapter
                     }
