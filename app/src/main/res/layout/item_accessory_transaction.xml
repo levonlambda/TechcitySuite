@@ -48,14 +48,18 @@
 
                 <TextView
                     android:id="@+id/accessoryNameText"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Phone Case - iPhone 15 Pro Max"
                     android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
                     android:maxLines="1"
-                    android:ellipsize="end" />
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="10sp"
+                    app:autoSizeMaxTextSize="15sp"
+                    app:autoSizeStepGranularity="1sp" />
 
                 <!-- Customer Name (only visible for In-House) -->
                 <TextView
