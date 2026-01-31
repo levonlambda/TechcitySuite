@@ -99,41 +99,41 @@
         </LinearLayout>
 
         <!-- ================================================================== -->
-        <!-- Row 2: Item Name + Customer Name -->
+        <!-- Row 2: Item Name -->
         <!-- ================================================================== -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/itemNameText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="6dp">
+            android:text="Tecno Camon 40 Pro 5G"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:maxLines="1"
+            android:layout_marginTop="6dp"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="11sp"
+            app:autoSizeMaxTextSize="15sp"
+            app:autoSizeStepGranularity="1sp" />
 
-            <TextView
-                android:id="@+id/itemNameText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tecno Camon 40 Pro 5G"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="@color/black"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <!-- Customer Name (only visible for In-House) -->
-            <TextView
-                android:id="@+id/customerNameText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text=" - Customer Name"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="#9C27B0"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:visibility="gone" />
-
-        </LinearLayout>
+        <!-- ================================================================== -->
+        <!-- Row 2b: Customer Name (only visible for In-House) -->
+        <!-- ================================================================== -->
+        <TextView
+            android:id="@+id/customerNameText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Customer Name"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#9C27B0"
+            android:maxLines="1"
+            android:layout_marginTop="2dp"
+            android:visibility="gone"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="10sp"
+            app:autoSizeMaxTextSize="14sp"
+            app:autoSizeStepGranularity="1sp" />
 
         <!-- ================================================================== -->
         <!-- Row 3: Item Details (Variant for devices, hidden for accessories) -->
