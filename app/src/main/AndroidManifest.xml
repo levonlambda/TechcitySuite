@@ -125,6 +125,22 @@
             android:exported="false"
             android:label="End of Day Report" />
 
+        <!-- ADD THESE TWO NEW ACTIVITIES HERE -->
+        <activity
+            android:name="com.techcity.techcitysuite.PhoneInventoryListActivity"
+            android:exported="false"
+            android:label="Phone Inventory" />
+
+        <activity
+            android:name="com.techcity.techcitysuite.ReconciliationDetailActivity"
+            android:exported="false"
+            android:label="Reconciliation Details" />
+
+        <activity
+            android:name="com.techcity.techcitysuite.ManufacturerDetailActivity"
+            android:exported="false"
+            android:label="Manufacturer Details" />
+
     </application>
 
 </manifest>

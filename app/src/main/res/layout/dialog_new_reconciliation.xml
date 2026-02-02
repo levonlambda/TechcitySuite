@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@android:color/white">
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: DIALOG HEADER -->
+    <!-- ========================================================================== -->
+
+    <!-- Icon -->
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_search"
+        android:layout_gravity="center"
+        app:tint="@color/techcity_blue"
+        android:contentDescription="Reconciliation Icon" />
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Reconciliation"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/techcity_blue"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select location and inventory status to reconcile"
+        android:textSize="14sp"
+        android:textColor="@color/gray"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="24dp" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: DIALOG HEADER -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 2: FORM FIELDS -->
+    <!-- ========================================================================== -->
+
+    <!-- Location Input Field -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/locationInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Location"
+        app:boxStrokeColor="@color/techcity_blue"
+        app:hintTextColor="@color/techcity_blue"
+        app:helperText="Enter 'All' to include all locations"
+        app:helperTextEnabled="true"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/locationInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:imeOptions="actionNext" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Status Filter Dropdown -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/statusFilterLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Status Filter"
+        app:boxStrokeColor="@color/techcity_blue"
+        app:hintTextColor="@color/techcity_blue"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_marginTop="16dp">
+
+        <AutoCompleteTextView
+            android:id="@+id/statusFilterDropdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:cursorVisible="false"
+            android:focusable="false"
+            android:text="All" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Error Message -->
+    <TextView
+        android:id="@+id/errorMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Please fill in all fields"
+        android:textSize="12sp"
+        android:textColor="@android:color/holo_red_dark"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 2: FORM FIELDS -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 3: DIALOG BUTTONS -->
+    <!-- ========================================================================== -->
+
+    <!-- Progress Bar (hidden by default) -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="24dp"
+        android:visibility="gone"
+        android:indeterminateTint="@color/techcity_blue" />
+
+    <!-- Button Layout -->
+    <LinearLayout
+        android:id="@+id/buttonsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginTop="24dp">
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:textColor="@color/gray"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Create"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/techcity_blue"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 3: DIALOG BUTTONS -->
+    <!-- ========================================================================== -->
+
+
+</LinearLayout>

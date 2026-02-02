@@ -44,8 +44,9 @@
     <!-- Viewfinder frame (transparent center) -->
     <View
         android:id="@+id/viewfinderFrame"
-        android:layout_width="320dp"
+        android:layout_width="0dp"
         android:layout_height="220dp"
+        android:layout_marginHorizontal="16dp"
         android:background="@drawable/viewfinder_frame"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -178,58 +179,34 @@
     <!-- START OF PART 5: BOTTOM CONTROLS -->
     <!-- ========================================================================== -->
 
-    <!-- Bottom control bar - added marginBottom for navigation bar clearance -->
+    <!-- Bottom control bar - positioned higher to avoid navigation buttons -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:paddingTop="24dp"
-        android:paddingBottom="48dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="80dp"
         android:paddingHorizontal="24dp"
-        android:background="#80000000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Flash toggle button -->
-        <ImageButton
-            android:id="@+id/flashButton"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@android:drawable/btn_star_big_off"
-            android:background="@drawable/circle_button_background"
-            android:contentDescription="Toggle Flash"
-            android:scaleType="centerInside"
-            android:padding="12dp" />
-
-        <!-- Spacer -->
-        <View
-            android:layout_width="48dp"
-            android:layout_height="0dp" />
-
-        <!-- Select/Done button (shows detected barcodes) -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <!-- Take Photo button - larger height -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/captureButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_check"
-            android:contentDescription="Select Barcode"
+            android:layout_height="64dp"
+            android:text="Take Photo"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:paddingHorizontal="40dp"
             app:backgroundTint="#3F51B5"
-            app:tint="@color/white"
-            app:fabSize="normal"
-            android:alpha="0.6" />
-
-        <!-- Spacer -->
-        <View
-            android:layout_width="48dp"
-            android:layout_height="0dp" />
-
-        <!-- Placeholder for symmetry -->
-        <View
-            android:layout_width="56dp"
-            android:layout_height="56dp" />
+            app:cornerRadius="32dp"
+            app:icon="@android:drawable/ic_menu_camera"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp" />
 
     </LinearLayout>
 

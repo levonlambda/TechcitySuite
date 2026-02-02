@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/manufacturerCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/light_gray"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: CARD CONTENT -->
+    <!-- ========================================================================== -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header Row: Manufacturer Name, Checkmark, Item Count -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Checkmark (shown when all verified) -->
+            <ImageView
+                android:id="@+id/completedCheckmark"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_check_circle"
+                android:visibility="gone"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="All items verified" />
+
+            <!-- Manufacturer Name -->
+            <TextView
+                android:id="@+id/manufacturerName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Samsung"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
+
+            <!-- Item Count Badge -->
+            <TextView
+                android:id="@+id/itemCountBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="12 items"
+                android:textSize="12sp"
+                android:textColor="@color/white"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:background="@drawable/badge_background"
+                android:backgroundTint="@color/techcity_blue" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/light_gray"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- On-Display Row -->
+        <LinearLayout
+            android:id="@+id/onDisplayRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="visible">
+
+            <!-- Label -->
+            <TextView
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:text="On-Display:"
+                android:textSize="13sp"
+                android:textColor="@color/gray" />
+
+            <!-- Qty -->
+            <TextView
+                android:id="@+id/onDisplayQty"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Qty: 5"
+                android:textSize="13sp"
+                android:textColor="@color/black"
+                android:gravity="center" />
+
+            <!-- Verified -->
+            <TextView
+                android:id="@+id/onDisplayVerified"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Ver: 2"
+                android:textSize="13sp"
+                android:textColor="@color/techcity_blue"
+                android:gravity="center" />
+
+            <!-- Reconciled -->
+            <TextView
+                android:id="@+id/onDisplayReconciled"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Rec: 0"
+                android:textSize="13sp"
+                android:textColor="@color/cash_dark_green"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- In-Stock Row (database value is On-Hand) -->
+        <LinearLayout
+            android:id="@+id/inStockRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp"
+            android:visibility="visible">
+
+            <!-- Label -->
+            <TextView
+                android:layout_width="90dp"
+                android:layout_height="wrap_content"
+                android:text="In-Stock:"
+                android:textSize="13sp"
+                android:textColor="@color/gray" />
+
+            <!-- Qty -->
+            <TextView
+                android:id="@+id/inStockQty"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Qty: 7"
+                android:textSize="13sp"
+                android:textColor="@color/black"
+                android:gravity="center" />
+
+            <!-- Verified -->
+            <TextView
+                android:id="@+id/inStockVerified"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Ver: 3"
+                android:textSize="13sp"
+                android:textColor="@color/techcity_blue"
+                android:gravity="center" />
+
+            <!-- Reconciled -->
+            <TextView
+                android:id="@+id/inStockReconciled"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Rec: 0"
+                android:textSize="13sp"
+                android:textColor="@color/cash_dark_green"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: CARD CONTENT -->
+    <!-- ========================================================================== -->
+
+
+</com.google.android.material.card.MaterialCardView>

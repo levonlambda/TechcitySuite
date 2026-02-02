@@ -136,11 +136,10 @@ class MenuActivity : AppCompatActivity() {
     // ============================================================================
 
     private fun setupMenuButtons() {
-        // Phone Inventory Checker button - DISABLED
-        binding.inventoryButton.isEnabled = false
-        binding.inventoryButton.alpha = 0.5f
+        // Phone Inventory button - NOW OPENS LIST ACTIVITY
         binding.inventoryButton.setOnClickListener {
-            Toast.makeText(this, "Phone Inventory is currently disabled", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, PhoneInventoryListActivity::class.java)
+            startActivity(intent)
         }
 
         // Device Transactions button - NOW OPENS THE LIST
@@ -161,21 +160,11 @@ class MenuActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // ============================================================================
-        // CODE TO ADD IN MenuActivity.kt - PART 4: MENU BUTTONS SETUP
-        // Add this click listener after the ledgerButton click listener
-        // and before the accountReceivableButton click listener
-        // ============================================================================
-
         // End of Day button
         binding.endOfDayButton.setOnClickListener {
             val intent = Intent(this, EndOfDayListActivity::class.java)
             startActivity(intent)
         }
-
-        // ============================================================================
-        // END OF EOD BUTTON CODE
-        // ============================================================================
 
         // Accessories Transactions button - NOW OPENS LIST ACTIVITY
         binding.accessoriesTransactionsButton.setOnClickListener {
