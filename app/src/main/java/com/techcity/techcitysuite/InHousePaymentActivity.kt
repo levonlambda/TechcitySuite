@@ -495,7 +495,8 @@ class InHousePaymentActivity : AppCompatActivity() {
             return
         }
 
-        if (amount > remainingBalance) {
+        // Add small tolerance (0.01) for floating-point precision issues
+        if (amount > remainingBalance + 0.01) {
             binding.paymentAmountLayout.error = "Amount exceeds remaining balance"
             return
         }
@@ -536,14 +537,13 @@ class InHousePaymentActivity : AppCompatActivity() {
         val newRemaining = remainingBalance - amount
         val isFullyPaid = newRemaining <= 0
 
-        // Create payment record with unique timestamp to prevent arrayUnion deduplication
+        // Create payment record
         val today = SimpleDateFormat("M/d/yyyy", Locale.US).format(Date())
         val paymentRecord = hashMapOf(
             "date" to today,
             "amount" to amount,
             "remainingAfter" to newRemaining,
-            "source" to paymentSource,
-            "timestamp" to System.currentTimeMillis()  // Unique identifier for each payment
+            "source" to paymentSource
         )
 
         scope.launch {
@@ -553,14 +553,12 @@ class InHousePaymentActivity : AppCompatActivity() {
 
                     // Build update map
                     val updates = hashMapOf<String, Any>(
-                        "inHouseInstallment.remainingBalance" to newRemaining,
+                        "inHouseInstallment.balance" to newRemaining,  // Use "balance" field name
                         "inHouseInstallment.payments" to FieldValue.arrayUnion(paymentRecord)
                     )
 
-                    // BACKWARD COMPATIBILITY: Also update "balance" field
-                    updates["inHouseInstallment.balance"] = newRemaining
-
-                    // Set originalBalance if this is the first payment and it wasn't set before
+                    // BACKWARD COMPATIBILITY: Set originalBalance if this is the first payment
+                    // and originalBalance wasn't set before
                     if (payments.isEmpty() && originalBalance > 0) {
                         updates["inHouseInstallment.originalBalance"] = originalBalance
                     }
