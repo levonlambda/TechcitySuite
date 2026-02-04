@@ -23,7 +23,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header Row: Date and Location -->
+        <!-- Header Row: Date, Complete Badge, and Status Filter -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -39,6 +39,21 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/techcity_blue" />
+
+            <!-- Complete Badge - shown when all items are verified -->
+            <TextView
+                android:id="@+id/completeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Complete"
+                android:textSize="11sp"
+                android:textColor="@color/white"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/badge_background"
+                android:backgroundTint="@color/cash_dark_green"
+                android:visibility="gone" />
 
             <!-- Status Filter Badge -->
             <TextView

@@ -427,16 +427,21 @@ class PhoneInventoryListActivity : AppCompatActivity() {
                     if (reconciliations.isEmpty()) {
                         binding.emptyStateLayout.visibility = View.VISIBLE
                         binding.reconciliationRecyclerView.visibility = View.GONE
-                        binding.recordCountLabel.text = "0 reconciliation records"
                     } else {
                         binding.emptyStateLayout.visibility = View.GONE
                         binding.reconciliationRecyclerView.visibility = View.VISIBLE
-                        binding.recordCountLabel.text = "${reconciliations.size} reconciliation record${if (reconciliations.size > 1) "s" else ""}"
 
-                        adapter = ReconciliationAdapter(reconciliations) { reconciliation ->
-                            // Open detail view
-                            openDetailActivity(reconciliation.documentId)
-                        }
+                        adapter = ReconciliationAdapter(
+                            reconciliations,
+                            onItemClick = { reconciliation ->
+                                // Check if date matches current date
+                                handleReconciliationClick(reconciliation)
+                            },
+                            onItemLongClick = { reconciliation ->
+                                // Show delete password dialog
+                                showDeletePasswordDialog(reconciliation)
+                            }
+                        )
                         binding.reconciliationRecyclerView.adapter = adapter
                     }
                 }
@@ -484,6 +489,113 @@ class PhoneInventoryListActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Handle reconciliation card click
+     * If date matches today, proceed directly
+     * If date doesn't match, ask for password first
+     */
+    private fun handleReconciliationClick(reconciliation: ReconciliationSummary) {
+        // Get current date in M/d/yyyy format
+        val dateFormat = SimpleDateFormat("M/d/yyyy", Locale.US)
+        val currentDate = dateFormat.format(Date())
+
+        if (reconciliation.date == currentDate) {
+            // Date matches - open directly
+            openDetailActivity(reconciliation.documentId)
+        } else {
+            // Date doesn't match - require password
+            showAccessPasswordDialog(reconciliation)
+        }
+    }
+
+    /**
+     * Show password dialog for accessing past reconciliations
+     */
+    private fun showAccessPasswordDialog(reconciliation: ReconciliationSummary) {
+        // Inflate the dialog layout
+        val dialogView = layoutInflater.inflate(R.layout.dialog_password, null)
+
+        // Get references to dialog views
+        val passwordInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.passwordInput)
+        val errorMessage = dialogView.findViewById<android.widget.TextView>(R.id.errorMessage)
+        val submitButton = dialogView.findViewById<android.widget.Button>(R.id.submitButton)
+        val cancelButton = dialogView.findViewById<android.widget.Button>(R.id.cancelButton)
+        val progressBar = dialogView.findViewById<android.widget.ProgressBar>(R.id.progressBar)
+        val buttonsLayout = dialogView.findViewById<android.widget.LinearLayout>(R.id.buttonsLayout)
+
+        // Create the dialog
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Access Past Reconciliation")
+            .setMessage("This reconciliation is from ${formatDisplayDate(reconciliation.date)}. Enter password to access.")
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        // Cancel button
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // Submit button
+        submitButton.setOnClickListener {
+            val password = passwordInput.text.toString()
+
+            // Validate password is not empty
+            if (password.isEmpty()) {
+                errorMessage.text = "Please enter a password"
+                errorMessage.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+
+            // Hide error and show progress
+            errorMessage.visibility = View.GONE
+            progressBar.visibility = View.VISIBLE
+            buttonsLayout.visibility = View.GONE
+            passwordInput.isEnabled = false
+
+            // Verify password
+            scope.launch {
+                try {
+                    val isValid = AppSettingsManager.verifyPassword(password)
+
+                    if (isValid) {
+                        dialog.dismiss()
+                        // Password correct - open detail activity
+                        openDetailActivity(reconciliation.documentId)
+                    } else {
+                        // Show error
+                        progressBar.visibility = View.GONE
+                        buttonsLayout.visibility = View.VISIBLE
+                        passwordInput.isEnabled = true
+                        errorMessage.text = "Incorrect password"
+                        errorMessage.visibility = View.VISIBLE
+                        passwordInput.setText("")
+                        passwordInput.requestFocus()
+                    }
+                } catch (e: Exception) {
+                    progressBar.visibility = View.GONE
+                    buttonsLayout.visibility = View.VISIBLE
+                    passwordInput.isEnabled = true
+                    errorMessage.text = "Error verifying password"
+                    errorMessage.visibility = View.VISIBLE
+                    Toast.makeText(this@PhoneInventoryListActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Handle Enter key on password input
+        passwordInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                submitButton.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
+        dialog.show()
+    }
+
     private fun openDetailActivity(documentId: String) {
         val intent = Intent(this, ReconciliationDetailActivity::class.java)
         intent.putExtra("RECONCILIATION_ID", documentId)
@@ -501,7 +613,8 @@ class PhoneInventoryListActivity : AppCompatActivity() {
 
     inner class ReconciliationAdapter(
         private val items: List<ReconciliationSummary>,
-        private val onItemClick: (ReconciliationSummary) -> Unit
+        private val onItemClick: (ReconciliationSummary) -> Unit,
+        private val onItemLongClick: (ReconciliationSummary) -> Unit
     ) : RecyclerView.Adapter<ReconciliationAdapter.ViewHolder>() {
 
         inner class ViewHolder(val binding: ItemReconciliationBinding) : RecyclerView.ViewHolder(binding.root)
@@ -536,6 +649,22 @@ class PhoneInventoryListActivity : AppCompatActivity() {
                     }
                 )
 
+                // Calculate if complete - ONLY count verified items (NOT for_reconciliation)
+                val totalItems = when (item.statusFilter) {
+                    "On-Display" -> item.qtyOnDisplay
+                    "On-Hand" -> item.qtyOnStock
+                    else -> item.qtyOnDisplay + item.qtyOnStock
+                }
+                val totalVerified = when (item.statusFilter) {
+                    "On-Display" -> item.qtyOnDisplayVerified
+                    "On-Hand" -> item.qtyOnStockVerified
+                    else -> item.qtyOnDisplayVerified + item.qtyOnStockVerified
+                }
+                val isComplete = totalItems > 0 && totalVerified == totalItems
+
+                // Show/hide complete badge
+                completeBadge.visibility = if (isComplete) View.VISIBLE else View.GONE
+
                 // Show/hide sections based on status filter
                 when (item.statusFilter) {
                     "On-Display" -> {
@@ -569,6 +698,12 @@ class PhoneInventoryListActivity : AppCompatActivity() {
                 root.setOnClickListener {
                     onItemClick(item)
                 }
+
+                // Long click listener for delete
+                root.setOnLongClickListener {
+                    onItemLongClick(item)
+                    true
+                }
             }
         }
 
@@ -581,7 +716,168 @@ class PhoneInventoryListActivity : AppCompatActivity() {
 
 
     // ============================================================================
-    // START OF PART 8: UTILITY METHODS
+    // START OF PART 8: DELETE METHODS
+    // ============================================================================
+
+    /**
+     * Show password dialog before allowing delete
+     */
+    private fun showDeletePasswordDialog(item: ReconciliationSummary) {
+        // Inflate the dialog layout
+        val dialogView = layoutInflater.inflate(R.layout.dialog_password, null)
+
+        // Get references to dialog views
+        val passwordInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.passwordInput)
+        val errorMessage = dialogView.findViewById<android.widget.TextView>(R.id.errorMessage)
+        val submitButton = dialogView.findViewById<android.widget.Button>(R.id.submitButton)
+        val cancelButton = dialogView.findViewById<android.widget.Button>(R.id.cancelButton)
+        val progressBar = dialogView.findViewById<android.widget.ProgressBar>(R.id.progressBar)
+        val buttonsLayout = dialogView.findViewById<android.widget.LinearLayout>(R.id.buttonsLayout)
+
+        // Create the dialog
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        // Cancel button
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // Submit button
+        submitButton.setOnClickListener {
+            val password = passwordInput.text.toString()
+
+            // Validate password is not empty
+            if (password.isEmpty()) {
+                errorMessage.text = "Please enter a password"
+                errorMessage.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+
+            // Hide error and show progress
+            errorMessage.visibility = View.GONE
+            progressBar.visibility = View.VISIBLE
+            buttonsLayout.visibility = View.GONE
+            passwordInput.isEnabled = false
+
+            // Verify password
+            scope.launch {
+                try {
+                    val isValid = AppSettingsManager.verifyPassword(password)
+
+                    if (isValid) {
+                        dialog.dismiss()
+                        // Password correct - show delete confirmation
+                        showDeleteConfirmationDialog(item)
+                    } else {
+                        // Show error
+                        progressBar.visibility = View.GONE
+                        buttonsLayout.visibility = View.VISIBLE
+                        passwordInput.isEnabled = true
+                        errorMessage.text = "Incorrect password"
+                        errorMessage.visibility = View.VISIBLE
+                        passwordInput.setText("")
+                        passwordInput.requestFocus()
+                    }
+                } catch (e: Exception) {
+                    progressBar.visibility = View.GONE
+                    buttonsLayout.visibility = View.VISIBLE
+                    passwordInput.isEnabled = true
+                    errorMessage.text = "Error verifying password"
+                    errorMessage.visibility = View.VISIBLE
+                    Toast.makeText(this@PhoneInventoryListActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Handle Enter key on password input
+        passwordInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                submitButton.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
+        // Show the dialog
+        dialog.show()
+    }
+
+    /**
+     * Show delete confirmation dialog
+     */
+    private fun showDeleteConfirmationDialog(item: ReconciliationSummary) {
+        // Calculate totals
+        val totalItems = item.qtyOnDisplay + item.qtyOnStock
+        val totalVerified = item.qtyOnDisplayVerified + item.qtyOnStockVerified
+
+        // Build message showing what will be deleted
+        val message = StringBuilder()
+        message.append("Delete this reconciliation?\n\n")
+        message.append("Date: ${formatDisplayDate(item.date)}\n")
+        message.append("Location: ${item.location}\n")
+        message.append("Status Filter: ${item.statusFilter}\n")
+        message.append("Total Items: $totalItems\n")
+        message.append("Verified: $totalVerified\n\n")
+        message.append("This action cannot be undone.")
+
+        AlertDialog.Builder(this)
+            .setTitle("Delete Reconciliation")
+            .setMessage(message.toString())
+            .setPositiveButton("Delete") { dialog, _ ->
+                dialog.dismiss()
+                deleteReconciliation(item)
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    /**
+     * Delete the reconciliation document from Firebase
+     */
+    private fun deleteReconciliation(item: ReconciliationSummary) {
+        scope.launch {
+            try {
+                // Show loading state
+                binding.progressBar.visibility = View.VISIBLE
+
+                withContext(Dispatchers.IO) {
+                    // Delete the specific document from inventory_reconciliations collection
+                    db.collection(COLLECTION_INVENTORY_RECONCILIATIONS)
+                        .document(item.documentId)
+                        .delete()
+                        .await()
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    showMessage("Reconciliation deleted successfully", false)
+                    // Reload the list
+                    loadReconciliations()
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    showMessage("Error deleting reconciliation: ${e.message}", true)
+                }
+            }
+        }
+    }
+
+    // ============================================================================
+    // END OF PART 8: DELETE METHODS
+    // ============================================================================
+
+
+    // ============================================================================
+    // START OF PART 9: UTILITY METHODS
     // ============================================================================
 
     private fun formatDisplayDate(dateStr: String): String {
@@ -606,6 +902,6 @@ class PhoneInventoryListActivity : AppCompatActivity() {
     }
 
     // ============================================================================
-    // END OF PART 8: UTILITY METHODS
+    // END OF PART 9: UTILITY METHODS
     // ============================================================================
 }

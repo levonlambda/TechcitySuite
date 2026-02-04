@@ -2,6 +2,7 @@ package com.techcity.techcitysuite
 
 import android.content.Context
 import android.os.Bundle
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.techcity.techcitysuite.databinding.ActivityProgramSettingsBinding
@@ -13,6 +14,9 @@ class ProgramSettingsActivity : AppCompatActivity() {
     // ============================================================================
 
     private lateinit var binding: ActivityProgramSettingsBinding
+
+    // Inventory status options
+    private val inventoryStatusOptions = arrayOf("On-Display", "In-Stock", "Both")
 
     // SharedPreferences keys
     companion object {
@@ -29,6 +33,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         private const val KEY_END_OF_DAY_ENABLED = "end_of_day_enabled"
         private const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
         private const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
+        private const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
     }
 
     // ============================================================================
@@ -47,8 +52,14 @@ class ProgramSettingsActivity : AppCompatActivity() {
         binding = ActivityProgramSettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Setup inventory status dropdown
+        setupInventoryStatusDropdown()
+
         // Load saved settings
         loadSettings()
+
+        // Setup toggle listener for Phone Inventory
+        setupPhoneInventoryToggleListener()
 
         // Set up button listeners
         setupButtonListeners()
@@ -62,6 +73,22 @@ class ProgramSettingsActivity : AppCompatActivity() {
     // ============================================================================
     // START OF PART 3: SETTINGS MANAGEMENT METHODS
     // ============================================================================
+
+    private fun setupInventoryStatusDropdown() {
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, inventoryStatusOptions)
+        binding.inventoryStatusDropdown.setAdapter(adapter)
+    }
+
+    private fun setupPhoneInventoryToggleListener() {
+        binding.phoneInventorySwitch.setOnCheckedChangeListener { _, isChecked ->
+            // Enable/disable the inventory status dropdown based on Phone Inventory toggle
+            binding.inventoryStatusLayout.isEnabled = isChecked
+            binding.inventoryStatusDropdown.isEnabled = isChecked
+
+            // Update visual appearance
+            binding.inventoryStatusLayout.alpha = if (isChecked) 1.0f else 0.5f
+        }
+    }
 
     private fun loadSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -81,6 +108,16 @@ class ProgramSettingsActivity : AppCompatActivity() {
         binding.endOfDaySwitch.isChecked = prefs.getBoolean(KEY_END_OF_DAY_ENABLED, true)
         binding.phoneInventorySwitch.isChecked = prefs.getBoolean(KEY_PHONE_INVENTORY_ENABLED, false)
         binding.deviceTransactionNotificationsSwitch.isChecked = prefs.getBoolean(KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED, true)
+
+        // Load inventory status filter (default to "On-Display")
+        val inventoryStatusFilter = prefs.getString(KEY_INVENTORY_STATUS_FILTER, "On-Display") ?: "On-Display"
+        binding.inventoryStatusDropdown.setText(inventoryStatusFilter, false)
+
+        // Set initial state of inventory status dropdown based on Phone Inventory toggle
+        val phoneInventoryEnabled = binding.phoneInventorySwitch.isChecked
+        binding.inventoryStatusLayout.isEnabled = phoneInventoryEnabled
+        binding.inventoryStatusDropdown.isEnabled = phoneInventoryEnabled
+        binding.inventoryStatusLayout.alpha = if (phoneInventoryEnabled) 1.0f else 0.5f
     }
 
     private fun saveSettings() {
@@ -102,6 +139,9 @@ class ProgramSettingsActivity : AppCompatActivity() {
         editor.putBoolean(KEY_END_OF_DAY_ENABLED, binding.endOfDaySwitch.isChecked)
         editor.putBoolean(KEY_PHONE_INVENTORY_ENABLED, binding.phoneInventorySwitch.isChecked)
         editor.putBoolean(KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED, binding.deviceTransactionNotificationsSwitch.isChecked)
+
+        // Save inventory status filter
+        editor.putString(KEY_INVENTORY_STATUS_FILTER, binding.inventoryStatusDropdown.text.toString())
 
         editor.apply()
 

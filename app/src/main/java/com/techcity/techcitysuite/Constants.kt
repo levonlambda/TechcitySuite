@@ -7,8 +7,8 @@ package com.techcity.techcitysuite
 object AppConstants {
 
     // ============================================================================
-    // SHARED PREFERENCES
-    // ============================================================================
+// SHARED PREFERENCES
+// ============================================================================
 
     const val PREFS_NAME = "TechCitySettings"
 
@@ -29,6 +29,7 @@ object AppConstants {
     const val KEY_END_OF_DAY_ENABLED = "end_of_day_enabled"
     const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
     const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
+    const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
 
     // ============================================================================
     // FIREBASE COLLECTION NAMES

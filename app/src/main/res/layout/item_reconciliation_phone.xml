@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp"
-    app:strokeWidth="1dp"
+    app:strokeWidth="2dp"
     app:strokeColor="@color/light_gray"
     android:clickable="true"
     android:focusable="true"
@@ -66,49 +67,36 @@
             android:textColor="@color/black"
             android:layout_marginTop="4dp" />
 
-        <!-- Specs Row: RAM + Storage | Color | Price (3 equal parts) -->
-        <LinearLayout
+        <!-- RAM + Storage Row -->
+        <TextView
+            android:id="@+id/ramStorageText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            android:text="12GB + 256GB"
+            android:textSize="13sp"
+            android:textColor="@color/gray"
+            android:layout_marginTop="2dp" />
 
-            <!-- RAM + Storage -->
-            <TextView
-                android:id="@+id/ramStorageText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="12GB + 256GB"
-                android:textSize="13sp"
-                android:textColor="@color/gray"
-                android:gravity="start" />
+        <!-- Color Row -->
+        <TextView
+            android:id="@+id/colorText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Titanium Black"
+            android:textSize="13sp"
+            android:textColor="@color/gray"
+            android:layout_marginTop="2dp" />
 
-            <!-- Color -->
-            <TextView
-                android:id="@+id/colorText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Titanium Black"
-                android:textSize="13sp"
-                android:textColor="@color/gray"
-                android:gravity="center" />
-
-            <!-- Retail Price -->
-            <TextView
-                android:id="@+id/retailPriceText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="₱52,000"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/cash_dark_green"
-                android:gravity="end" />
-
-        </LinearLayout>
+        <!-- Retail Price Row -->
+        <TextView
+            android:id="@+id/retailPriceText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="₱75,990.00"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/cash_dark_green"
+            android:layout_marginTop="4dp" />
 
         <!-- Divider -->
         <View
@@ -116,21 +104,21 @@
             android:layout_height="1dp"
             android:background="@color/light_gray"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="8dp" />
 
-        <!-- IMEI1 Row (if available) -->
+        <!-- IMEI1 Row -->
         <LinearLayout
             android:id="@+id/imei1Row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:visibility="gone">
+            android:visibility="visible">
 
             <TextView
                 android:layout_width="70dp"
                 android:layout_height="wrap_content"
-                android:text="IMEI1:"
+                android:text="IMEI 1:"
                 android:textSize="12sp"
                 android:textColor="@color/gray" />
 
@@ -141,13 +129,12 @@
                 android:layout_weight="1"
                 android:text="123456789012345"
                 android:textSize="12sp"
-                android:textStyle="bold"
                 android:textColor="@color/black"
                 android:fontFamily="monospace" />
 
         </LinearLayout>
 
-        <!-- IMEI2 Row (if available) -->
+        <!-- IMEI2 Row -->
         <LinearLayout
             android:id="@+id/imei2Row"
             android:layout_width="match_parent"
@@ -160,7 +147,7 @@
             <TextView
                 android:layout_width="70dp"
                 android:layout_height="wrap_content"
-                android:text="IMEI2:"
+                android:text="IMEI 2:"
                 android:textSize="12sp"
                 android:textColor="@color/gray" />
 
@@ -171,13 +158,12 @@
                 android:layout_weight="1"
                 android:text="123456789012346"
                 android:textSize="12sp"
-                android:textStyle="bold"
                 android:textColor="@color/black"
                 android:fontFamily="monospace" />
 
         </LinearLayout>
 
-        <!-- Serial Number Row (if available) -->
+        <!-- Serial Number Row -->
         <LinearLayout
             android:id="@+id/serialRow"
             android:layout_width="match_parent"
@@ -201,26 +187,18 @@
                 android:layout_weight="1"
                 android:text="SN123456789"
                 android:textSize="12sp"
-                android:textStyle="bold"
                 android:textColor="@color/black"
                 android:fontFamily="monospace" />
 
         </LinearLayout>
 
-        <!-- Divider before location and verification -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/light_gray"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp" />
-
-        <!-- Location and Verification Status Row -->
+        <!-- Location and Verification Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
 
             <!-- Location -->
             <LinearLayout
@@ -288,6 +266,16 @@
                     android:layout_marginStart="-4dp" />
 
             </LinearLayout>
+
+            <!-- For Reconciliation Status - shown when marked for reconciliation -->
+            <TextView
+                android:id="@+id/forReconciliationText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="For Reconciliation"
+                android:textSize="11sp"
+                android:textColor="@android:color/holo_red_dark"
+                android:visibility="gone" />
 
         </LinearLayout>
 

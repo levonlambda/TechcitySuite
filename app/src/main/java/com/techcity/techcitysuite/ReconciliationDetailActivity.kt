@@ -39,8 +39,14 @@ class ReconciliationDetailActivity : AppCompatActivity() {
     private val COLLECTION_INVENTORY_RECONCILIATIONS = "inventory_reconciliations"
     private val COLLECTION_INVENTORY = "inventory"
 
+    // Manufacturers to exclude from reconciliation (case-insensitive)
+    private val EXCLUDED_MANUFACTURERS = listOf("Techcity")
+
     // Reconciliation ID passed from list activity
     private var reconciliationId: String = ""
+
+    // Inventory status setting from Program Settings
+    private var inventoryStatusSetting: String = "On-Display"
 
     // Reconciliation data
     private var reconciliationData: ReconciliationData? = null
@@ -52,7 +58,7 @@ class ReconciliationDetailActivity : AppCompatActivity() {
     private var manufacturers: MutableList<ManufacturerSummary> = mutableListOf()
     private var adapter: ManufacturerAdapter? = null
 
-    // Verified items map (from Firebase)
+    // Verified items map (from Firebase) - now includes verification status
     private var verifiedItems: MutableMap<String, VerificationInfo> = mutableMapOf()
 
     // Snapshot listener for real-time updates
@@ -73,6 +79,8 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         val qtyOnStockVerified: Int,
         val qtyOnStockReconciled: Int,
         val inventoryIds: List<String>,
+        val totalItems: Int,
+        val isComplete: Boolean,
         val createdAt: String
     )
 
@@ -95,17 +103,9 @@ class ReconciliationDetailActivity : AppCompatActivity() {
     )
 
     /**
-     * Data class for verification info
-     */
-    data class VerificationInfo(
-        val verifiedBy: String,
-        val verifiedAt: Timestamp?,
-        val scannedType: String,
-        val scannedValue: String
-    )
-
-    /**
      * Data class for manufacturer summary
+     * totalItems is calculated based on statusFilter
+     * isComplete is true ONLY when all items are verified (not counting for_reconciliation)
      */
     data class ManufacturerSummary(
         val name: String,
@@ -117,6 +117,18 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         val qtyOnStockVerified: Int,
         val qtyOnStockReconciled: Int,
         val isComplete: Boolean
+    )
+
+    /**
+     * Data class for verification info
+     * verificationStatus can be "verified" or "for_reconciliation"
+     */
+    data class VerificationInfo(
+        val verifiedBy: String,
+        val verifiedAt: Timestamp?,
+        val scannedType: String,
+        val scannedValue: String,
+        val verificationStatus: String = "verified"  // "verified" or "for_reconciliation"
     )
 
     // Barcode scanner launcher
@@ -152,6 +164,10 @@ class ReconciliationDetailActivity : AppCompatActivity() {
 
         // Get reconciliation ID from intent
         reconciliationId = intent.getStringExtra("RECONCILIATION_ID") ?: ""
+
+        // Load inventory status setting from SharedPreferences
+        val prefs = getSharedPreferences(AppConstants.PREFS_NAME, Context.MODE_PRIVATE)
+        inventoryStatusSetting = prefs.getString(AppConstants.KEY_INVENTORY_STATUS_FILTER, "On-Display") ?: "On-Display"
 
         if (reconciliationId.isEmpty()) {
             showMessage("Error: No reconciliation ID provided", true)
@@ -258,49 +274,57 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         @Suppress("UNCHECKED_CAST")
         val inventoryIds = (data["inventoryIds"] as? List<String>) ?: emptyList()
 
+        val qtyOnDisplay = (data["qtyOnDisplay"] as? Number)?.toInt() ?: 0
+        val qtyOnDisplayVerified = (data["qtyOnDisplayVerified"] as? Number)?.toInt() ?: 0
+        val qtyOnDisplayReconciled = (data["qtyOnDisplayReconciled"] as? Number)?.toInt() ?: 0
+        val qtyOnStock = (data["qtyOnStock"] as? Number)?.toInt() ?: 0
+        val qtyOnStockVerified = (data["qtyOnStockVerified"] as? Number)?.toInt() ?: 0
+        val qtyOnStockReconciled = (data["qtyOnStockReconciled"] as? Number)?.toInt() ?: 0
+
+        val statusFilter = data["statusFilter"] as? String ?: "All"
+
+        // Calculate totalItems based on statusFilter
+        val totalItems = when (statusFilter) {
+            "On-Display" -> qtyOnDisplay
+            "On-Hand" -> qtyOnStock
+            else -> qtyOnDisplay + qtyOnStock
+        }
+
+        // isComplete only counts verified items (NOT for_reconciliation)
+        val totalVerified = qtyOnDisplayVerified + qtyOnStockVerified
+        val isComplete = totalItems > 0 && totalVerified == totalItems
+
         return ReconciliationData(
             documentId = doc.id,
             date = data["date"] as? String ?: "",
             location = data["location"] as? String ?: "",
-            statusFilter = data["statusFilter"] as? String ?: "All",
-            qtyOnDisplay = (data["qtyOnDisplay"] as? Number)?.toInt() ?: 0,
-            qtyOnDisplayVerified = (data["qtyOnDisplayVerified"] as? Number)?.toInt() ?: 0,
-            qtyOnDisplayReconciled = (data["qtyOnDisplayReconciled"] as? Number)?.toInt() ?: 0,
-            qtyOnStock = (data["qtyOnStock"] as? Number)?.toInt() ?: 0,
-            qtyOnStockVerified = (data["qtyOnStockVerified"] as? Number)?.toInt() ?: 0,
-            qtyOnStockReconciled = (data["qtyOnStockReconciled"] as? Number)?.toInt() ?: 0,
+            statusFilter = statusFilter,
+            qtyOnDisplay = qtyOnDisplay,
+            qtyOnDisplayVerified = qtyOnDisplayVerified,
+            qtyOnDisplayReconciled = qtyOnDisplayReconciled,
+            qtyOnStock = qtyOnStock,
+            qtyOnStockVerified = qtyOnStockVerified,
+            qtyOnStockReconciled = qtyOnStockReconciled,
             inventoryIds = inventoryIds,
+            totalItems = totalItems,
+            isComplete = isComplete,
             createdAt = data["createdAt"] as? String ?: ""
         )
     }
 
     private suspend fun fetchPhones(inventoryIds: List<String>): List<PhoneItem> {
-        if (inventoryIds.isEmpty()) {
-            return emptyList()
-        }
+        if (inventoryIds.isEmpty()) return emptyList()
 
-        // Firestore supports up to 30 items for whereIn queries
-        val batchSize = 30
-        val batches = inventoryIds.chunked(batchSize)
-
-        // Fetch all batches in parallel for faster loading
-        val deferredResults = batches.map { batch ->
-            scope.async(Dispatchers.IO) {
-                try {
-                    db.collection(COLLECTION_INVENTORY)
-                        .whereIn(com.google.firebase.firestore.FieldPath.documentId(), batch)
-                        .get()
-                        .await()
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        }
-
-        // Collect results from all parallel requests
         val phonesList = mutableListOf<PhoneItem>()
-        for (deferred in deferredResults) {
-            val querySnapshot = deferred.await() ?: continue
+
+        // Firestore "in" queries are limited to 30 items, so we need to batch
+        val batches = inventoryIds.chunked(30)
+
+        for (batch in batches) {
+            val querySnapshot = db.collection(COLLECTION_INVENTORY)
+                .whereIn(com.google.firebase.firestore.FieldPath.documentId(), batch)
+                .get()
+                .await()
 
             for (doc in querySnapshot.documents) {
                 val data = doc.data ?: continue
@@ -347,7 +371,8 @@ class ReconciliationDetailActivity : AppCompatActivity() {
                             verifiedBy = info["verifiedBy"] as? String ?: "",
                             verifiedAt = info["verifiedAt"] as? Timestamp,
                             scannedType = info["scannedType"] as? String ?: "",
-                            scannedValue = info["scannedValue"] as? String ?: ""
+                            scannedValue = info["scannedValue"] as? String ?: "",
+                            verificationStatus = info["verificationStatus"] as? String ?: "verified"
                         )
                     }
 
@@ -391,8 +416,8 @@ class ReconciliationDetailActivity : AppCompatActivity() {
             }
         )
 
-        // Item count
-        binding.itemCountLabel.text = "${data.inventoryIds.size} items"
+        // Item count - based on statusFilter
+        binding.itemCountLabel.text = "${data.totalItems} items"
 
         // Show/hide summary rows based on status filter
         when (data.statusFilter) {
@@ -411,35 +436,136 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Check if a manufacturer should be excluded from reconciliation
+     */
+    private fun isExcludedManufacturer(manufacturer: String): Boolean {
+        return EXCLUDED_MANUFACTURERS.any { excluded ->
+            manufacturer.equals(excluded, ignoreCase = true)
+        }
+    }
+
     private fun updateOverallSummary() {
         val statusFilter = reconciliationData?.statusFilter ?: "All"
 
-        // Calculate totals from manufacturers
-        var totalOnDisplay = 0
-        var totalOnDisplayVerified = 0
-        var totalOnDisplayReconciled = 0
-        var totalOnStock = 0
-        var totalOnStockVerified = 0
-        var totalOnStockReconciled = 0
+        // Calculate from actual phones and verified items
+        // EXCLUDE Techcity manufacturer from counts
+        var qtyOnDisplay = 0
+        var qtyOnDisplayVerified = 0
+        var qtyOnDisplayReconciled = 0
+        var qtyOnStock = 0
+        var qtyOnStockVerified = 0
+        var qtyOnStockReconciled = 0
 
-        for (manufacturer in manufacturers) {
-            totalOnDisplay += manufacturer.qtyOnDisplay
-            totalOnDisplayVerified += manufacturer.qtyOnDisplayVerified
-            totalOnDisplayReconciled += manufacturer.qtyOnDisplayReconciled
-            totalOnStock += manufacturer.qtyOnStock
-            totalOnStockVerified += manufacturer.qtyOnStockVerified
-            totalOnStockReconciled += manufacturer.qtyOnStockReconciled
+        for (phone in allPhones) {
+            // Skip excluded manufacturers
+            if (isExcludedManufacturer(phone.manufacturer)) {
+                continue
+            }
+
+            val verification = verifiedItems[phone.documentId]
+            when (phone.status) {
+                "On-Display" -> {
+                    qtyOnDisplay++
+                    if (verification != null) {
+                        if (verification.verificationStatus == "verified") {
+                            qtyOnDisplayVerified++
+                        } else if (verification.verificationStatus == "for_reconciliation") {
+                            qtyOnDisplayReconciled++
+                        }
+                    }
+                }
+                "On-Hand" -> {
+                    qtyOnStock++
+                    if (verification != null) {
+                        if (verification.verificationStatus == "verified") {
+                            qtyOnStockVerified++
+                        } else if (verification.verificationStatus == "for_reconciliation") {
+                            qtyOnStockReconciled++
+                        }
+                    }
+                }
+            }
         }
 
-        // Update On-Display row
-        binding.summaryOnDisplayQty.text = "Qty: $totalOnDisplay"
-        binding.summaryOnDisplayVerified.text = "Ver: $totalOnDisplayVerified"
-        binding.summaryOnDisplayReconciled.text = "Rec: $totalOnDisplayReconciled"
+        // Update summary card
+        binding.summaryOnDisplayQty.text = "Qty: $qtyOnDisplay"
+        binding.summaryOnDisplayVerified.text = "Ver: $qtyOnDisplayVerified"
+        binding.summaryOnDisplayReconciled.text = "Rec: $qtyOnDisplayReconciled"
 
-        // Update In-Stock row
-        binding.summaryOnStockQty.text = "Qty: $totalOnStock"
-        binding.summaryOnStockVerified.text = "Ver: $totalOnStockVerified"
-        binding.summaryOnStockReconciled.text = "Rec: $totalOnStockReconciled"
+        binding.summaryOnStockQty.text = "Qty: $qtyOnStock"
+        binding.summaryOnStockVerified.text = "Ver: $qtyOnStockVerified"
+        binding.summaryOnStockReconciled.text = "Rec: $qtyOnStockReconciled"
+
+        // Update total item count in header based on status filter
+        val totalItems = when (statusFilter) {
+            "On-Display" -> qtyOnDisplay
+            "On-Hand" -> qtyOnStock
+            else -> qtyOnDisplay + qtyOnStock
+        }
+        binding.itemCountLabel.text = "$totalItems items"
+
+        // Sync counts to Firebase if they differ from stored values
+        syncCountsToFirebase(qtyOnDisplay, qtyOnDisplayVerified, qtyOnDisplayReconciled,
+            qtyOnStock, qtyOnStockVerified, qtyOnStockReconciled)
+    }
+
+    /**
+     * Sync calculated counts to Firebase if they differ from stored values
+     * This ensures the list activity shows the correct counts
+     */
+    private fun syncCountsToFirebase(
+        qtyOnDisplay: Int,
+        qtyOnDisplayVerified: Int,
+        qtyOnDisplayReconciled: Int,
+        qtyOnStock: Int,
+        qtyOnStockVerified: Int,
+        qtyOnStockReconciled: Int
+    ) {
+        val data = reconciliationData ?: return
+
+        // Check if any counts differ
+        val needsUpdate = data.qtyOnDisplay != qtyOnDisplay ||
+                data.qtyOnDisplayVerified != qtyOnDisplayVerified ||
+                data.qtyOnDisplayReconciled != qtyOnDisplayReconciled ||
+                data.qtyOnStock != qtyOnStock ||
+                data.qtyOnStockVerified != qtyOnStockVerified ||
+                data.qtyOnStockReconciled != qtyOnStockReconciled
+
+        if (needsUpdate) {
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        db.collection(COLLECTION_INVENTORY_RECONCILIATIONS)
+                            .document(reconciliationId)
+                            .update(
+                                mapOf(
+                                    "qtyOnDisplay" to qtyOnDisplay,
+                                    "qtyOnDisplayVerified" to qtyOnDisplayVerified,
+                                    "qtyOnDisplayReconciled" to qtyOnDisplayReconciled,
+                                    "qtyOnStock" to qtyOnStock,
+                                    "qtyOnStockVerified" to qtyOnStockVerified,
+                                    "qtyOnStockReconciled" to qtyOnStockReconciled
+                                )
+                            )
+                            .await()
+                    }
+
+                    // Update local reconciliationData
+                    reconciliationData = data.copy(
+                        qtyOnDisplay = qtyOnDisplay,
+                        qtyOnDisplayVerified = qtyOnDisplayVerified,
+                        qtyOnDisplayReconciled = qtyOnDisplayReconciled,
+                        qtyOnStock = qtyOnStock,
+                        qtyOnStockVerified = qtyOnStockVerified,
+                        qtyOnStockReconciled = qtyOnStockReconciled
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // Silent failure - counts will sync on next open
+                }
+            }
+        }
     }
 
     private fun updateManufacturerList() {
@@ -448,17 +574,28 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         if (allPhones.isEmpty()) {
             binding.emptyStateLayout.visibility = View.VISIBLE
             binding.manufacturerRecyclerView.visibility = View.GONE
-            binding.manufacturerCountLabel.text = "0 manufacturers"
             return
         }
 
-        // Group phones by manufacturer
-        val groupedPhones = allPhones.groupBy { it.manufacturer }
+        // Get the status filter
+        val statusFilter = reconciliationData?.statusFilter ?: "All"
 
+        // Group phones by manufacturer and calculate counts
+        // EXCLUDE Techcity manufacturer
+        val manufacturerMap = mutableMapOf<String, MutableList<PhoneItem>>()
+        for (phone in allPhones) {
+            // Skip excluded manufacturers
+            if (isExcludedManufacturer(phone.manufacturer)) {
+                continue
+            }
+
+            val list = manufacturerMap.getOrPut(phone.manufacturer) { mutableListOf() }
+            list.add(phone)
+        }
+
+        // Build manufacturer summaries with verification counts
         manufacturers.clear()
-
-        for ((manufacturerName, phones) in groupedPhones) {
-            // Calculate counts based on status and verification
+        for ((name, phoneList) in manufacturerMap) {
             var qtyOnDisplay = 0
             var qtyOnDisplayVerified = 0
             var qtyOnDisplayReconciled = 0
@@ -466,30 +603,49 @@ class ReconciliationDetailActivity : AppCompatActivity() {
             var qtyOnStockVerified = 0
             var qtyOnStockReconciled = 0
 
-            for (phone in phones) {
-                val isVerified = verifiedItems.containsKey(phone.documentId)
+            for (phone in phoneList) {
+                val verification = verifiedItems[phone.documentId]
+                val isVerified = verification != null && verification.verificationStatus == "verified"
+                val isForReconciliation = verification != null && verification.verificationStatus == "for_reconciliation"
 
                 when (phone.status) {
                     "On-Display" -> {
                         qtyOnDisplay++
                         if (isVerified) qtyOnDisplayVerified++
+                        if (isForReconciliation) qtyOnDisplayReconciled++
                     }
                     "On-Hand" -> {
                         qtyOnStock++
                         if (isVerified) qtyOnStockVerified++
+                        if (isForReconciliation) qtyOnStockReconciled++
                     }
                 }
             }
 
-            // Check if manufacturer is complete (all items verified)
-            val totalQty = qtyOnDisplay + qtyOnStock
-            val totalVerified = qtyOnDisplayVerified + qtyOnStockVerified
-            val isComplete = totalQty > 0 && totalVerified == totalQty
+            // Calculate totalItems based on statusFilter (this is what the badge shows)
+            val totalItems = when (statusFilter) {
+                "On-Display" -> qtyOnDisplay
+                "On-Hand" -> qtyOnStock
+                else -> qtyOnDisplay + qtyOnStock
+            }
+
+            // Skip this manufacturer if no items match the filter
+            if (totalItems == 0) {
+                continue
+            }
+
+            // Check if manufacturer is complete - ONLY count verified items (NOT for_reconciliation)
+            val totalVerified = when (statusFilter) {
+                "On-Display" -> qtyOnDisplayVerified
+                "On-Hand" -> qtyOnStockVerified
+                else -> qtyOnDisplayVerified + qtyOnStockVerified
+            }
+            val isComplete = totalItems > 0 && totalVerified == totalItems
 
             manufacturers.add(
                 ManufacturerSummary(
-                    name = manufacturerName,
-                    totalItems = phones.size,
+                    name = name,
+                    totalItems = totalItems,
                     qtyOnDisplay = qtyOnDisplay,
                     qtyOnDisplayVerified = qtyOnDisplayVerified,
                     qtyOnDisplayReconciled = qtyOnDisplayReconciled,
@@ -501,7 +657,7 @@ class ReconciliationDetailActivity : AppCompatActivity() {
             )
         }
 
-        // Sort manufacturers alphabetically
+        // Sort by manufacturer name
         manufacturers.sortBy { it.name }
 
         // Update manufacturer count
@@ -555,10 +711,11 @@ class ReconciliationDetailActivity : AppCompatActivity() {
                 // Manufacturer name
                 manufacturerName.text = item.name
 
-                // Item count badge
+                // Item count badge - shows total items based on status filter
                 itemCountBadge.text = "${item.totalItems} item${if (item.totalItems > 1) "s" else ""}"
 
-                // Completion status
+                // Completion status - show checkmark and green background ONLY if all items are verified
+                // (not counting for_reconciliation items)
                 if (item.isComplete) {
                     completedCheckmark.visibility = View.VISIBLE
                     manufacturerCard.setCardBackgroundColor(
@@ -631,6 +788,18 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         barcodeScannerLauncher.launch(intent)
     }
 
+    /**
+     * Check if an item's status matches the inventory status setting
+     */
+    private fun doesStatusMatchSetting(itemStatus: String): Boolean {
+        return when (inventoryStatusSetting) {
+            "On-Display" -> itemStatus == "On-Display"
+            "In-Stock" -> itemStatus == "On-Hand"
+            "Both" -> true
+            else -> true
+        }
+    }
+
     private fun processScannedBarcode(scannedValue: String) {
         // Search for matching phone by IMEI1, IMEI2, or Serial Number
         val matchingPhone = allPhones.find { phone ->
@@ -644,10 +813,35 @@ class ReconciliationDetailActivity : AppCompatActivity() {
             return
         }
 
-        // Check if already verified
+        // Check if already verified or marked for reconciliation
         val existingVerification = verifiedItems[matchingPhone.documentId]
         if (existingVerification != null) {
-            showMessage("Already verified by ${existingVerification.verifiedBy}", false)
+            // Check if user with "Both" setting can upgrade "for_reconciliation" to "verified"
+            if (existingVerification.verificationStatus == "for_reconciliation" && inventoryStatusSetting == "Both") {
+                // User with "Both" setting can resolve reconciliation items
+                val scannedType = when (scannedValue) {
+                    matchingPhone.imei1 -> "IMEI1"
+                    matchingPhone.imei2 -> "IMEI2"
+                    matchingPhone.serialNumber -> "Serial"
+                    else -> "Unknown"
+                }
+
+                val prefs = getSharedPreferences(AppConstants.PREFS_NAME, Context.MODE_PRIVATE)
+                val username = prefs.getString(AppConstants.KEY_USER, "") ?: ""
+                val verifiedBy = if (username.isNotEmpty()) username else "Unknown"
+
+                // Upgrade from "for_reconciliation" to "verified"
+                upgradeToVerified(matchingPhone.documentId, verifiedBy, scannedType, scannedValue, matchingPhone.status)
+                return
+            }
+
+            // Already verified or marked for reconciliation (and user can't upgrade it)
+            val statusText = if (existingVerification.verificationStatus == "for_reconciliation") {
+                "Already marked for reconciliation by ${existingVerification.verifiedBy}"
+            } else {
+                "Already verified by ${existingVerification.verifiedBy}"
+            }
+            showMessage(statusText, false)
             return
         }
 
@@ -664,8 +858,17 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         val username = prefs.getString(AppConstants.KEY_USER, "") ?: ""
         val verifiedBy = if (username.isNotEmpty()) username else "Unknown"
 
-        // Save verification to Firebase
-        saveVerification(matchingPhone.documentId, verifiedBy, scannedType, scannedValue, matchingPhone.status)
+        // Determine if this should be verified or marked for reconciliation
+        val statusMatches = doesStatusMatchSetting(matchingPhone.status)
+
+        if (statusMatches) {
+            // Item status matches setting - mark as verified
+            saveVerification(matchingPhone.documentId, verifiedBy, scannedType, scannedValue, matchingPhone.status, "verified")
+        } else {
+            // Item status doesn't match setting - mark for reconciliation
+            saveVerification(matchingPhone.documentId, verifiedBy, scannedType, scannedValue, matchingPhone.status, "for_reconciliation")
+            showMessage("Marked for reconciliation (status mismatch)", false)
+        }
     }
 
     private fun saveVerification(
@@ -673,7 +876,8 @@ class ReconciliationDetailActivity : AppCompatActivity() {
         verifiedBy: String,
         scannedType: String,
         scannedValue: String,
-        itemStatus: String
+        itemStatus: String,
+        verificationStatus: String  // "verified" or "for_reconciliation"
     ) {
         scope.launch {
             try {
@@ -681,14 +885,24 @@ class ReconciliationDetailActivity : AppCompatActivity() {
                     "verifiedBy" to verifiedBy,
                     "verifiedAt" to Timestamp.now(),
                     "scannedType" to scannedType,
-                    "scannedValue" to scannedValue
+                    "scannedValue" to scannedValue,
+                    "verificationStatus" to verificationStatus
                 )
 
-                // Determine which verified count to increment
-                val verifiedCountField = when (itemStatus) {
-                    "On-Display" -> "qtyOnDisplayVerified"
-                    "On-Hand" -> "qtyOnStockVerified"
-                    else -> null
+                // Determine which count field to increment based on verification status
+                val countField = if (verificationStatus == "verified") {
+                    when (itemStatus) {
+                        "On-Display" -> "qtyOnDisplayVerified"
+                        "On-Hand" -> "qtyOnStockVerified"
+                        else -> null
+                    }
+                } else {
+                    // For reconciliation
+                    when (itemStatus) {
+                        "On-Display" -> "qtyOnDisplayReconciled"
+                        "On-Hand" -> "qtyOnStockReconciled"
+                        else -> null
+                    }
                 }
 
                 withContext(Dispatchers.IO) {
@@ -708,9 +922,9 @@ class ReconciliationDetailActivity : AppCompatActivity() {
                         transaction.update(docRef, "verifiedItems", currentVerifiedItems)
 
                         // Update the count if applicable
-                        if (verifiedCountField != null) {
-                            val currentCount = (snapshot.get(verifiedCountField) as? Number)?.toInt() ?: 0
-                            transaction.update(docRef, verifiedCountField, currentCount + 1)
+                        if (countField != null) {
+                            val currentCount = (snapshot.get(countField) as? Number)?.toInt() ?: 0
+                            transaction.update(docRef, countField, currentCount + 1)
                         }
 
                         null
@@ -718,13 +932,94 @@ class ReconciliationDetailActivity : AppCompatActivity() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    showMessage("✓ Verified!", false)
+                    if (verificationStatus == "verified") {
+                        showMessage("✓ Verified!", false)
+                    }
+                    // For reconciliation, message is already shown in processScannedBarcode
                 }
 
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     showMessage("Error saving verification: ${e.message}", true)
+                }
+            }
+        }
+    }
+
+    /**
+     * Upgrade an item from "for_reconciliation" to "verified"
+     * This is used when a user with "Both" setting scans an item that was previously marked for reconciliation
+     */
+    private fun upgradeToVerified(
+        inventoryId: String,
+        verifiedBy: String,
+        scannedType: String,
+        scannedValue: String,
+        itemStatus: String
+    ) {
+        scope.launch {
+            try {
+                val verificationData = mapOf(
+                    "verifiedBy" to verifiedBy,
+                    "verifiedAt" to Timestamp.now(),
+                    "scannedType" to scannedType,
+                    "scannedValue" to scannedValue,
+                    "verificationStatus" to "verified"
+                )
+
+                // Determine which count fields to adjust
+                val verifiedCountField = when (itemStatus) {
+                    "On-Display" -> "qtyOnDisplayVerified"
+                    "On-Hand" -> "qtyOnStockVerified"
+                    else -> null
+                }
+                val reconciledCountField = when (itemStatus) {
+                    "On-Display" -> "qtyOnDisplayReconciled"
+                    "On-Hand" -> "qtyOnStockReconciled"
+                    else -> null
+                }
+
+                withContext(Dispatchers.IO) {
+                    // Use a transaction to update the map and adjust counts
+                    db.runTransaction { transaction ->
+                        val docRef = db.collection(COLLECTION_INVENTORY_RECONCILIATIONS).document(reconciliationId)
+                        val snapshot = transaction.get(docRef)
+
+                        // Get current verified items
+                        @Suppress("UNCHECKED_CAST")
+                        val currentVerifiedItems = snapshot.get("verifiedItems") as? MutableMap<String, Any> ?: mutableMapOf()
+
+                        // Update verification status
+                        currentVerifiedItems[inventoryId] = verificationData
+
+                        // Update the document
+                        transaction.update(docRef, "verifiedItems", currentVerifiedItems)
+
+                        // Decrement reconciled count and increment verified count
+                        if (reconciledCountField != null) {
+                            val currentReconciledCount = (snapshot.get(reconciledCountField) as? Number)?.toInt() ?: 0
+                            if (currentReconciledCount > 0) {
+                                transaction.update(docRef, reconciledCountField, currentReconciledCount - 1)
+                            }
+                        }
+                        if (verifiedCountField != null) {
+                            val currentVerifiedCount = (snapshot.get(verifiedCountField) as? Number)?.toInt() ?: 0
+                            transaction.update(docRef, verifiedCountField, currentVerifiedCount + 1)
+                        }
+
+                        null
+                    }.await()
+                }
+
+                withContext(Dispatchers.Main) {
+                    showMessage("✓ Verified! (Reconciliation resolved)", false)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    showMessage("Error upgrading verification: ${e.message}", true)
                 }
             }
         }

@@ -547,6 +547,30 @@
 
                 </LinearLayout>
 
+                <!-- Inventory Status Dropdown (below Phone Inventory toggle) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/inventoryStatusLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginStart="24dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:hint="Inventory Status"
+                    android:enabled="false"
+                    app:boxStrokeColor="@color/techcity_blue"
+                    app:hintTextColor="@color/techcity_blue">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/inventoryStatusDropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:text="On-Display"
+                        android:textSize="14sp"
+                        android:enabled="false" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <!-- Divider -->
                 <View
                     android:layout_width="match_parent"
