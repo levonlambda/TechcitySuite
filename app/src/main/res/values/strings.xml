@@ -44,7 +44,7 @@
     <string name="financing_accounts_subtitle">Track customer financing accounts</string>
     <string name="financing_accounts_icon">Financing Accounts Icon</string>
     <string name="add_financing_account">Add Financing Account</string>
-    <string name="search_financing_accounts">Search by name, account #, contact…</string>
+    <string name="search_financing_accounts">Search by name, account #, contact, device, date…</string>
     <string name="no_financing_accounts">No financing accounts found</string>
     <string name="filter_all">All</string>
     <string name="filter_home_credit">Home Credit</string>

@@ -183,8 +183,24 @@ class FinancingAccountListActivity : AppCompatActivity() {
         applyFilters()
     }
 
+    // Month name mappings for date search
+    private val monthNames = mapOf(
+        "jan" to 1, "january" to 1,
+        "feb" to 2, "february" to 2,
+        "mar" to 3, "march" to 3,
+        "apr" to 4, "april" to 4,
+        "may" to 5,
+        "jun" to 6, "june" to 6,
+        "jul" to 7, "july" to 7,
+        "aug" to 8, "august" to 8,
+        "sep" to 9, "september" to 9,
+        "oct" to 10, "october" to 10,
+        "nov" to 11, "november" to 11,
+        "dec" to 12, "december" to 12
+    )
+
     private fun applyFilters() {
-        val searchText = binding.searchEditText.text?.toString()?.lowercase(Locale.getDefault()) ?: ""
+        val searchText = binding.searchEditText.text?.toString()?.trim()?.lowercase(Locale.getDefault()) ?: ""
 
         filteredAccounts.clear()
         filteredAccounts.addAll(allAccounts.filter { account ->
@@ -203,7 +219,8 @@ class FinancingAccountListActivity : AppCompatActivity() {
                 account.customerName.lowercase(Locale.getDefault()).contains(searchText) ||
                 account.accountNumber.lowercase(Locale.getDefault()).contains(searchText) ||
                 account.contactNumber.lowercase(Locale.getDefault()).contains(searchText) ||
-                account.financingCompany.lowercase(Locale.getDefault()).contains(searchText)
+                (account.devicePurchased?.lowercase(Locale.getDefault())?.contains(searchText) == true) ||
+                matchesDateSearch(account.purchaseDate, searchText)
             }
 
             matchesFilter && matchesSearch
@@ -211,6 +228,33 @@ class FinancingAccountListActivity : AppCompatActivity() {
 
         adapter?.notifyDataSetChanged()
         updateEmptyState()
+    }
+
+    /**
+     * Checks if the account's purchase date matches the search text.
+     * - If search text is a month name (e.g., "feb", "february"), matches that month in the current year only.
+     * - Otherwise, matches against the formatted display date (e.g., "Feb 14, 2026") for specific date searches.
+     */
+    private fun matchesDateSearch(purchaseDate: String, searchText: String): Boolean {
+        if (purchaseDate.isEmpty()) return false
+
+        // Check if search text matches a month name — filter to current year only
+        val matchedMonth = monthNames[searchText]
+        if (matchedMonth != null) {
+            val currentYear = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).get(Calendar.YEAR)
+            // purchaseDate format is "yyyy-MM-dd"
+            val parts = purchaseDate.split("-")
+            if (parts.size == 3) {
+                val year = parts[0].toIntOrNull()
+                val month = parts[1].toIntOrNull()
+                return year == currentYear && month == matchedMonth
+            }
+            return false
+        }
+
+        // Otherwise, match against the formatted display date (e.g., "Feb 14, 2026")
+        val displayDate = formatDisplayDate(purchaseDate).lowercase(Locale.getDefault())
+        return displayDate.contains(searchText)
     }
 
     private fun updateEmptyState() {

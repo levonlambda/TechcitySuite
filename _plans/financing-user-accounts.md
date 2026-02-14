@@ -124,7 +124,8 @@ Following the patterns from `AccountReceivableActivity.kt` and `PhoneInventoryLi
 - **onCreate**: Init binding, Firebase, setup back button, search listener (TextWatcher with `afterTextChanged` for real-time filtering), filter chip click handlers, FAB click → `Intent(this, AddFinancingAccountActivity::class.java)`, call `loadAccounts()`
 - **onResume**: Reload accounts (so newly added accounts appear on return)
 - **loadAccounts()**: Coroutine with `Dispatchers.IO`, query `financing_accounts` ordered by `createdAt` descending, map documents to `FinancingAccount` (set `id` from `document.id`), update `allAccounts`, call `applyFilters()`
-- **applyFilters()**: Filter `allAccounts` by current chip selection + search text (case-insensitive partial match on customerName, accountNumber, contactNumber, financingCompany), update `filteredAccounts`, notify adapter, toggle empty state visibility
+- **applyFilters()**: Filter `allAccounts` by current chip selection + search text (case-insensitive partial match on customerName, accountNumber, contactNumber, devicePurchased, and purchaseDate). Financing company is NOT searched via text — the filter buttons handle that. Date search uses a `matchesDateSearch()` helper with month-name matching (e.g., "feb" → February of current year only) and display-date partial matching for specific dates. A `monthNames` map provides month name lookups. Update `filteredAccounts`, notify adapter, toggle empty state visibility
+- **Search bar**: White background (`boxBackgroundColor`), hint text includes "name, account #, contact, device, date"
 - **Inner Adapter**: RecyclerView.Adapter with ViewHolder using `ItemFinancingAccountBinding`. Bind: name, account number, contact, date (formatted "MMM dd, yyyy"), device (visibility toggle), financing company badge (colored background per company). Item click → Toast "Detail view coming soon."
 - **onDestroy**: Cancel coroutine scope
 
