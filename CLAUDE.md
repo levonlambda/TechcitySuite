@@ -107,6 +107,9 @@ When asked to implement, follow the approved technical plan **exactly**. During 
 - **Do NOT fix unrelated bugs, warnings, lint issues, or TODOs** you happen to notice.
 - **Do NOT change code style, formatting, or structure** of files outside the current scope.
 - **Do NOT add features, enhancements, or "nice-to-haves"** that were not in the approved spec and plan.
+- **Do NOT modify, remove, or rewrite existing comments** in the code unless they are directly related to the current task.
+- **Do NOT change spacing, indentation, formatting, or line breaks** in existing code that is not being modified for the current task. Unnecessary whitespace changes clutter the diff and make it hard to review what actually changed.
 - If you notice something that should be fixed or improved outside the current scope, **mention it in a comment at the end of your response** instead of changing it. I will decide whether to address it separately.
+- **Do NOT run any git commands** (`git commit`, `git push`, `git merge`, `git checkout`, etc.). I will handle all version control operations myself.
 
 **Violating these scope rules risks breaking existing functionality.** Stay focused on the approved plan.
