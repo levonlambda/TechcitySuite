@@ -305,29 +305,67 @@ class FinancingAccountListActivity : AppCompatActivity() {
             b.customerNameText.text = account.customerName
 
             // Account number
-            b.accountNumberText.text = account.accountNumber
+            b.accountNumberValue.text = account.accountNumber
 
             // Contact number
-            b.contactNumberText.text = account.contactNumber
+            b.contactNumberValue.text = account.contactNumber
 
-            // Date of purchase - format for display
+            // Device purchased (conditional visibility)
+            if (!account.devicePurchased.isNullOrBlank()) {
+                b.devicePurchasedValue.text = account.devicePurchased
+                b.deviceColumn.visibility = View.VISIBLE
+            } else {
+                b.deviceColumn.visibility = View.GONE
+            }
+
+            // Financial summary row (conditional visibility)
+            val hasMonthly = account.monthlyPayment != null && account.monthlyPayment > 0
+            val hasTerm = !account.term.isNullOrBlank()
+            val hasDownpayment = account.downpayment != null && account.downpayment > 0
+            val hasFinancialData = hasMonthly || hasTerm || hasDownpayment
+
+            if (hasFinancialData) {
+                b.financialDivider.visibility = View.VISIBLE
+                b.financialSummaryRow.visibility = View.VISIBLE
+
+                // Monthly payment
+                if (hasMonthly) {
+                    b.monthlyPaymentValue.text = "₱${String.format("%,.2f", account.monthlyPayment)}"
+                    b.monthlyPaymentValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.cash_dark_green))
+                } else {
+                    b.monthlyPaymentValue.text = "—"
+                    b.monthlyPaymentValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.gray))
+                }
+
+                // Term
+                if (hasTerm) {
+                    b.termValue.text = account.term
+                    b.termValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.black))
+                } else {
+                    b.termValue.text = "—"
+                    b.termValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.gray))
+                }
+
+                // Downpayment
+                if (hasDownpayment) {
+                    b.downpaymentValue.text = "₱${String.format("%,.2f", account.downpayment)}"
+                    b.downpaymentValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.black))
+                } else {
+                    b.downpaymentValue.text = "—"
+                    b.downpaymentValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.gray))
+                }
+            } else {
+                b.financialDivider.visibility = View.GONE
+                b.financialSummaryRow.visibility = View.GONE
+            }
+
+            // Purchase date (right side of account number row)
             b.purchaseDateText.text = formatDisplayDate(account.purchaseDate)
 
-            // Monthly payment (conditional visibility)
-            if (account.monthlyPayment != null && account.monthlyPayment > 0) {
-                b.monthlyPaymentText.text = "Monthly: ₱${String.format("%,.2f", account.monthlyPayment)}"
-                b.monthlyPaymentText.visibility = View.VISIBLE
-            } else {
-                b.monthlyPaymentText.visibility = View.GONE
-            }
-
-            // Device purchased (conditional visibility - controls the row wrapper)
-            if (!account.devicePurchased.isNullOrBlank()) {
-                b.devicePurchasedText.text = account.devicePurchased
-                b.devicePurchasedRow.visibility = View.VISIBLE
-            } else {
-                b.devicePurchasedRow.visibility = View.GONE
-            }
+            // Align Date column width to match Phone column width
+            val phoneValueWidth = b.contactNumberValue.paint.measureText(account.contactNumber)
+            val phoneLabelWidth = b.contactNumberLabel.paint.measureText("Phone")
+            b.purchaseDateColumn.minimumWidth = maxOf(phoneValueWidth, phoneLabelWidth).toInt()
 
             // Financing company badge
             b.financingCompanyBadge.text = account.financingCompany

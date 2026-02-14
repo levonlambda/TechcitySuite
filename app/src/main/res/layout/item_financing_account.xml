@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="14dp">
 
         <!-- Row 1: Customer Name + Financing Company Badge -->
         <LinearLayout
@@ -37,11 +37,11 @@
                 android:id="@+id/financingCompanyBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="2dp"
-                android:paddingBottom="2dp"
-                android:textSize="10sp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
                 android:background="@drawable/rounded_badge_small"
@@ -49,94 +49,220 @@
 
         </LinearLayout>
 
-        <!-- Row 2: Account Number + Date of Purchase -->
+        <!-- Row 2: Account Number (left) + Date (right) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="8dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Acct #: "
-                android:textSize="13sp"
-                android:textColor="@color/gray" />
-
-            <TextView
-                android:id="@+id/accountNumberText"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textSize="13sp"
-                android:textColor="@color/black" />
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/purchaseDateText"
+                <TextView
+                    android:id="@+id/accountNumberLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Account Number"
+                    android:textSize="11sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/accountNumberValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/purchaseDateColumn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/gray" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/purchaseDateLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Date"
+                    android:textSize="11sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/purchaseDateText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Row 3: Contact Number + Monthly Payment -->
+        <!-- Row 3: Device (left, conditional) + Phone (right) -->
         <LinearLayout
+            android:id="@+id/contactInfoRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="2dp">
+            android:gravity="end"
+            android:layout_marginTop="6dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Phone #: "
-                android:textSize="12sp"
-                android:textColor="@color/gray" />
-
-            <TextView
-                android:id="@+id/contactNumberText"
+            <!-- Device column (conditional) -->
+            <LinearLayout
+                android:id="@+id/deviceColumn"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textSize="12sp"
-                android:textColor="@color/gray" />
+                android:orientation="vertical"
+                android:visibility="gone">
 
-            <TextView
-                android:id="@+id/monthlyPaymentText"
+                <TextView
+                    android:id="@+id/devicePurchasedLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Device"
+                    android:textSize="11sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/devicePurchasedValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+
+            <!-- Phone column -->
+            <LinearLayout
+                android:id="@+id/contactNumberColumn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/gray"
-                android:visibility="gone" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/contactNumberLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Phone"
+                    android:textSize="11sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/contactNumberValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Row 4: Device Purchased (conditional) -->
+        <!-- Divider (conditional - shown when financial summary is visible) -->
+        <View
+            android:id="@+id/financialDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/light_gray"
+            android:visibility="gone" />
+
+        <!-- Row 4: Financial Summary - Monthly / Term / Downpayment (conditional) -->
         <LinearLayout
-            android:id="@+id/devicePurchasedRow"
+            android:id="@+id/financialSummaryRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="8dp"
             android:visibility="gone">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Device: "
-                android:textSize="12sp"
-                android:textColor="@color/gray" />
-
-            <TextView
-                android:id="@+id/devicePurchasedText"
+            <!-- Monthly Payment column -->
+            <LinearLayout
+                android:id="@+id/monthlyPaymentColumn"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textSize="12sp"
-                android:textColor="@color/gray" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/monthlyPaymentLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Monthly"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/monthlyPaymentValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/cash_dark_green" />
+
+            </LinearLayout>
+
+            <!-- Term column -->
+            <LinearLayout
+                android:id="@+id/termColumn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/termLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Term"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/termValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+
+            <!-- Downpayment column -->
+            <LinearLayout
+                android:id="@+id/downpaymentColumn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:id="@+id/downpaymentLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Downpayment"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/downpaymentValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
