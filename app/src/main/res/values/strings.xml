@@ -55,10 +55,10 @@
     <string name="label_account_number">Account Number</string>
     <string name="label_date_of_purchase">Date of Purchase</string>
     <string name="label_contact_number">Contact Number</string>
-    <string name="label_device_purchased">Device Purchased</string>
-    <string name="label_monthly_payment">Monthly Payment</string>
+    <string name="label_device_purchased">Device Purchased (Optional)</string>
+    <string name="label_monthly_payment">Monthly Payment (Optional)</string>
     <string name="label_term">Term</string>
-    <string name="label_downpayment">Downpayment</string>
+    <string name="label_downpayment">Downpayment (Optional)</string>
     <string name="save_account">Save Account</string>
     <string name="account_saved_successfully">Account saved successfully</string>
     <string name="field_required">This field is required</string>

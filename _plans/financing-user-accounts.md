@@ -76,8 +76,8 @@ const val COLLECTION_FINANCING_ACCOUNTS = "financing_accounts"
 
 **activity_financing_account_list.xml** — ConstraintLayout structure following `activity_phone_inventory_list.xml` pattern:
 - Blue header LinearLayout with back arrow ImageButton + title TextView
-- Search TextInputLayout below header with search icon
-- HorizontalScrollView with filter chips (All, Home Credit, Skyro, Samsung Finance) as MaterialButtons
+- Search bar wrapped in a white `FrameLayout` (`searchContainer`) for seamless background with the filter row below. Contains `TextInputLayout` with search icon, white `boxBackgroundColor`, and outline box mode
+- Filter buttons row (All, Home Credit, Skyro, Samsung) as MaterialButtons with white background. Samsung button label shortened to "Samsung" with `minHeight="0dp"` for consistent height
 - RecyclerView (initially GONE)
 - ProgressBar (centered, initially GONE)
 - Empty state TextView (centered, initially GONE)
@@ -85,9 +85,9 @@ const val COLLECTION_FINANCING_ACCOUNTS = "financing_accounts"
 
 **item_financing_account.xml** — MaterialCardView following `item_account_receivable.xml` pattern:
 - Row 1: Customer name (bold, 16sp) + financing company badge (top-right, colored by company)
-- Row 2: Account number
-- Row 3: Contact number + Date of purchase (right-aligned)
-- Row 4 (conditional): Device purchased (smaller text, gray, GONE if null)
+- Row 2: "Acct #:" label + account number (left) + date of purchase (right-aligned)
+- Row 3: "Phone #:" label + contact number (left) + monthly payment formatted as "Monthly: ₱X,XXX.XX" (right-aligned, conditional, GONE if null)
+- Row 4 (conditional): "Device:" label + device purchased (GONE if null). Wrapped in a `LinearLayout` (`devicePurchasedRow`) for visibility toggling
 
 **activity_add_financing_account.xml** — ConstraintLayout with:
 - Blue header with back arrow + title
@@ -97,10 +97,11 @@ const val COLLECTION_FINANCING_ACCOUNTS = "financing_accounts"
   3. Customer Name
   4. Account Number
   5. Contact Number (inputType: phone)
-  6. Device Purchased
-  7. Monthly Payment (inputType: numberDecimal)
+  6. Device Purchased (Optional)
+  7. Monthly Payment (Optional, inputType: numberDecimal)
   8. Term
-  9. Downpayment (inputType: numberDecimal)
+  9. Downpayment (Optional, inputType: numberDecimal)
+- Optional fields show "(Optional)" in their hint labels
 - Full-width MaterialButton "Save Account" at bottom of ScrollView content
 
 ### Step 3: Menu integration
@@ -126,7 +127,7 @@ Following the patterns from `AccountReceivableActivity.kt` and `PhoneInventoryLi
 - **loadAccounts()**: Coroutine with `Dispatchers.IO`, query `financing_accounts` ordered by `createdAt` descending, map documents to `FinancingAccount` (set `id` from `document.id`), update `allAccounts`, call `applyFilters()`
 - **applyFilters()**: Filter `allAccounts` by current chip selection + search text (case-insensitive partial match on customerName, accountNumber, contactNumber, devicePurchased, and purchaseDate). Financing company is NOT searched via text — the filter buttons handle that. Date search uses a `matchesDateSearch()` helper with month-name matching (e.g., "feb" → February of current year only) and display-date partial matching for specific dates. A `monthNames` map provides month name lookups. Update `filteredAccounts`, notify adapter, toggle empty state visibility
 - **Search bar**: White background (`boxBackgroundColor`), hint text includes "name, account #, contact, device, date"
-- **Inner Adapter**: RecyclerView.Adapter with ViewHolder using `ItemFinancingAccountBinding`. Bind: name, account number, contact, date (formatted "MMM dd, yyyy"), device (visibility toggle), financing company badge (colored background per company). Item click → Toast "Detail view coming soon."
+- **Inner Adapter**: RecyclerView.Adapter with ViewHolder using `ItemFinancingAccountBinding`. Bind: name, account number, contact, date (formatted "MMM dd, yyyy"), monthly payment (conditional, formatted "Monthly: ₱X,XXX.XX"), device (visibility toggle on `devicePurchasedRow` wrapper), financing company badge (colored background per company). Item click → Toast "Detail view coming soon."
 - **onDestroy**: Cancel coroutine scope
 
 ### Step 5: Add Activity (AddFinancingAccountActivity.kt)
@@ -179,5 +180,6 @@ No new libraries required. All needed dependencies (Firestore, Material, Corouti
    - Required field validation shows inline errors
    - Saving creates a document in `financing_accounts` Firestore collection
    - Returning to list shows the newly added account
-   - Search filters in real-time across name/account#/contact/company
+   - Search filters in real-time across name/account#/contact/device/date
    - Filter chips narrow results by financing company
+   - Monthly payment shows on list cards when provided

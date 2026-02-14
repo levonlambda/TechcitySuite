@@ -26,20 +26,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TechcitySuite is a business management Android app for a tech shop. It handles device sales (phones, tablets, laptops), accessory transactions, service payments (cash in/out, mobile loading, Skyro, Home Credit), accounts receivable with in-house installments, multi-ledger financial tracking, end-of-day reconciliation, and phone inventory management with barcode scanning.
+TechcitySuite is a business management Android app for a tech shop. It handles device sales (phones, tablets, laptops), accessory transactions, service payments (cash in/out, mobile loading, Skyro, Home Credit), accounts receivable with in-house installments, financing account tracking (Home Credit, Skyro, Samsung Finance), multi-ledger financial tracking, end-of-day reconciliation, and phone inventory management with barcode scanning.
 
 ## Architecture
 
 **Single-module Android app** (`app/`) using Activity-based MVC — no MVVM, no Jetpack Navigation, no ViewModel/LiveData.
 
-- **Activities** (`app/src/main/java/com/techcity/techcitysuite/`) — Each screen is an Activity (26 registered). Navigation is Intent-based. `SplashActivity` → `MenuActivity` → feature activities.
+- **Activities** (`app/src/main/java/com/techcity/techcitysuite/`) — Each screen is an Activity (28 registered). Navigation is Intent-based. `SplashActivity` → `MenuActivity` → feature activities.
 - **Singleton Managers** — `LedgerManager` (in-memory ledger state for CASH, GCASH, PAYMAYA, OTHERS) and `AppSettingsManager` (Firebase-backed settings with local caching). These hold global mutable state.
-- **Models** — Kotlin data classes: `InventoryItem`, `DeviceTransaction`, `ServiceTransaction`, `AccessoryTransaction`, `LedgerEntry`, `Ledger`, `AppSettings`.
+- **Models** — Kotlin data classes: `InventoryItem`, `DeviceTransaction`, `ServiceTransaction`, `AccessoryTransaction`, `LedgerEntry`, `Ledger`, `AppSettings`, `FinancingAccount`.
 - **Utilities** — `TransactionProcessor` (ledger entry generation), `NotificationHelper`, `Constants`/`AppConstants` (Firebase collection names, config keys).
 
 ## Backend & Data
 
-**Firebase Cloud Firestore** is the sole backend — no local database. Key collections: `inventory`, `device_transactions`, `service_transactions`, `accessory_transactions`, `app_settings`, `app_config`, `suppliers`, `procurements`.
+**Firebase Cloud Firestore** is the sole backend — no local database. Key collections: `inventory`, `device_transactions`, `service_transactions`, `accessory_transactions`, `financing_accounts`, `app_settings`, `app_config`, `suppliers`, `procurements`.
 
 Async pattern: Kotlin Coroutines with `Dispatchers.Main`/`Dispatchers.IO` and Firebase `.await()` extensions. Coroutine scopes are created per-Activity and cancelled in `onDestroy()`.
 

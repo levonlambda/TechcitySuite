@@ -2,8 +2,11 @@ package com.techcity.techcitysuite
 
 import android.app.DatePickerDialog
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import com.google.android.material.textfield.TextInputEditText
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -12,6 +15,7 @@ import com.google.firebase.ktx.Firebase
 import com.techcity.techcitysuite.databinding.ActivityAddFinancingAccountBinding
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,6 +46,7 @@ class AddFinancingAccountActivity : AppCompatActivity() {
         setupBackButton()
         setupDatePicker()
         setupFinancingCompanyDropdown()
+        setupCurrencyFormatting()
         setupSaveButton()
     }
 
@@ -103,6 +108,47 @@ class AddFinancingAccountActivity : AppCompatActivity() {
     private fun setupFinancingCompanyDropdown() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, financingCompanies)
         binding.financingCompanyDropdown.setAdapter(adapter)
+    }
+
+    private fun setupCurrencyFormatting() {
+        addCurrencyTextWatcher(binding.monthlyPaymentEditText)
+        addCurrencyTextWatcher(binding.downpaymentEditText)
+    }
+
+    private fun addCurrencyTextWatcher(editText: TextInputEditText) {
+        val formatter = DecimalFormat("#,##0.00")
+        var isFormatting = false
+
+        editText.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                // Format on focus loss
+                val raw = editText.text.toString().replace(",", "")
+                val value = raw.toDoubleOrNull()
+                if (value != null) {
+                    isFormatting = true
+                    editText.setText(formatter.format(value))
+                    isFormatting = false
+                }
+            }
+        }
+
+        editText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (isFormatting) return
+                // Remove non-numeric chars except decimal point while typing
+                val text = s.toString()
+                val dotCount = text.count { it == '.' }
+                if (dotCount > 1) {
+                    isFormatting = true
+                    val lastDot = text.lastIndexOf('.')
+                    editText.setText(text.removeRange(lastDot, lastDot + 1))
+                    editText.setSelection(editText.text?.length ?: 0)
+                    isFormatting = false
+                }
+            }
+        })
     }
 
     private fun setupSaveButton() {
@@ -168,11 +214,11 @@ class AddFinancingAccountActivity : AppCompatActivity() {
 
         if (hasErrors) return
 
-        // Get optional fields
+        // Get optional fields (strip commas from currency fields before parsing)
         val devicePurchased = binding.devicePurchasedEditText.text.toString().trim().ifEmpty { null }
-        val monthlyPaymentText = binding.monthlyPaymentEditText.text.toString().trim()
+        val monthlyPaymentText = binding.monthlyPaymentEditText.text.toString().trim().replace(",", "")
         val monthlyPayment = if (monthlyPaymentText.isNotEmpty()) monthlyPaymentText.toDoubleOrNull() else null
-        val downpaymentText = binding.downpaymentEditText.text.toString().trim()
+        val downpaymentText = binding.downpaymentEditText.text.toString().trim().replace(",", "")
         val downpayment = if (downpaymentText.isNotEmpty()) downpaymentText.toDoubleOrNull() else null
 
         // Get user info from AppSettingsManager
