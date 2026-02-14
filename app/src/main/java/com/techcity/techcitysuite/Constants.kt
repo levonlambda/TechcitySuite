@@ -44,6 +44,7 @@ object AppConstants {
     const val COLLECTION_PROCUREMENTS = "procurements"
     const val COLLECTION_SUPPLIER_LEDGER = "supplier_ledger"
     const val COLLECTION_INVENTORY_ARCHIVES = "inventory_archives"
+    const val COLLECTION_FINANCING_ACCOUNTS = "financing_accounts"
 
     // ============================================================================
     // TRANSACTION TYPES

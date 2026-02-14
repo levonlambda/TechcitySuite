@@ -177,6 +177,12 @@ class MenuActivity : AppCompatActivity() {
             val intent = Intent(this, AccountReceivableActivity::class.java)
             startActivity(intent)
         }
+
+        // Financing Accounts button
+        binding.financingAccountsButton.setOnClickListener {
+            val intent = Intent(this, FinancingAccountListActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     // ============================================================================
