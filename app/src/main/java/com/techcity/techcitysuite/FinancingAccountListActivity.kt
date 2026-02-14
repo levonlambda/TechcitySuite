@@ -313,12 +313,20 @@ class FinancingAccountListActivity : AppCompatActivity() {
             // Date of purchase - format for display
             b.purchaseDateText.text = formatDisplayDate(account.purchaseDate)
 
-            // Device purchased (conditional visibility)
+            // Monthly payment (conditional visibility)
+            if (account.monthlyPayment != null && account.monthlyPayment > 0) {
+                b.monthlyPaymentText.text = "Monthly: ₱${String.format("%,.2f", account.monthlyPayment)}"
+                b.monthlyPaymentText.visibility = View.VISIBLE
+            } else {
+                b.monthlyPaymentText.visibility = View.GONE
+            }
+
+            // Device purchased (conditional visibility - controls the row wrapper)
             if (!account.devicePurchased.isNullOrBlank()) {
                 b.devicePurchasedText.text = account.devicePurchased
-                b.devicePurchasedText.visibility = View.VISIBLE
+                b.devicePurchasedRow.visibility = View.VISIBLE
             } else {
-                b.devicePurchasedText.visibility = View.GONE
+                b.devicePurchasedRow.visibility = View.GONE
             }
 
             // Financing company badge
