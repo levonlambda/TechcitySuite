@@ -24,6 +24,10 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 | 6 | `app/src/main/res/values/strings.xml` | Add ~12 new string resources |
 | 7 | `app/src/main/java/com/techcity/techcitysuite/FinancingAccountListActivity.kt` | Add ItemTouchHelper swipe actions, password/delete dialogs, edit trigger, detail navigation, 2-year Firestore filter on default load |
 | 8 | `app/src/main/java/com/techcity/techcitysuite/AddFinancingAccountActivity.kt` | Add edit mode support (pre-fill fields, update vs add, preserve original metadata) |
+| 9 | `app/src/main/java/com/techcity/techcitysuite/Constants.kt` | Add `KEY_FINANCING_ACCOUNTS_ENABLED` SharedPreferences key |
+| 10 | `app/src/main/java/com/techcity/techcitysuite/ProgramSettingsActivity.kt` | Add Financing Accounts toggle (default on) to Feature Settings — load/save preference |
+| 11 | `app/src/main/res/layout/activity_program_settings.xml` | Add Financing Accounts SwitchMaterial toggle in Feature Settings card |
+| 12 | `app/src/main/java/com/techcity/techcitysuite/MenuActivity.kt` | Add Financing Accounts card visibility toggle in `updateFeatureVisibility()` |
 
 ---
 
@@ -181,6 +185,27 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 
 ---
 
+### Step 6: Feature 5 — Financing Accounts Toggle in Program Settings
+
+**6a. Add constant to `Constants.kt`:**
+- `KEY_FINANCING_ACCOUNTS_ENABLED = "financing_accounts_enabled"`
+
+**6b. Add toggle to `activity_program_settings.xml`:**
+- New "Financing Accounts" SwitchMaterial toggle in Feature Settings card (between Phone Inventory and Device Transaction Notifications)
+- Title: "Financing Accounts", subtitle: "Show Financing Accounts in main menu"
+- Default checked: `true`
+
+**6c. Modify `ProgramSettingsActivity.kt`:**
+- Add `KEY_FINANCING_ACCOUNTS_ENABLED` companion const
+- `loadSettings()`: load toggle state with default `true`
+- `saveSettings()`: save toggle state
+
+**6d. Modify `MenuActivity.kt` → `updateFeatureVisibility()`:**
+- Read `KEY_FINANCING_ACCOUNTS_ENABLED` preference (default `true`)
+- Show/hide `financingAccountsCard` based on the value
+
+---
+
 ## Key Patterns Being Reused
 
 | Pattern | Source File | Reused In |
@@ -211,4 +236,5 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 2. **Swipe Right to Edit**: Swipe a card right → see teal background with edit icon → AddFinancingAccountActivity opens with "Edit Financing Account" title, all fields pre-filled (including formatted currency), button says "Update Account" → modify a field → tap Update → toast shown, returns to list, changes reflected.
 3. **Tap to View Detail**: Tap a card → FinancingAccountDetailActivity opens with "Account Details" title → fields displayed with correct badge color → tap copy button for each field → toast confirms copy → paste elsewhere to verify clipboard content → back button returns to list.
 4. **Default Loading with 2-Year Filter**: Open Financing Accounts list → spinner appears, accounts from last 2 years load automatically → search field filters results client-side → filter buttons work on loaded results → returning from edit/add/delete refreshes the list via `onResume()`.
+5. **Financing Accounts Toggle**: Open Program Settings → Financing Accounts toggle is ON by default → turn OFF → save → return to menu → Financing Accounts card is hidden → go back to settings → turn ON → save → card reappears.
 5. **Build**: `./gradlew assembleDebug` succeeds with no errors.

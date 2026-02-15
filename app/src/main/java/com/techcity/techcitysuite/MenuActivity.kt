@@ -105,6 +105,14 @@ class MenuActivity : AppCompatActivity() {
         } else {
             binding.inventoryCard.visibility = View.GONE
         }
+
+        // Financing Accounts visibility
+        val financingAccountsEnabled = prefs.getBoolean(AppConstants.KEY_FINANCING_ACCOUNTS_ENABLED, true)
+        if (financingAccountsEnabled) {
+            binding.financingAccountsCard.visibility = View.VISIBLE
+        } else {
+            binding.financingAccountsCard.visibility = View.GONE
+        }
     }
 
     // ============================================================================
