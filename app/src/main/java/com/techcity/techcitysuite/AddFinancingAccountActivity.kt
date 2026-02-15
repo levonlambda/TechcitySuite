@@ -36,6 +36,12 @@ class AddFinancingAccountActivity : AppCompatActivity() {
     private val displayDateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
     private var selectedDateStorage: String = ""
 
+    // Edit mode properties
+    private var isEditMode = false
+    private var editDocumentId = ""
+    private var originalCreatedBy = ""
+    private var originalStoreLocation = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAddFinancingAccountBinding.inflate(layoutInflater)
@@ -47,6 +53,7 @@ class AddFinancingAccountActivity : AppCompatActivity() {
         setupDatePicker()
         setupFinancingCompanyDropdown()
         setupCurrencyFormatting()
+        checkEditMode()
         setupSaveButton()
     }
 
@@ -155,6 +162,53 @@ class AddFinancingAccountActivity : AppCompatActivity() {
         binding.saveButton.setOnClickListener { saveAccount() }
     }
 
+    private fun checkEditMode() {
+        isEditMode = intent.getBooleanExtra("edit_mode", false)
+        if (!isEditMode) return
+
+        editDocumentId = intent.getStringExtra("document_id") ?: ""
+        originalCreatedBy = intent.getStringExtra("created_by") ?: ""
+        originalStoreLocation = intent.getStringExtra("store_location") ?: ""
+
+        // Update header and button text
+        binding.titleText.text = getString(R.string.edit_financing_account)
+        binding.saveButton.text = getString(R.string.update_account)
+
+        // Pre-fill financing company dropdown (false prevents filter from activating)
+        val financingCompany = intent.getStringExtra("financing_company") ?: ""
+        binding.financingCompanyDropdown.setText(financingCompany, false)
+
+        // Pre-fill text fields
+        binding.customerNameEditText.setText(intent.getStringExtra("customer_name") ?: "")
+        binding.accountNumberEditText.setText(intent.getStringExtra("account_number") ?: "")
+        binding.contactNumberEditText.setText(intent.getStringExtra("contact_number") ?: "")
+        binding.devicePurchasedEditText.setText(intent.getStringExtra("device_purchased") ?: "")
+        binding.termEditText.setText(intent.getStringExtra("term") ?: "")
+
+        // Pre-fill date
+        val purchaseDate = intent.getStringExtra("purchase_date") ?: ""
+        if (purchaseDate.isNotEmpty()) {
+            selectedDateStorage = purchaseDate
+            try {
+                val date = storageDateFormat.parse(purchaseDate)
+                if (date != null) {
+                    binding.dateEditText.setText(displayDateFormat.format(date))
+                }
+            } catch (_: Exception) {}
+        }
+
+        // Pre-fill currency fields with formatting
+        val currencyFormatter = DecimalFormat("#,##0.00")
+        if (intent.getBooleanExtra("has_monthly_payment", false)) {
+            val monthlyPayment = intent.getDoubleExtra("monthly_payment", 0.0)
+            binding.monthlyPaymentEditText.setText(currencyFormatter.format(monthlyPayment))
+        }
+        if (intent.getBooleanExtra("has_downpayment", false)) {
+            val downpayment = intent.getDoubleExtra("downpayment", 0.0)
+            binding.downpaymentEditText.setText(currencyFormatter.format(downpayment))
+        }
+    }
+
     // ============================================================================
     // END OF PART 2: SETUP METHODS
     // ============================================================================
@@ -223,8 +277,8 @@ class AddFinancingAccountActivity : AppCompatActivity() {
 
         // Get user info from AppSettingsManager
         val settings = AppSettingsManager.getCurrentSettings()
-        val createdBy = settings?.user ?: ""
-        val storeLocation = settings?.storeLocation ?: ""
+        val createdBy = if (isEditMode) originalCreatedBy else (settings?.user ?: "")
+        val storeLocation = if (isEditMode) originalStoreLocation else (settings?.storeLocation ?: "")
 
         // Build data map
         val data = hashMapOf<String, Any?>(
@@ -237,10 +291,20 @@ class AddFinancingAccountActivity : AppCompatActivity() {
             "monthlyPayment" to monthlyPayment,
             "term" to term,
             "downpayment" to downpayment,
-            "createdAt" to FieldValue.serverTimestamp(),
             "createdBy" to createdBy,
             "storeLocation" to storeLocation
         )
+
+        if (!isEditMode) {
+            data["createdAt"] = FieldValue.serverTimestamp()
+        }
+
+        // In edit mode, use FieldValue.delete() for null optional fields
+        if (isEditMode) {
+            if (devicePurchased == null) data["devicePurchased"] = FieldValue.delete()
+            if (monthlyPayment == null) data["monthlyPayment"] = FieldValue.delete()
+            if (downpayment == null) data["downpayment"] = FieldValue.delete()
+        }
 
         // Disable save button to prevent double-tap
         binding.saveButton.isEnabled = false
@@ -248,14 +312,21 @@ class AddFinancingAccountActivity : AppCompatActivity() {
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    db.collection(AppConstants.COLLECTION_FINANCING_ACCOUNTS)
-                        .add(data)
-                        .await()
+                    if (isEditMode) {
+                        db.collection(AppConstants.COLLECTION_FINANCING_ACCOUNTS)
+                            .document(editDocumentId)
+                            .update(data as Map<String, Any>)
+                            .await()
+                    } else {
+                        db.collection(AppConstants.COLLECTION_FINANCING_ACCOUNTS)
+                            .add(data)
+                            .await()
+                    }
                 }
 
                 Toast.makeText(
                     this@AddFinancingAccountActivity,
-                    getString(R.string.account_saved_successfully),
+                    getString(if (isEditMode) R.string.account_updated_successfully else R.string.account_saved_successfully),
                     Toast.LENGTH_SHORT
                 ).show()
                 finish()

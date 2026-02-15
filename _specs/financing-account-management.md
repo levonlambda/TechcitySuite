@@ -1,8 +1,8 @@
-# Feature Spec: Financing Account Management (Swipe Actions, Detail View, Search-to-Load)
+# Feature Spec: Financing Account Management (Swipe Actions, Detail View, 2-Year Filter)
 
 ## Description
 
-Enhancements to the Financing Account module adding four capabilities: swipe-left to delete (password-protected), swipe-right to edit, tap to view detail with copy-to-clipboard, and search-driven loading to reduce Firestore reads.
+Enhancements to the Financing Account module adding four capabilities: swipe-left to delete (password-protected), swipe-right to edit, tap to view detail with copy-to-clipboard, and default loading with a 2-year Firestore filter to reduce reads.
 
 ---
 
@@ -111,35 +111,31 @@ Enhancements to the Financing Account module adding four capabilities: swipe-lef
 
 ---
 
-## Feature 4: Search-Driven Loading (Save Firestore Reads)
+## Feature 4: Default Loading with 2-Year Filter
 
 ### User Story
 
-**As a store owner**, I want the financing account list to only load entries when the user searches, so that we minimize unnecessary Firestore read operations and reduce costs.
+**As a store owner**, I want the financing account list to automatically load recent accounts (last 2 years) when opened, so that I can immediately see and search through active accounts without extra steps, while keeping Firestore read costs manageable by excluding very old records.
 
 ### UI/UX Flow
 
-1. When `FinancingAccountListActivity` opens, **no accounts are loaded from Firestore**. The RecyclerView is empty.
-2. The empty state message changes to an instructional message: **"Search for an account to get started"** (instead of "No financing accounts found").
-3. When the user types in the search field (at least 1 character), the app **queries Firestore** for matching accounts and displays results.
-4. **When the search field is cleared** (back to empty), the list clears again and the instructional empty state message reappears.
-5. The **filter buttons** (All, Home Credit, Skyro, Samsung Finance) still work — they filter the results that were returned from the search query. Filters apply client-side on the already-loaded search results.
-6. The `onResume()` auto-reload is **removed** since we no longer auto-load.
+1. When `FinancingAccountListActivity` opens, accounts from the **last 2 years** are loaded from Firestore automatically and displayed in the RecyclerView.
+2. The empty state message shows **"No financing accounts found"** if no accounts exist within the 2-year window.
+3. The **search field** filters the loaded accounts **client-side** (same as current behavior) — no additional Firestore reads when typing.
+4. The **filter buttons** (All, Home Credit, Skyro, Samsung Finance) still work — they filter the already-loaded results client-side.
+5. `onResume()` reloads accounts to stay in sync after edit, add, or delete operations.
 
 ### Query Approach
 
-Since Firestore does not natively support full-text search across multiple fields, the approach is:
-- Load accounts from Firestore **limited to the last 2 years** (based on `createdAt` timestamp) when the user starts typing (first character entered), and cache them in memory (`allAccounts`). The query uses `.whereGreaterThan("createdAt", twoYearsAgo)` to limit the result set.
-- Apply search filtering **client-side** on the cached list (same as current behavior).
-- If the search field is cleared, clear the cached list and show the instructional message.
-- This means the Firestore read only happens once per session (when the user first searches), not on every `onResume()`, and only fetches recent accounts rather than the entire collection.
+- On open, load accounts from Firestore **limited to the last 2 years** (based on `createdAt` timestamp). The query uses `.whereGreaterThan("createdAt", twoYearsAgo)` combined with `.orderBy("createdAt", Query.Direction.DESCENDING)` to limit the result set.
+- Search filtering is applied **client-side** on the loaded list (same as current behavior).
+- This reduces Firestore reads compared to loading the entire collection, while still showing all relevant active accounts immediately.
 
 ### Edge Cases
 
-- If the user opens the list and never searches, **zero Firestore reads** occur.
-- On a subsequent search after clearing, if accounts are already cached in memory, do not re-fetch from Firestore — use the cached list.
-- The loading spinner should appear during the initial Firestore fetch, then disappear once data is cached.
-- If the user swipes to delete or swipes to edit and returns, the cached list should be refreshed from Firestore to stay in sync.
+- If no accounts exist within the 2-year window, the empty state message "No financing accounts found" is shown.
+- The loading spinner appears during the Firestore fetch and disappears once data is loaded.
+- If the user swipes to delete or swipes to edit and returns, `onResume()` reloads the list to stay in sync.
 
 ---
 
@@ -153,10 +149,10 @@ No changes to the existing `FinancingAccount` data class or Firestore schema. Th
 2. **Delete** removes the Firestore document permanently — there is no soft delete or trash.
 3. **Edit** updates the existing document in-place (same document ID) — `createdAt`, `createdBy`, and `storeLocation` are preserved from the original document (not overwritten).
 4. **Copy-to-clipboard** only copies the text value, not the label.
-5. **Search-to-load** means the initial state shows no data and no Firestore reads until the user initiates a search.
+5. **2-year filter** limits the Firestore query to accounts created within the last 2 years, reducing read costs while showing all relevant active accounts by default.
 6. **Swipe gestures** use Android's `ItemTouchHelper` attached to the RecyclerView.
 
 ## Open Questions
 
-None — all four features are well-defined. The Firestore query in Feature 4 is limited to accounts created within the last 2 years (via `createdAt` timestamp filter) to keep reads manageable as the dataset grows.
+None — all four features are well-defined. The Firestore query in Feature 4 loads accounts created within the last 2 years (via `createdAt` timestamp filter) by default on open, keeping reads manageable as the dataset grows.
 

@@ -2,7 +2,7 @@
 
 ## Context
 
-This plan implements 4 features from `_specs/financing-account-management.md` for the Financing Account module: swipe-left to delete (password-protected), swipe-right to edit, tap to view detail with copy-to-clipboard, and search-driven loading to reduce Firestore reads. These were deferred as "Phase 2" in the original financing-user-accounts spec.
+This plan implements 4 features from `_specs/financing-account-management.md` for the Financing Account module: swipe-left to delete (password-protected), swipe-right to edit, tap to view detail with copy-to-clipboard, and default loading with a 2-year Firestore filter. These were deferred as "Phase 2" in the original financing-user-accounts spec.
 
 ---
 
@@ -21,7 +21,7 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 |---|------|--------------------|
 | 5 | `app/src/main/AndroidManifest.xml` | Register `FinancingAccountDetailActivity` |
 | 6 | `app/src/main/res/values/strings.xml` | Add ~12 new string resources |
-| 7 | `app/src/main/java/com/techcity/techcitysuite/FinancingAccountListActivity.kt` | Add ItemTouchHelper swipe actions, password/delete dialogs, edit trigger, detail navigation, search-driven loading with 2-year Firestore filter |
+| 7 | `app/src/main/java/com/techcity/techcitysuite/FinancingAccountListActivity.kt` | Add ItemTouchHelper swipe actions, password/delete dialogs, edit trigger, detail navigation, 2-year Firestore filter on default load |
 | 8 | `app/src/main/java/com/techcity/techcitysuite/AddFinancingAccountActivity.kt` | Add edit mode support (pre-fill fields, update vs add, preserve original metadata) |
 
 ---
@@ -50,7 +50,6 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 | `account_number_copied` | Account number copied |
 | `customer_name_copied` | Customer name copied |
 | `contact_number_copied` | Contact number copied |
-| `search_to_get_started` | Search for an account to get started |
 | `password_required_to_delete` | Password required to delete accounts |
 
 ---
@@ -152,20 +151,15 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 
 ---
 
-### Step 5: Feature 4 — Search-Driven Loading
+### Step 5: Feature 4 — Default Loading with 2-Year Filter
 
 **Modify `FinancingAccountListActivity.kt`:**
 
-- Add property: `private var accountsLoaded = false`
-- **Remove** `loadAccounts()` call from `onCreate()` (line 60)
-- **Initial state**: show empty message "Search for an account to get started", hide RecyclerView
-
-- **Modify `onResume()`**: set `accountsLoaded = false`. If search field has text, call `loadAccounts()` to refresh cache (handles returning from edit/delete). If search field is empty, do nothing (zero reads).
+- **Keep** `loadAccounts()` call in `onCreate()` — accounts load automatically on open
+- **Keep** `loadAccounts()` call in `onResume()` — reloads to stay in sync after edit/add/delete
 
 - **Modify `setupSearch()` → `afterTextChanged()`**:
-  - If search text is empty: clear `allAccounts`, clear `filteredAccounts`, set `accountsLoaded = false`, show instructional empty message
-  - If search text is non-empty AND `!accountsLoaded`: call `loadAccounts()` (which sets `accountsLoaded = true` and calls `applyFilters()`)
-  - If search text is non-empty AND `accountsLoaded`: call `applyFilters()` only (client-side filter on cached data)
+  - Simply calls `applyFilters()` on every text change (client-side filtering on cached data, same as original behavior)
 
 - **Modify `loadAccounts()`**: add 2-year filter to Firestore query:
   ```kotlin
@@ -178,11 +172,8 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
       .orderBy("createdAt", Query.Direction.DESCENDING)
       .get().await()
   ```
-  After success: set `accountsLoaded = true`, call `applyFilters()`
 
-- **Modify `updateEmptyState()`**: dynamic empty message text:
-  - Not loaded yet (`!accountsLoaded`): "Search for an account to get started"
-  - Loaded but no results: "No financing accounts found"
+- **`updateEmptyState()`**: keep existing behavior — shows "No financing accounts found" when list is empty
 
 ---
 
@@ -215,5 +206,5 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 1. **Swipe Left to Delete**: Swipe a card left → see red background with delete icon → password dialog appears → enter correct password → confirmation dialog shows account details → tap "Yes, Delete" → entry removed, toast shown. Also test: wrong password, cancel at each stage.
 2. **Swipe Right to Edit**: Swipe a card right → see teal background with edit icon → AddFinancingAccountActivity opens with "Edit Financing Account" title, all fields pre-filled (including formatted currency), button says "Update Account" → modify a field → tap Update → toast shown, returns to list, changes reflected.
 3. **Tap to View Detail**: Tap a card → FinancingAccountDetailActivity opens with "Account Details" title → fields displayed with correct badge color → tap copy button for each field → toast confirms copy → paste elsewhere to verify clipboard content → back button returns to list.
-4. **Search-Driven Loading**: Open Financing Accounts list → no cards shown, message says "Search for an account to get started" → type a character → spinner appears, accounts load → filter and search work → clear search → list clears, instructional message returns → verify zero Firestore reads when not searching.
+4. **Default Loading with 2-Year Filter**: Open Financing Accounts list → spinner appears, accounts from last 2 years load automatically → search field filters results client-side → filter buttons work on loaded results → returning from edit/add/delete refreshes the list via `onResume()`.
 5. **Build**: `./gradlew assembleDebug` succeeds with no errors.

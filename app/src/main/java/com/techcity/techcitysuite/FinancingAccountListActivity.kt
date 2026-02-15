@@ -1,6 +1,9 @@
 package com.techcity.techcitysuite
 
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -8,8 +11,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FirebaseFirestore
@@ -56,6 +61,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
         setupSearch()
         setupFilterButtons()
         setupRecyclerView()
+        setupSwipeActions()
         setupFab()
         loadAccounts()
     }
@@ -115,6 +121,110 @@ class FinancingAccountListActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSwipeActions() {
+        val callback = object : ItemTouchHelper.SimpleCallback(
+            0,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val account = filteredAccounts[position]
+
+                if (direction == ItemTouchHelper.LEFT) {
+                    showPasswordDialogForDelete(account, position)
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    openEditMode(account, position)
+                }
+            }
+
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                    val itemView = viewHolder.itemView
+                    val paint = Paint()
+
+                    if (dX < 0) {
+                        // Swiping left — red background + delete icon
+                        paint.color = ContextCompat.getColor(
+                            this@FinancingAccountListActivity,
+                            R.color.red
+                        )
+                        c.drawRect(
+                            itemView.right.toFloat() + dX,
+                            itemView.top.toFloat(),
+                            itemView.right.toFloat(),
+                            itemView.bottom.toFloat(),
+                            paint
+                        )
+
+                        val deleteIcon = ContextCompat.getDrawable(
+                            this@FinancingAccountListActivity,
+                            android.R.drawable.ic_menu_delete
+                        )
+                        deleteIcon?.let { icon ->
+                            val iconMargin = (itemView.height - icon.intrinsicHeight) / 2
+                            val iconTop = itemView.top + iconMargin
+                            val iconBottom = iconTop + icon.intrinsicHeight
+                            val iconLeft = itemView.right - iconMargin - icon.intrinsicWidth
+                            val iconRight = itemView.right - iconMargin
+
+                            icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                            icon.setTint(Color.WHITE)
+                            icon.draw(c)
+                        }
+                    } else if (dX > 0) {
+                        // Swiping right — teal background + edit icon
+                        paint.color = ContextCompat.getColor(
+                            this@FinancingAccountListActivity,
+                            R.color.financing_teal
+                        )
+                        c.drawRect(
+                            itemView.left.toFloat(),
+                            itemView.top.toFloat(),
+                            itemView.left.toFloat() + dX,
+                            itemView.bottom.toFloat(),
+                            paint
+                        )
+
+                        val editIcon = ContextCompat.getDrawable(
+                            this@FinancingAccountListActivity,
+                            R.drawable.ic_edit
+                        )
+                        editIcon?.let { icon ->
+                            val iconMargin = (itemView.height - icon.intrinsicHeight) / 2
+                            val iconTop = itemView.top + iconMargin
+                            val iconBottom = iconTop + icon.intrinsicHeight
+                            val iconLeft = itemView.left + iconMargin
+                            val iconRight = iconLeft + icon.intrinsicWidth
+
+                            icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                            icon.setTint(Color.WHITE)
+                            icon.draw(c)
+                        }
+                    }
+                }
+
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+            }
+        }
+
+        val itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper.attachToRecyclerView(binding.accountsRecyclerView)
+    }
+
     // ============================================================================
     // END OF PART 2: SETUP METHODS
     // ============================================================================
@@ -132,7 +242,12 @@ class FinancingAccountListActivity : AppCompatActivity() {
         scope.launch {
             try {
                 val accounts = withContext(Dispatchers.IO) {
+                    val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
+                    calendar.add(Calendar.YEAR, -2)
+                    val twoYearsAgo = com.google.firebase.Timestamp(calendar.time)
+
                     val snapshot = db.collection(AppConstants.COLLECTION_FINANCING_ACCOUNTS)
+                        .whereGreaterThan("createdAt", twoYearsAgo)
                         .orderBy("createdAt", Query.Direction.DESCENDING)
                         .get()
                         .await()
@@ -283,7 +398,178 @@ class FinancingAccountListActivity : AppCompatActivity() {
 
 
     // ============================================================================
-    // START OF PART 5: RECYCLER VIEW ADAPTER
+    // START OF PART 5: SWIPE ACTIONS (DELETE + EDIT)
+    // ============================================================================
+
+    private fun showPasswordDialogForDelete(account: FinancingAccount, position: Int) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_password, null)
+
+        val passwordInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.passwordInput)
+        val errorMessage = dialogView.findViewById<android.widget.TextView>(R.id.errorMessage)
+        val submitButton = dialogView.findViewById<android.widget.Button>(R.id.submitButton)
+        val cancelButton = dialogView.findViewById<android.widget.Button>(R.id.cancelButton)
+        val progressBar = dialogView.findViewById<android.widget.ProgressBar>(R.id.progressBar)
+        val buttonsLayout = dialogView.findViewById<android.widget.LinearLayout>(R.id.buttonsLayout)
+
+        // Update subtitle
+        val subtitleView = dialogView.findViewById<android.widget.TextView>(android.R.id.text1)
+        subtitleView?.text = getString(R.string.password_required_to_delete)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+            adapter?.notifyItemChanged(position)
+        }
+
+        submitButton.setOnClickListener {
+            val password = passwordInput.text.toString()
+
+            if (password.isEmpty()) {
+                errorMessage.text = "Please enter a password"
+                errorMessage.visibility = View.VISIBLE
+                return@setOnClickListener
+            }
+
+            errorMessage.visibility = View.GONE
+            progressBar.visibility = View.VISIBLE
+            buttonsLayout.visibility = View.GONE
+            passwordInput.isEnabled = false
+
+            scope.launch {
+                try {
+                    val isValid = AppSettingsManager.verifyPassword(password)
+
+                    if (isValid) {
+                        dialog.dismiss()
+                        showDeleteConfirmationDialog(account, position)
+                    } else {
+                        progressBar.visibility = View.GONE
+                        buttonsLayout.visibility = View.VISIBLE
+                        passwordInput.isEnabled = true
+                        errorMessage.text = "Incorrect password"
+                        errorMessage.visibility = View.VISIBLE
+                        passwordInput.setText("")
+                        passwordInput.requestFocus()
+                    }
+                } catch (e: Exception) {
+                    progressBar.visibility = View.GONE
+                    buttonsLayout.visibility = View.VISIBLE
+                    passwordInput.isEnabled = true
+                    errorMessage.text = "Error verifying password"
+                    errorMessage.visibility = View.VISIBLE
+                    Toast.makeText(this@FinancingAccountListActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        passwordInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                submitButton.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
+        dialog.setOnCancelListener {
+            adapter?.notifyItemChanged(position)
+        }
+
+        dialog.show()
+    }
+
+    private fun showDeleteConfirmationDialog(account: FinancingAccount, position: Int) {
+        val message = StringBuilder()
+        message.append("Financing Company: ${account.financingCompany}\n")
+        message.append("Customer Name: ${account.customerName}\n")
+        message.append("Account Number: ${account.accountNumber}\n")
+        message.append("Contact Number: ${account.contactNumber}")
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.delete_account_title))
+            .setMessage(message.toString())
+            .setPositiveButton(getString(R.string.confirm_delete)) { _, _ ->
+                deleteAccountFromFirestore(account.id, position)
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                adapter?.notifyItemChanged(position)
+            }
+            .setOnCancelListener {
+                adapter?.notifyItemChanged(position)
+            }
+            .show()
+    }
+
+    private fun deleteAccountFromFirestore(documentId: String, position: Int) {
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    db.collection(AppConstants.COLLECTION_FINANCING_ACCOUNTS)
+                        .document(documentId)
+                        .delete()
+                        .await()
+                }
+
+                // Remove from both lists
+                allAccounts.removeAll { it.id == documentId }
+                filteredAccounts.removeAll { it.id == documentId }
+                adapter?.notifyDataSetChanged()
+                updateEmptyState()
+
+                Toast.makeText(
+                    this@FinancingAccountListActivity,
+                    getString(R.string.account_deleted_successfully),
+                    Toast.LENGTH_SHORT
+                ).show()
+
+            } catch (e: Exception) {
+                adapter?.notifyItemChanged(position)
+                Toast.makeText(
+                    this@FinancingAccountListActivity,
+                    "Error: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun openEditMode(account: FinancingAccount, position: Int) {
+        adapter?.notifyItemChanged(position)
+
+        val intent = Intent(this, AddFinancingAccountActivity::class.java)
+        intent.putExtra("edit_mode", true)
+        intent.putExtra("document_id", account.id)
+        intent.putExtra("financing_company", account.financingCompany)
+        intent.putExtra("customer_name", account.customerName)
+        intent.putExtra("account_number", account.accountNumber)
+        intent.putExtra("purchase_date", account.purchaseDate)
+        intent.putExtra("contact_number", account.contactNumber)
+        intent.putExtra("device_purchased", account.devicePurchased ?: "")
+        intent.putExtra("term", account.term ?: "")
+        intent.putExtra("has_monthly_payment", account.monthlyPayment != null)
+        if (account.monthlyPayment != null) {
+            intent.putExtra("monthly_payment", account.monthlyPayment)
+        }
+        intent.putExtra("has_downpayment", account.downpayment != null)
+        if (account.downpayment != null) {
+            intent.putExtra("downpayment", account.downpayment)
+        }
+        intent.putExtra("created_by", account.createdBy)
+        intent.putExtra("store_location", account.storeLocation)
+        startActivity(intent)
+    }
+
+    // ============================================================================
+    // END OF PART 5: SWIPE ACTIONS (DELETE + EDIT)
+    // ============================================================================
+
+
+    // ============================================================================
+    // START OF PART 6: RECYCLER VIEW ADAPTER
     // ============================================================================
 
     inner class FinancingAccountAdapter : RecyclerView.Adapter<FinancingAccountAdapter.ViewHolder>() {
@@ -379,9 +665,14 @@ class FinancingAccountListActivity : AppCompatActivity() {
             badgeDrawable.setTint(badgeColor)
             b.financingCompanyBadge.background = badgeDrawable
 
-            // Item click
+            // Item click — open detail screen
             holder.itemView.setOnClickListener {
-                Toast.makeText(this@FinancingAccountListActivity, getString(R.string.detail_view_coming_soon), Toast.LENGTH_SHORT).show()
+                val intent = Intent(this@FinancingAccountListActivity, FinancingAccountDetailActivity::class.java)
+                intent.putExtra("financing_company", account.financingCompany)
+                intent.putExtra("customer_name", account.customerName)
+                intent.putExtra("account_number", account.accountNumber)
+                intent.putExtra("contact_number", account.contactNumber)
+                startActivity(intent)
             }
         }
 
@@ -398,6 +689,6 @@ class FinancingAccountListActivity : AppCompatActivity() {
     }
 
     // ============================================================================
-    // END OF PART 5: RECYCLER VIEW ADAPTER
+    // END OF PART 6: RECYCLER VIEW ADAPTER
     // ============================================================================
 }

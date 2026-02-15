@@ -151,6 +151,10 @@
             android:exported="false"
             android:label="Add Financing Account" />
 
+        <activity
+            android:name=".FinancingAccountDetailActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
