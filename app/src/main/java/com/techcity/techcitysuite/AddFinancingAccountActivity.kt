@@ -1,10 +1,14 @@
 package com.techcity.techcitysuite
 
 import android.app.DatePickerDialog
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.TypedValue
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
 import android.widget.Toast
 import com.google.android.material.textfield.TextInputEditText
 import androidx.appcompat.app.AppCompatActivity
@@ -104,6 +108,36 @@ class AddFinancingAccountActivity : AppCompatActivity() {
                 currentCalendar.get(Calendar.DAY_OF_MONTH)
             )
             datePickerDialog.show()
+
+            // Style dialog buttons — programmatic override since theme attributes
+            // don't reliably apply to platform DatePickerDialog buttons
+            val dp8 = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8f, resources.displayMetrics).toInt()
+            val dp16 = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16f, resources.displayMetrics).toInt()
+            val cornerRadius = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 6f, resources.displayMetrics)
+
+            // Add padding to the button bar container so buttons don't get clipped
+            datePickerDialog.getButton(DatePickerDialog.BUTTON_POSITIVE)?.let { button ->
+                (button.parent as? LinearLayout)?.setPadding(dp8, dp16, dp8, dp16)
+            }
+
+            fun styleButton(button: android.widget.Button) {
+                val bg = GradientDrawable().apply {
+                    setColor(getColor(R.color.techcity_blue_dark))
+                    setCornerRadius(cornerRadius)
+                }
+                button.background = bg
+                button.setTextColor(getColor(R.color.white))
+                button.isAllCaps = false
+                val params = button.layoutParams as LinearLayout.LayoutParams
+                params.setMargins(dp8, 0, dp8, 0)
+                params.weight = 1f
+                params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                button.layoutParams = params
+                button.setPadding(dp16, dp8, dp16, dp8)
+            }
+
+            datePickerDialog.getButton(DatePickerDialog.BUTTON_POSITIVE)?.let { styleButton(it) }
+            datePickerDialog.getButton(DatePickerDialog.BUTTON_NEGATIVE)?.let { styleButton(it) }
         }
     }
 

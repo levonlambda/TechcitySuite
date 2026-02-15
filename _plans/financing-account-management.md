@@ -28,6 +28,7 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 | 10 | `app/src/main/java/com/techcity/techcitysuite/ProgramSettingsActivity.kt` | Add Financing Accounts toggle (default on) to Feature Settings — load/save preference |
 | 11 | `app/src/main/res/layout/activity_program_settings.xml` | Add Financing Accounts SwitchMaterial toggle in Feature Settings card |
 | 12 | `app/src/main/java/com/techcity/techcitysuite/MenuActivity.kt` | Add Financing Accounts card visibility toggle in `updateFeatureVisibility()` |
+| 13 | `app/src/main/java/com/techcity/techcitysuite/AddFinancingAccountActivity.kt` | Programmatically style date picker dialog buttons (`techcity_blue_dark` background, white text) after `show()` |
 
 ---
 
