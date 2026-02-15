@@ -483,25 +483,33 @@ class FinancingAccountListActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmationDialog(account: FinancingAccount, position: Int) {
-        val message = StringBuilder()
-        message.append("Financing Company: ${account.financingCompany}\n")
-        message.append("Customer Name: ${account.customerName}\n")
-        message.append("Account Number: ${account.accountNumber}\n")
-        message.append("Contact Number: ${account.contactNumber}")
+        val dialogView = layoutInflater.inflate(R.layout.dialog_delete_account, null)
 
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.delete_account_title))
-            .setMessage(message.toString())
-            .setPositiveButton(getString(R.string.confirm_delete)) { _, _ ->
-                deleteAccountFromFirestore(account.id, position)
-            }
-            .setNegativeButton("Cancel") { _, _ ->
-                adapter?.notifyItemChanged(position)
-            }
-            .setOnCancelListener {
-                adapter?.notifyItemChanged(position)
-            }
-            .show()
+        dialogView.findViewById<android.widget.TextView>(R.id.deleteCompanyValue).text = account.financingCompany
+        dialogView.findViewById<android.widget.TextView>(R.id.deleteCustomerValue).text = account.customerName
+        dialogView.findViewById<android.widget.TextView>(R.id.deleteAccountValue).text = account.accountNumber
+        dialogView.findViewById<android.widget.TextView>(R.id.deleteContactValue).text = account.contactNumber
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        dialogView.findViewById<android.widget.Button>(R.id.cancelButton).setOnClickListener {
+            dialog.dismiss()
+            adapter?.notifyItemChanged(position)
+        }
+
+        dialogView.findViewById<android.widget.Button>(R.id.deleteButton).setOnClickListener {
+            dialog.dismiss()
+            deleteAccountFromFirestore(account.id, position)
+        }
+
+        dialog.setOnCancelListener {
+            adapter?.notifyItemChanged(position)
+        }
+
+        dialog.show()
     }
 
     private fun deleteAccountFromFirestore(documentId: String, position: Int) {
@@ -672,6 +680,10 @@ class FinancingAccountListActivity : AppCompatActivity() {
                 intent.putExtra("customer_name", account.customerName)
                 intent.putExtra("account_number", account.accountNumber)
                 intent.putExtra("contact_number", account.contactNumber)
+                intent.putExtra("has_monthly_payment", account.monthlyPayment != null)
+                if (account.monthlyPayment != null) {
+                    intent.putExtra("monthly_payment", account.monthlyPayment)
+                }
                 startActivity(intent)
             }
         }

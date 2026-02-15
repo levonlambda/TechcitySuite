@@ -14,6 +14,7 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 | 2 | `app/src/main/res/drawable/ic_content_copy.xml` | Copy vector icon (24dp) for detail screen clipboard buttons |
 | 3 | `app/src/main/res/layout/activity_financing_account_detail.xml` | Layout for the detail/copy-to-clipboard screen |
 | 4 | `app/src/main/java/com/techcity/techcitysuite/FinancingAccountDetailActivity.kt` | Detail activity with copy-to-clipboard |
+| 5 | `app/src/main/res/layout/dialog_delete_account.xml` | Custom styled layout for the delete confirmation dialog |
 
 ## Files to Modify
 
@@ -59,19 +60,21 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 **2a. Create `app/src/main/res/layout/activity_financing_account_detail.xml`**
 - ConstraintLayout root, `#F5F5F5` background
 - Blue header with back button + title "Account Details" (same pattern as other activities)
-- Body: ScrollView → vertical LinearLayout with 4 rows:
-  - **Financing Company**: label + value + colored badge (no copy button). Badge uses same color mapping as card entries (Home Credit=red, Skyro=skyro_light_blue, Samsung Finance=financing_teal)
+- Body: ScrollView → MaterialCardView (12dp corners, 2dp elevation) with 5 rows:
+  - **Financing Company**: label + value (text color matches company brand — no badge, no copy button)
   - **Customer Name**: label + value + copy ImageButton (tinted `techcity_blue`)
   - **Account Number**: label + value + copy ImageButton
   - **Contact Number**: label + value + copy ImageButton
+  - **Monthly Payment**: label + value (formatted as `₱X,XXX.XX` in green, or "—" in gray if null) + copy ImageButton
 - Rows separated by thin dividers
 
 **2b. Create `app/src/main/java/com/techcity/techcitysuite/FinancingAccountDetailActivity.kt`**
 - View Binding with `ActivityFinancingAccountDetailBinding`
-- Receives 4 intent extras: `financing_company`, `customer_name`, `account_number`, `contact_number`
+- Receives 5 intent extras: `financing_company`, `customer_name`, `account_number`, `contact_number`, `monthly_payment` (Double, with `has_monthly_payment` boolean to distinguish null from 0.0)
 - Back button calls `finish()`
-- Populates text values and financing company badge color
-- 3 copy button click listeners using `ClipboardManager`:
+- Populates text values and financing company text color (brand color, no badge)
+- Monthly payment formatted as `₱X,XXX.XX` (green) or "—" (gray) when null
+- 4 copy button click listeners using `ClipboardManager`:
   ```kotlin
   val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
   clipboard.setPrimaryClip(ClipData.newPlainText("label", value))
@@ -83,7 +86,7 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 - Add `<activity android:name=".FinancingAccountDetailActivity" android:exported="false" />`
 
 **2d. Modify card click handler in `FinancingAccountListActivity.kt`**
-- Replace Toast in `onBindViewHolder` click listener (line 383-385) with Intent to `FinancingAccountDetailActivity` passing the 4 fields
+- Replace Toast in `onBindViewHolder` click listener with Intent to `FinancingAccountDetailActivity` passing 5 fields + `has_monthly_payment` boolean
 
 ---
 
@@ -131,11 +134,12 @@ This plan implements 4 features from `_specs/financing-account-management.md` fo
 - Pattern follows `DeviceTransactionListActivity` lines 294-387
 
 **4c. `showDeleteConfirmationDialog(account, position)` method:**
-- `AlertDialog.Builder` with title "Delete Account?"
-- Message body shows: Financing Company, Customer Name, Account Number, Contact Number
-- "Yes, Delete" → `deleteAccountFromFirestore(account.id, position)`
-- "Cancel" → `adapter?.notifyItemChanged(position)`
-- Pattern follows `DeviceTransactionListActivity` lines 392-420
+- Inflates custom layout `R.layout.dialog_delete_account` (red warning icon, red title, gray subtitle, styled label/value rows, Cancel/Delete buttons)
+- Populates 4 value TextViews: financing company, customer name, account number, contact number
+- Cancel button → `dialog.dismiss()` + `adapter?.notifyItemChanged(position)`
+- Delete button → `dialog.dismiss()` + `deleteAccountFromFirestore(account.id, position)`
+- `setOnCancelListener` → `adapter?.notifyItemChanged(position)` (back button)
+- Pattern follows `dialog_password.xml` and `dialog_transaction_confirmation.xml` styling
 
 **4d. `deleteAccountFromFirestore(documentId, position)` method:**
 - `db.collection(COLLECTION_FINANCING_ACCOUNTS).document(documentId).delete().await()` in `Dispatchers.IO`

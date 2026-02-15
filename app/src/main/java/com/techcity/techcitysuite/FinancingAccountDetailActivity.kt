@@ -38,17 +38,25 @@ class FinancingAccountDetailActivity : AppCompatActivity() {
         binding.accountNumberValue.text = accountNumber
         binding.contactNumberValue.text = contactNumber
 
-        // Set badge text and color
-        binding.financingCompanyBadge.text = financingCompany
-        val badgeColor = when (financingCompany) {
+        // Monthly payment
+        val hasMonthlyPayment = intent.getBooleanExtra("has_monthly_payment", false)
+        if (hasMonthlyPayment) {
+            val monthlyPayment = intent.getDoubleExtra("monthly_payment", 0.0)
+            binding.monthlyPaymentValue.text = "₱${String.format("%,.2f", monthlyPayment)}"
+            binding.monthlyPaymentValue.setTextColor(ContextCompat.getColor(this, R.color.cash_dark_green))
+        } else {
+            binding.monthlyPaymentValue.text = "—"
+            binding.monthlyPaymentValue.setTextColor(ContextCompat.getColor(this, R.color.gray))
+        }
+
+        // Set financing company text color to match the company brand
+        val companyColor = when (financingCompany) {
             "Home Credit" -> ContextCompat.getColor(this, R.color.red)
             "Skyro" -> ContextCompat.getColor(this, R.color.skyro_light_blue)
             "Samsung Finance" -> ContextCompat.getColor(this, R.color.financing_teal)
             else -> ContextCompat.getColor(this, R.color.gray)
         }
-        val badgeDrawable = binding.financingCompanyBadge.background.mutate()
-        badgeDrawable.setTint(badgeColor)
-        binding.financingCompanyBadge.background = badgeDrawable
+        binding.financingCompanyValue.setTextColor(companyColor)
     }
 
     private fun setupCopyButtons() {
@@ -65,6 +73,11 @@ class FinancingAccountDetailActivity : AppCompatActivity() {
         binding.copyContactNumberButton.setOnClickListener {
             copyToClipboard("Contact Number", binding.contactNumberValue.text.toString())
             Toast.makeText(this, getString(R.string.contact_number_copied), Toast.LENGTH_SHORT).show()
+        }
+
+        binding.copyMonthlyPaymentButton.setOnClickListener {
+            copyToClipboard("Monthly Payment", binding.monthlyPaymentValue.text.toString())
+            Toast.makeText(this, getString(R.string.monthly_payment_copied), Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -73,6 +73,7 @@
     <string name="account_number_copied">Account number copied</string>
     <string name="customer_name_copied">Customer name copied</string>
     <string name="contact_number_copied">Contact number copied</string>
+    <string name="monthly_payment_copied">Monthly payment copied</string>
     <string name="search_to_get_started">Search for an account to get started</string>
     <string name="password_required_to_delete">Password required to delete accounts</string>
 
