@@ -76,7 +76,7 @@
                     android:layout_height="wrap_content"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="@color/black" />
+                    android:textColor="@color/techcity_blue_dark" />
 
             </LinearLayout>
 

@@ -25,7 +25,7 @@ Replace the entire layout with the new structure:
 | Row | Content | Key Styling |
 |-----|---------|-------------|
 | **Row 1** | `customerNameText` + `financingCompanyBadge` | Name: 16sp bold black. Badge: **11sp** (was 10sp), padding 10dp/3dp (was 8dp/2dp) |
-| **Row 2** | Account Number (label-above-value, left) + Date (label-above-value, right) | Acct label: "Account Number" 11sp gray. Acct value: **14sp bold black**. Date label: "Date" 11sp gray. Date value: 13sp black. Date column `wrap_content`, pushed right. marginTop=8dp |
+| **Row 2** | Account Number (label-above-value, left) + Date (label-above-value, right) | Acct label: "Account Number" 11sp gray. Acct value: **14sp bold `techcity_blue_dark`**. Date label: "Date" 11sp gray. Date value: 13sp black. Date column `wrap_content`, pushed right. marginTop=8dp |
 | **Row 3** | Device (left col, conditional) + Phone (right col) | Device: `weight=1`, `visibility="gone"` by default. Phone: `wrap_content`, flush right. Labels: 11sp gray. Values: 13sp black. Row has `gravity="end"` to keep Phone right when Device is hidden. marginTop=6dp |
 | **Divider** | 1dp `@color/light_gray` line | Conditional — `visibility="gone"` by default |
 | **Row 4** | Monthly / Term / Downpayment (3-column) | Labels: 10sp gray. Values: 13sp bold. Monthly=left-aligned `cash_dark_green`, Term=center-aligned black, Downpayment=right-aligned black. Each column `weight=1`. Conditional |
