@@ -13,6 +13,7 @@ data class FinancingAccount(
     val monthlyPayment: Double? = null,
     val term: String? = null,
     val downpayment: Double? = null,
+    val financedAmount: Double? = null,
     val createdAt: Timestamp? = null,
     val createdBy: String = "",
     val storeLocation: String = ""

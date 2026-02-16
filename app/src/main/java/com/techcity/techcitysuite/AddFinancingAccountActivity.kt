@@ -154,6 +154,7 @@ class AddFinancingAccountActivity : AppCompatActivity() {
     private fun setupCurrencyFormatting() {
         addCurrencyTextWatcher(binding.monthlyPaymentEditText)
         addCurrencyTextWatcher(binding.downpaymentEditText)
+        addCurrencyTextWatcher(binding.financedAmountEditText)
     }
 
     private fun addCurrencyTextWatcher(editText: TextInputEditText) {
@@ -241,6 +242,10 @@ class AddFinancingAccountActivity : AppCompatActivity() {
             val downpayment = intent.getDoubleExtra("downpayment", 0.0)
             binding.downpaymentEditText.setText(currencyFormatter.format(downpayment))
         }
+        if (intent.getBooleanExtra("has_financed_amount", false)) {
+            val financedAmount = intent.getDoubleExtra("financed_amount", 0.0)
+            binding.financedAmountEditText.setText(currencyFormatter.format(financedAmount))
+        }
     }
 
     // ============================================================================
@@ -308,6 +313,8 @@ class AddFinancingAccountActivity : AppCompatActivity() {
         val monthlyPayment = if (monthlyPaymentText.isNotEmpty()) monthlyPaymentText.toDoubleOrNull() else null
         val downpaymentText = binding.downpaymentEditText.text.toString().trim().replace(",", "")
         val downpayment = if (downpaymentText.isNotEmpty()) downpaymentText.toDoubleOrNull() else null
+        val financedAmountText = binding.financedAmountEditText.text.toString().trim().replace(",", "")
+        val financedAmount = if (financedAmountText.isNotEmpty()) financedAmountText.toDoubleOrNull() else null
 
         // Get user info from AppSettingsManager
         val settings = AppSettingsManager.getCurrentSettings()
@@ -325,6 +332,7 @@ class AddFinancingAccountActivity : AppCompatActivity() {
             "monthlyPayment" to monthlyPayment,
             "term" to term,
             "downpayment" to downpayment,
+            "financedAmount" to financedAmount,
             "createdBy" to createdBy,
             "storeLocation" to storeLocation
         )
@@ -338,6 +346,7 @@ class AddFinancingAccountActivity : AppCompatActivity() {
             if (devicePurchased == null) data["devicePurchased"] = FieldValue.delete()
             if (monthlyPayment == null) data["monthlyPayment"] = FieldValue.delete()
             if (downpayment == null) data["downpayment"] = FieldValue.delete()
+            if (financedAmount == null) data["financedAmount"] = FieldValue.delete()
         }
 
         // Disable save button to prevent double-tap

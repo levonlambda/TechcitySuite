@@ -264,6 +264,33 @@
 
             </LinearLayout>
 
+            <!-- Financed Amount column -->
+            <LinearLayout
+                android:id="@+id/financedAmountColumn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:id="@+id/financedAmountLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Financed"
+                    android:textSize="10sp"
+                    android:textColor="@color/gray" />
+
+                <TextView
+                    android:id="@+id/financedAmountValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
     </LinearLayout>

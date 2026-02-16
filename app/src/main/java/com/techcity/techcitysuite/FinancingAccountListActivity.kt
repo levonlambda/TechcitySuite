@@ -25,6 +25,7 @@ import com.techcity.techcitysuite.databinding.ActivityFinancingAccountListBindin
 import com.techcity.techcitysuite.databinding.ItemFinancingAccountBinding
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -264,6 +265,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
                             monthlyPayment = doc.getDouble("monthlyPayment"),
                             term = doc.getString("term"),
                             downpayment = doc.getDouble("downpayment"),
+                            financedAmount = doc.getDouble("financedAmount"),
                             createdAt = doc.getTimestamp("createdAt"),
                             createdBy = doc.getString("createdBy") ?: "",
                             storeLocation = doc.getString("storeLocation") ?: ""
@@ -341,33 +343,50 @@ class FinancingAccountListActivity : AppCompatActivity() {
             matchesFilter && matchesSearch
         })
 
+        val totalFinanced = filteredAccounts.sumOf { it.financedAmount ?: 0.0 }
+        binding.totalFinancedAmount.text = formatCurrency(totalFinanced)
+        binding.entryCount.text = filteredAccounts.size.toString()
+
         adapter?.notifyDataSetChanged()
         updateEmptyState()
     }
 
     /**
      * Checks if the account's purchase date matches the search text.
-     * - If search text is a month name (e.g., "feb", "february"), matches that month in the current year only.
-     * - Otherwise, matches against the formatted display date (e.g., "Feb 14, 2026") for specific date searches.
+     * - "month year" pattern (e.g., "dec 2025"): matches that specific month + year.
+     * - Month name only (e.g., "dec", "december"): matches across ALL loaded years.
+     * - Otherwise, matches against the formatted display date (e.g., "Feb 14, 2026").
      */
     private fun matchesDateSearch(purchaseDate: String, searchText: String): Boolean {
         if (purchaseDate.isEmpty()) return false
 
-        // Check if search text matches a month name — filter to current year only
+        // 1. Check for "month year" pattern (e.g., "dec 2025")
+        val searchParts = searchText.split(" ")
+        if (searchParts.size == 2) {
+            val matchedMonth = monthNames[searchParts[0]]
+            val matchedYear = if (searchParts[1].length == 4) searchParts[1].toIntOrNull() else null
+            if (matchedMonth != null && matchedYear != null) {
+                val currentYear = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).get(Calendar.YEAR)
+                if (matchedYear < currentYear - 2) return false
+                val parts = purchaseDate.split("-")
+                if (parts.size == 3) {
+                    return parts[0].toIntOrNull() == matchedYear && parts[1].toIntOrNull() == matchedMonth
+                }
+                return false
+            }
+        }
+
+        // 2. Month name only — match across ALL loaded years
         val matchedMonth = monthNames[searchText]
         if (matchedMonth != null) {
-            val currentYear = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).get(Calendar.YEAR)
-            // purchaseDate format is "yyyy-MM-dd"
             val parts = purchaseDate.split("-")
             if (parts.size == 3) {
-                val year = parts[0].toIntOrNull()
-                val month = parts[1].toIntOrNull()
-                return year == currentYear && month == matchedMonth
+                return parts[1].toIntOrNull() == matchedMonth
             }
             return false
         }
 
-        // Otherwise, match against the formatted display date (e.g., "Feb 14, 2026")
+        // 3. Fallback: match against formatted display date
         val displayDate = formatDisplayDate(purchaseDate).lowercase(Locale.getDefault())
         return displayDate.contains(searchText)
     }
@@ -566,6 +585,10 @@ class FinancingAccountListActivity : AppCompatActivity() {
         if (account.downpayment != null) {
             intent.putExtra("downpayment", account.downpayment)
         }
+        intent.putExtra("has_financed_amount", account.financedAmount != null)
+        if (account.financedAmount != null) {
+            intent.putExtra("financed_amount", account.financedAmount)
+        }
         intent.putExtra("created_by", account.createdBy)
         intent.putExtra("store_location", account.storeLocation)
         startActivity(intent)
@@ -616,7 +639,8 @@ class FinancingAccountListActivity : AppCompatActivity() {
             val hasMonthly = account.monthlyPayment != null && account.monthlyPayment > 0
             val hasTerm = !account.term.isNullOrBlank()
             val hasDownpayment = account.downpayment != null && account.downpayment > 0
-            val hasFinancialData = hasMonthly || hasTerm || hasDownpayment
+            val hasFinanced = account.financedAmount != null && account.financedAmount > 0
+            val hasFinancialData = hasMonthly || hasTerm || hasDownpayment || hasFinanced
 
             if (hasFinancialData) {
                 b.financialDivider.visibility = View.VISIBLE
@@ -647,6 +671,15 @@ class FinancingAccountListActivity : AppCompatActivity() {
                 } else {
                     b.downpaymentValue.text = "—"
                     b.downpaymentValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.gray))
+                }
+
+                // Financed Amount
+                if (hasFinanced) {
+                    b.financedAmountValue.text = "₱${String.format("%,.2f", account.financedAmount)}"
+                    b.financedAmountValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.black))
+                } else {
+                    b.financedAmountValue.text = "—"
+                    b.financedAmountValue.setTextColor(ContextCompat.getColor(this@FinancingAccountListActivity, R.color.gray))
                 }
             } else {
                 b.financialDivider.visibility = View.GONE
@@ -698,6 +731,11 @@ class FinancingAccountListActivity : AppCompatActivity() {
         } catch (e: Exception) {
             dateString
         }
+    }
+
+    private fun formatCurrency(amount: Double): String {
+        val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
+        return format.format(amount)
     }
 
     // ============================================================================

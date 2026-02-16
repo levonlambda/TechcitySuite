@@ -59,6 +59,9 @@
     <string name="label_monthly_payment">Monthly Payment (Optional)</string>
     <string name="label_term">Term</string>
     <string name="label_downpayment">Downpayment (Optional)</string>
+    <string name="label_financed_amount">Financed Amount (Optional)</string>
+    <string name="label_total_financed">Total Financed</string>
+    <string name="label_entries">Entries</string>
     <string name="save_account">Save Account</string>
     <string name="account_saved_successfully">Account saved successfully</string>
     <string name="field_required">This field is required</string>
