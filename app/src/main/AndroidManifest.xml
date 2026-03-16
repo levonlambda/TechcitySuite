@@ -141,6 +141,20 @@
             android:exported="false"
             android:label="Manufacturer Details" />
 
+        <activity
+            android:name=".FinancingAccountListActivity"
+            android:exported="false"
+            android:label="Financing Accounts" />
+
+        <activity
+            android:name=".AddFinancingAccountActivity"
+            android:exported="false"
+            android:label="Add Financing Account" />
+
+        <activity
+            android:name=".FinancingAccountDetailActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

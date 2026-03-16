@@ -56,4 +56,8 @@
     <color name="paymaya_green">#00B4A2</color>
     <color name="others_gray">#757575</color>
 
+    <!-- Financing Accounts -->
+    <color name="financing_teal">#00796B</color>
+    <color name="financing_teal_light">#E0F2F1</color>
+
 </resources>

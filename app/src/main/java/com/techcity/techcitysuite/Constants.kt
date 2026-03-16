@@ -28,6 +28,7 @@ object AppConstants {
     const val KEY_ACCOUNT_RECEIVABLE_ENABLED = "account_receivable_enabled"
     const val KEY_END_OF_DAY_ENABLED = "end_of_day_enabled"
     const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
+    const val KEY_FINANCING_ACCOUNTS_ENABLED = "financing_accounts_enabled"
     const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
     const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
 
@@ -44,6 +45,7 @@ object AppConstants {
     const val COLLECTION_PROCUREMENTS = "procurements"
     const val COLLECTION_SUPPLIER_LEDGER = "supplier_ledger"
     const val COLLECTION_INVENTORY_ARCHIVES = "inventory_archives"
+    const val COLLECTION_FINANCING_ACCOUNTS = "financing_accounts"
 
     // ============================================================================
     // TRANSACTION TYPES

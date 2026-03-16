@@ -39,6 +39,47 @@
     <string name="manage_receivables">Reconcile customer payments</string>
     <string name="account_receivable_icon">Account Receivable Icon</string>
 
+    <!-- Financing Accounts -->
+    <string name="financing_accounts">Financing Accounts</string>
+    <string name="financing_accounts_subtitle">Track customer financing accounts</string>
+    <string name="financing_accounts_icon">Financing Accounts Icon</string>
+    <string name="add_financing_account">Add Financing Account</string>
+    <string name="search_financing_accounts">Search by name, account #, contact, device, date…</string>
+    <string name="no_financing_accounts">No financing accounts found</string>
+    <string name="filter_all">All</string>
+    <string name="filter_home_credit">Home Credit</string>
+    <string name="filter_skyro">Skyro</string>
+    <string name="filter_samsung_finance">Samsung</string>
+    <string name="label_financing_company">Financing Company</string>
+    <string name="label_customer_name">Customer Name</string>
+    <string name="label_account_number">Account Number</string>
+    <string name="label_date_of_purchase">Date of Purchase</string>
+    <string name="label_contact_number">Contact Number</string>
+    <string name="label_device_purchased">Device Purchased (Optional)</string>
+    <string name="label_monthly_payment">Monthly Payment (Optional)</string>
+    <string name="label_term">Term</string>
+    <string name="label_downpayment">Downpayment (Optional)</string>
+    <string name="label_financed_amount">Financed Amount (Optional)</string>
+    <string name="label_total_financed">Total Financed</string>
+    <string name="label_entries">Entries</string>
+    <string name="save_account">Save Account</string>
+    <string name="account_saved_successfully">Account saved successfully</string>
+    <string name="field_required">This field is required</string>
+    <string name="detail_view_coming_soon">Detail view coming soon</string>
+    <string name="edit_financing_account">Edit Financing Account</string>
+    <string name="update_account">Update Account</string>
+    <string name="account_updated_successfully">Account updated successfully</string>
+    <string name="account_deleted_successfully">Account deleted successfully</string>
+    <string name="delete_account_title">Delete Account?</string>
+    <string name="confirm_delete">Yes, Delete</string>
+    <string name="account_details">Account Details</string>
+    <string name="account_number_copied">Account number copied</string>
+    <string name="customer_name_copied">Customer name copied</string>
+    <string name="contact_number_copied">Contact number copied</string>
+    <string name="monthly_payment_copied">Monthly payment copied</string>
+    <string name="search_to_get_started">Search for an account to get started</string>
+    <string name="password_required_to_delete">Password required to delete accounts</string>
+
     <!-- Content Descriptions for Accessibility -->
     <string name="app_logo">App Logo</string>
     <string name="inventory_icon">Inventory Icon</string>

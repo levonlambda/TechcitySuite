@@ -32,6 +32,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         private const val KEY_ACCOUNT_RECEIVABLE_ENABLED = "account_receivable_enabled"
         private const val KEY_END_OF_DAY_ENABLED = "end_of_day_enabled"
         private const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
+        private const val KEY_FINANCING_ACCOUNTS_ENABLED = "financing_accounts_enabled"
         private const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
         private const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
     }
@@ -107,6 +108,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         binding.accountReceivableSwitch.isChecked = prefs.getBoolean(KEY_ACCOUNT_RECEIVABLE_ENABLED, true)
         binding.endOfDaySwitch.isChecked = prefs.getBoolean(KEY_END_OF_DAY_ENABLED, true)
         binding.phoneInventorySwitch.isChecked = prefs.getBoolean(KEY_PHONE_INVENTORY_ENABLED, false)
+        binding.financingAccountsSwitch.isChecked = prefs.getBoolean(KEY_FINANCING_ACCOUNTS_ENABLED, true)
         binding.deviceTransactionNotificationsSwitch.isChecked = prefs.getBoolean(KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED, true)
 
         // Load inventory status filter (default to "On-Display")
@@ -138,6 +140,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         editor.putBoolean(KEY_ACCOUNT_RECEIVABLE_ENABLED, binding.accountReceivableSwitch.isChecked)
         editor.putBoolean(KEY_END_OF_DAY_ENABLED, binding.endOfDaySwitch.isChecked)
         editor.putBoolean(KEY_PHONE_INVENTORY_ENABLED, binding.phoneInventorySwitch.isChecked)
+        editor.putBoolean(KEY_FINANCING_ACCOUNTS_ENABLED, binding.financingAccountsSwitch.isChecked)
         editor.putBoolean(KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED, binding.deviceTransactionNotificationsSwitch.isChecked)
 
         // Save inventory status filter

@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "You are a scope reviewer. Check if there are uncommitted code changes by running `git diff --name-only`. If there are NO changed files, or if the ONLY changed files are in `_specs/` or `_plans/` or are `.md` files, respond with {\"decision\": \"approve\", \"reason\": \"No code changes to review\"}. If there ARE code changes to source files (.kt, .java, .xml, .gradle, etc.), then: 1) Find the most recent plan in `_plans/` by running `ls -t _plans/`. 2) Read that plan file. 3) Run `git diff` to see all changes. 4) For each changed file, verify it is listed in the plan. Flag any file NOT in the plan as out-of-scope. 5) Check for unrelated comment removals, spacing/formatting changes to untouched code, refactors, or additions not in the plan. 6) Print a clear report with ✅ In-Scope, ❌ Out-of-Scope, and ⚠️ Warnings sections. 7) If ANY out-of-scope changes are found, respond with {\"decision\": \"block\", \"reason\": \"Out-of-scope changes detected. See report above.\"} so the main agent must fix them. If all changes are in scope, respond with {\"decision\": \"approve\", \"reason\": \"All changes are within scope.\"}."
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git merge*)",
+      "Bash(git checkout*)",
+      "Bash(git rebase*)"
+    ]
+  }
+}

@@ -105,6 +105,14 @@ class MenuActivity : AppCompatActivity() {
         } else {
             binding.inventoryCard.visibility = View.GONE
         }
+
+        // Financing Accounts visibility
+        val financingAccountsEnabled = prefs.getBoolean(AppConstants.KEY_FINANCING_ACCOUNTS_ENABLED, true)
+        if (financingAccountsEnabled) {
+            binding.financingAccountsCard.visibility = View.VISIBLE
+        } else {
+            binding.financingAccountsCard.visibility = View.GONE
+        }
     }
 
     // ============================================================================
@@ -175,6 +183,12 @@ class MenuActivity : AppCompatActivity() {
         // Account Receivable button - NOW ENABLED
         binding.accountReceivableButton.setOnClickListener {
             val intent = Intent(this, AccountReceivableActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Financing Accounts button
+        binding.financingAccountsButton.setOnClickListener {
+            val intent = Intent(this, FinancingAccountListActivity::class.java)
             startActivity(intent)
         }
     }
