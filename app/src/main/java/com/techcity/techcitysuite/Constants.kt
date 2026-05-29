@@ -15,6 +15,7 @@ object AppConstants {
     // User and Location
     const val KEY_USER = "user"
     const val KEY_STORE_LOCATION = "store_location"
+    const val KEY_STORE_LOCATION_ID = "store_location_id"
 
     // Account Settings
     const val KEY_CASH_ACCOUNT = "cash_account"
@@ -46,6 +47,11 @@ object AppConstants {
     const val COLLECTION_SUPPLIER_LEDGER = "supplier_ledger"
     const val COLLECTION_INVENTORY_ARCHIVES = "inventory_archives"
     const val COLLECTION_FINANCING_ACCOUNTS = "financing_accounts"
+    const val COLLECTION_ACCESSORY_TRANSACTIONS = "accessory_transactions"
+    const val COLLECTION_ACCESSORY_PRODUCTS = "accessory_products"
+    const val COLLECTION_ACCESSORY_PRICING = "accessory_pricing"
+    const val COLLECTION_ACCESSORY_INVENTORY = "accessory_inventory"
+    const val COLLECTION_ACCESSORY_LOCATIONS = "accessory_locations"
 
     // ============================================================================
     // TRANSACTION TYPES

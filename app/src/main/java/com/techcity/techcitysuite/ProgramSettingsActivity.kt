@@ -5,7 +5,12 @@ import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.techcity.techcitysuite.databinding.ActivityProgramSettingsBinding
+import kotlinx.coroutines.*
+import kotlinx.coroutines.tasks.await
 
 class ProgramSettingsActivity : AppCompatActivity() {
 
@@ -14,6 +19,11 @@ class ProgramSettingsActivity : AppCompatActivity() {
     // ============================================================================
 
     private lateinit var binding: ActivityProgramSettingsBinding
+    private lateinit var db: FirebaseFirestore
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
+
+    // Store location name -> accessory_locations document ID
+    private val locationNameToId = mutableMapOf<String, String>()
 
     // Inventory status options
     private val inventoryStatusOptions = arrayOf("On-Display", "In-Stock", "Both")
@@ -35,6 +45,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         private const val KEY_FINANCING_ACCOUNTS_ENABLED = "financing_accounts_enabled"
         private const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
         private const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
+        private const val KEY_STORE_LOCATION_ID = "store_location_id"
     }
 
     // ============================================================================
@@ -53,17 +64,28 @@ class ProgramSettingsActivity : AppCompatActivity() {
         binding = ActivityProgramSettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Initialize Firestore
+        db = Firebase.firestore
+
         // Setup inventory status dropdown
         setupInventoryStatusDropdown()
 
         // Load saved settings
         loadSettings()
 
+        // Populate the store location dropdown from accessory_locations
+        setupStoreLocationDropdown()
+
         // Setup toggle listener for Phone Inventory
         setupPhoneInventoryToggleListener()
 
         // Set up button listeners
         setupButtonListeners()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
     }
 
     // ============================================================================
@@ -78,6 +100,50 @@ class ProgramSettingsActivity : AppCompatActivity() {
     private fun setupInventoryStatusDropdown() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, inventoryStatusOptions)
         binding.inventoryStatusDropdown.setAdapter(adapter)
+    }
+
+    /**
+     * Load active store locations from accessory_locations into the dropdown,
+     * keeping a name -> document ID map so the selected locationId can be saved.
+     */
+    private fun setupStoreLocationDropdown() {
+        scope.launch {
+            try {
+                val names = withContext(Dispatchers.IO) {
+                    val snapshot = db.collection(AppConstants.COLLECTION_ACCESSORY_LOCATIONS)
+                        .get()
+                        .await()
+
+                    locationNameToId.clear()
+                    val list = mutableListOf<String>()
+                    for (document in snapshot.documents) {
+                        val active = document.getBoolean("active") ?: true
+                        if (!active) continue
+                        val name = document.getString("name") ?: continue
+                        locationNameToId[name] = document.id
+                        list.add(name)
+                    }
+                    list
+                }
+
+                val adapter = ArrayAdapter(
+                    this@ProgramSettingsActivity,
+                    android.R.layout.simple_dropdown_item_1line,
+                    names
+                )
+                binding.storeLocationInput.setAdapter(adapter)
+
+                // Pre-select the saved location if it still exists in the list
+                val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val savedName = prefs.getString(KEY_STORE_LOCATION, "") ?: ""
+                if (savedName.isNotEmpty() && locationNameToId.containsKey(savedName)) {
+                    binding.storeLocationInput.setText(savedName, false)
+                }
+            } catch (e: Exception) {
+                // Offline / load failure: keep the saved name shown and don't block other settings.
+                e.printStackTrace()
+            }
+        }
     }
 
     private fun setupPhoneInventoryToggleListener() {
@@ -128,7 +194,9 @@ class ProgramSettingsActivity : AppCompatActivity() {
 
         // Save all field values
         editor.putString(KEY_USER, binding.userInput.text.toString().trim())
-        editor.putString(KEY_STORE_LOCATION, binding.storeLocationInput.text.toString().trim())
+        val selectedLocation = binding.storeLocationInput.text.toString().trim()
+        editor.putString(KEY_STORE_LOCATION, selectedLocation)
+        editor.putString(KEY_STORE_LOCATION_ID, locationNameToId[selectedLocation] ?: "")
         editor.putString(KEY_CASH_ACCOUNT, binding.cashAccountInput.text.toString().trim())
         editor.putString(KEY_GCASH_ACCOUNT, binding.gcashAccountInput.text.toString().trim())
         editor.putString(KEY_PAYMAYA_ACCOUNT, binding.paymayaAccountInput.text.toString().trim())

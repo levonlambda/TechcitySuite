@@ -137,16 +137,16 @@
                     android:id="@+id/storeLocationInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter store location"
+                    android:hint="Select store location"
                     app:boxStrokeColor="#3F51B5"
                     app:hintTextColor="#3F51B5"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-                    <com.google.android.material.textfield.TextInputEditText
+                    <AutoCompleteTextView
                         android:id="@+id/storeLocationInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="text"
+                        android:inputType="none"
                         android:textStyle="bold" />
 
                 </com.google.android.material.textfield.TextInputLayout>

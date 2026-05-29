@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -426,10 +427,39 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
-                        .document(documentId)
-                        .delete()
-                        .await()
+                    val txRef = db.collection(COLLECTION_ACCESSORY_TRANSACTIONS).document(documentId)
+
+                    db.runTransaction { transaction ->
+                        // Read the transaction doc first
+                        val snap = transaction.get(txRef)
+                        val inventoryUpdated = snap.getBoolean("inventoryUpdated") ?: false
+                        val sku = snap.getString("inventorySku") ?: ""
+                        val locId = snap.getString("inventoryLocationId") ?: ""
+                        val bucket = snap.getString("inventoryBucket") ?: ""
+                        val qty = snap.getLong("inventoryQuantity") ?: 1L
+
+                        // If this sale decremented inventory, reverse exactly that bucket
+                        if (inventoryUpdated && sku.isNotEmpty() && locId.isNotEmpty() &&
+                            (bucket == "onDisplay" || bucket == "onHand")
+                        ) {
+                            val invRef = db.collection(AppConstants.COLLECTION_ACCESSORY_INVENTORY)
+                                .document("${sku}__${locId}")
+                            // Read before writes; only reverse if the inventory doc still exists
+                            val invSnap = transaction.get(invRef)
+                            if (invSnap.exists()) {
+                                transaction.update(
+                                    invRef,
+                                    mapOf(
+                                        bucket to FieldValue.increment(qty),
+                                        "sold" to FieldValue.increment(-qty),
+                                        "lastUpdated" to FieldValue.serverTimestamp()
+                                    )
+                                )
+                            }
+                        }
+
+                        transaction.delete(txRef)
+                    }.await()
                 }
 
                 withContext(Dispatchers.Main) {
