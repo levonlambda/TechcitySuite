@@ -5,12 +5,15 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.firebase.firestore.FirebaseFirestore
@@ -33,6 +36,28 @@ class AccessoryTransactionActivity : AppCompatActivity() {
     private var accessoryName: String = ""
     private var price: Double = 0.0
     private var discount: Double = 0.0
+
+    // Barcode lookup results (saved to the transaction; empty when entered manually)
+    private var scannedBarcode: String = ""
+    private var scannedSku: String = ""
+
+    // Flag to prevent the accessory name TextWatcher from clearing the
+    // scanned barcode/SKU during a programmatic auto-fill from a lookup
+    private var isAutoFillingFromScan = false
+
+    // Barcode scanner result launcher
+    private val barcodeScannerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val barcodeValue = result.data?.getStringExtra(BarcodeScannerActivity.RESULT_BARCODE_VALUE)
+
+            if (!barcodeValue.isNullOrEmpty()) {
+                binding.barcodeInput.setText(barcodeValue)
+                lookupAccessoryByBarcode(barcodeValue)
+            }
+        }
+    }
 
     // Transaction type
     private var transactionType: String = "Cash Transaction"
@@ -89,6 +114,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
         setupDownPaymentListeners()
         setupInHouseListeners()
         setupButtonListeners()
+        setupBarcodeButton()
 
         // Initially disable save button until form is valid
         binding.saveButton.isEnabled = false
@@ -269,6 +295,184 @@ class AccessoryTransactionActivity : AppCompatActivity() {
 
     // ============================================================================
     // END OF PART 4: ACCESSORY NAME LISTENER
+    // ============================================================================
+
+
+    // ============================================================================
+    // START OF PART 4B: BARCODE SCAN AND LOOKUP
+    // ============================================================================
+
+    private fun setupBarcodeButton() {
+        binding.barcodeButton.setOnClickListener {
+            val intent = Intent(this, BarcodeScannerActivity::class.java)
+            // Accessory barcodes are product codes (EAN/UPC), not IMEIs
+            intent.putExtra(BarcodeScannerActivity.EXTRA_PRIORITIZE_IMEI, false)
+            intent.putExtra(BarcodeScannerActivity.EXTRA_FILTER_PRODUCT_CODES, false)
+            barcodeScannerLauncher.launch(intent)
+        }
+
+        binding.searchButton.setOnClickListener {
+            searchByBarcode()
+        }
+
+        // If the user manually edits the barcode, the previously matched
+        // SKU/barcode no longer apply until they search again. Skipped during auto-fill.
+        binding.barcodeInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (!isAutoFillingFromScan) {
+                    scannedBarcode = ""
+                    scannedSku = ""
+                }
+            }
+        })
+    }
+
+    /**
+     * Look up the (possibly partial) barcode the user typed into the barcode field.
+     */
+    private fun searchByBarcode() {
+        val typedBarcode = binding.barcodeInput.text.toString().trim()
+        if (typedBarcode.isEmpty()) {
+            showMessage("Please enter a barcode", true)
+            return
+        }
+        lookupAccessoryByBarcode(typedBarcode)
+    }
+
+    /**
+     * Look up a barcode against the accessory catalog using partial matching
+     * (like the IMEI search in Device Transaction). When exactly one product
+     * matches, auto-fill the accessory name (manufacturer + model) and price
+     * (retail price). More than one match asks the user to enter more digits.
+     */
+    private fun lookupAccessoryByBarcode(searchTerm: String) {
+        binding.progressBar.visibility = View.VISIBLE
+        binding.searchButton.isEnabled = false
+        binding.barcodeButton.isEnabled = false
+
+        scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    // Fetch all products and partial-match on the barcode field
+                    val productSnapshot = db.collection("accessory_products")
+                        .get()
+                        .await()
+
+                    val matches = mutableListOf<MatchedProduct>()
+                    for (document in productSnapshot.documents) {
+                        val barcode = document.getString("barcode") ?: ""
+                        if (barcode.isEmpty()) continue
+
+                        // Skip inactive (soft-deleted) products
+                        val active = document.getBoolean("active") ?: true
+                        if (!active) continue
+
+                        if (barcode.contains(searchTerm, ignoreCase = true)) {
+                            val sku = document.getString("internalSku") ?: document.id
+                            val manufacturer = document.getString("manufacturer") ?: ""
+                            val model = document.getString("model") ?: ""
+                            matches.add(
+                                MatchedProduct(
+                                    sku = sku,
+                                    barcode = barcode,
+                                    displayName = "$manufacturer $model".trim()
+                                )
+                            )
+                        }
+                    }
+
+                    when {
+                        matches.isEmpty() -> BarcodeLookupResult.NotFound
+                        matches.size == 1 -> {
+                            val match = matches[0]
+                            // Read the retail price from the pricing collection (keyed by SKU)
+                            val pricingDoc = db.collection("accessory_pricing")
+                                .document(match.sku)
+                                .get()
+                                .await()
+                            BarcodeLookupResult.Found(
+                                sku = match.sku,
+                                barcode = match.barcode,
+                                displayName = match.displayName,
+                                retailPrice = pricingDoc.getDouble("retailPrice")
+                            )
+                        }
+                        else -> BarcodeLookupResult.Multiple(matches.size)
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.searchButton.isEnabled = true
+                    binding.barcodeButton.isEnabled = true
+
+                    when (result) {
+                        is BarcodeLookupResult.Found -> {
+                            // Auto-fill the barcode (full value) and name; guard the
+                            // watchers so the matched SKU/barcode are preserved.
+                            isAutoFillingFromScan = true
+                            binding.barcodeInput.setText(result.barcode)
+                            binding.accessoryNameInput.setText(result.displayName)
+                            isAutoFillingFromScan = false
+
+                            // Store the matched identifiers for the saved transaction
+                            scannedBarcode = result.barcode
+                            scannedSku = result.sku
+
+                            if (result.retailPrice != null) {
+                                // Feed a clean numeric string so the price TextWatcher parses it
+                                binding.priceInput.setText(String.format(Locale.US, "%.2f", result.retailPrice))
+                                showMessage("Product found and filled in", false)
+                            } else {
+                                showMessage("Product found, but no price on file. Please enter the price manually.", false)
+                            }
+                        }
+                        is BarcodeLookupResult.Multiple -> {
+                            scannedBarcode = ""
+                            scannedSku = ""
+                            showMessage("Multiple matches found (${result.count}). Please enter more digits.", true)
+                        }
+                        is BarcodeLookupResult.NotFound -> {
+                            scannedBarcode = ""
+                            scannedSku = ""
+                            showMessage("Barcode not found in accessory catalog. Please enter details manually.", true)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.searchButton.isEnabled = true
+                    binding.barcodeButton.isEnabled = true
+                    showMessage("Could not look up barcode, check connection", true)
+                }
+            }
+        }
+    }
+
+    /**
+     * A catalog product whose barcode matched the search term.
+     */
+    private data class MatchedProduct(
+        val sku: String,
+        val barcode: String,
+        val displayName: String
+    )
+
+    /**
+     * Outcome of a barcode catalog lookup.
+     */
+    private sealed class BarcodeLookupResult {
+        data class Found(val sku: String, val barcode: String, val displayName: String, val retailPrice: Double?) : BarcodeLookupResult()
+        data class Multiple(val count: Int) : BarcodeLookupResult()
+        object NotFound : BarcodeLookupResult()
+    }
+
+    // ============================================================================
+    // END OF PART 4B: BARCODE SCAN AND LOOKUP
     // ============================================================================
 
 
@@ -911,6 +1115,8 @@ class AccessoryTransactionActivity : AppCompatActivity() {
 
                 // Accessory Details
                 "accessoryName" to accessoryName,
+                "barcode" to scannedBarcode,
+                "sku" to scannedSku,
 
                 // Pricing Information
                 "price" to price,

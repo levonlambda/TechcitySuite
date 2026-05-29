@@ -63,6 +63,68 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+                <!-- Barcode Input with Search and Barcode Buttons -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Barcode"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/barcodeInputLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter or scan barcode"
+                        app:boxStrokeColor="#FF9800"
+                        app:hintTextColor="#FF9800"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/barcodeInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:textStyle="bold" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Search Button with Magnifying Glass Icon -->
+                    <ImageButton
+                        android:id="@+id/searchButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_search"
+                        android:background="@drawable/rounded_button_background_orange"
+                        android:contentDescription="Search"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
+                        app:tint="@color/white" />
+
+                    <!-- Barcode Scanner Button -->
+                    <ImageButton
+                        android:id="@+id/barcodeButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:src="@drawable/ic_barcode_scanner"
+                        android:background="@drawable/rounded_button_background_orange"
+                        android:contentDescription="Scan Barcode"
+                        android:padding="12dp"
+                        app:tint="@color/white" />
+
+                </LinearLayout>
+
                 <!-- Accessory Name Input -->
                 <TextView
                     android:layout_width="wrap_content"
@@ -71,6 +133,7 @@
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
+                    android:layout_marginTop="12dp"
                     android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.textfield.TextInputLayout
