@@ -105,4 +105,11 @@ object AppConstants {
     const val INVENTORY_STATUS_ON_HAND = "On-Hand"
     const val INVENTORY_STATUS_SOLD = "Sold"
     const val INVENTORY_STATUS_ON_DISPLAY = "On-Display"
+
+    // ============================================================================
+    // PLACEHOLDER IMEI
+    // ============================================================================
+    // Reusable placeholder used for device transactions with no real IMEI recorded.
+    // Devices matching this IMEI never change inventory status, so it can be reused.
+    const val PLACEHOLDER_IMEI = "100000000000001"
 }
