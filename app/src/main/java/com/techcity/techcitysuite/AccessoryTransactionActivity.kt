@@ -1016,6 +1016,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE)
         val user = prefs.getString(AppConstants.KEY_USER, "") ?: ""
         val userLocation = prefs.getString(AppConstants.KEY_STORE_LOCATION, "") ?: ""
+        val locationId = prefs.getString(AppConstants.KEY_STORE_LOCATION_ID, "") ?: ""
 
         if (user.isEmpty()) {
             showMessage("Please configure User in Settings first", true)
@@ -1034,15 +1035,19 @@ class AccessoryTransactionActivity : AppCompatActivity() {
         scope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
-                    saveTransactionToFirebase(prefs, user, userLocation)
+                    saveTransactionToFirebase(prefs, user, userLocation, locationId)
                 }
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
 
                     result.fold(
-                        onSuccess = { docId ->
-                            showMessage("Accessory transaction saved successfully!", false)
+                        onSuccess = { (_, outcome) ->
+                            if (outcome == InventoryOutcome.SKIPPED) {
+                                showMessage("Sale recorded, but inventory could not be updated (out of stock or not configured)", true)
+                            } else {
+                                showMessage("Accessory transaction saved successfully!", false)
+                            }
                             // Return to previous screen after short delay
                             binding.root.postDelayed({
                                 finish()
@@ -1065,11 +1070,19 @@ class AccessoryTransactionActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Outcome of the inventory side-effect of a sale.
+     * NOT_APPLICABLE = free-typed item (no SKU); UPDATED = a bucket was decremented;
+     * SKIPPED = catalog item but inventory could not be decremented (out of stock / not configured).
+     */
+    private enum class InventoryOutcome { UPDATED, SKIPPED, NOT_APPLICABLE }
+
     private suspend fun saveTransactionToFirebase(
         prefs: android.content.SharedPreferences,
         user: String,
-        userLocation: String
-    ): Result<String> {
+        userLocation: String,
+        locationId: String
+    ): Result<Pair<String, InventoryOutcome>> {
         return try {
             // Get current date/time
             val now = Date()
@@ -1222,12 +1235,66 @@ class AccessoryTransactionActivity : AppCompatActivity() {
                 }
             }
 
-            // Save to Firebase (accessory_transactions collection)
-            val docRef = db.collection("accessory_transactions")
-                .add(transactionData)
-                .await()
+            // Save the transaction and decrement inventory atomically.
+            // Only catalog items (non-empty SKU) with a configured location touch inventory.
+            val canTouchInventory = scannedSku.isNotEmpty() && locationId.isNotEmpty()
+            val newRef = db.collection(AppConstants.COLLECTION_ACCESSORY_TRANSACTIONS).document()
 
-            Result.success(docRef.id)
+            val outcome = db.runTransaction { transaction ->
+                var bucket: String? = null
+
+                if (canTouchInventory) {
+                    val invRef = db.collection(AppConstants.COLLECTION_ACCESSORY_INVENTORY)
+                        .document("${scannedSku}__${locationId}")
+                    // Read before any write
+                    val invSnap = transaction.get(invRef)
+                    if (invSnap.exists()) {
+                        val onDisplay = invSnap.getLong("onDisplay") ?: 0L
+                        val onHand = invSnap.getLong("onHand") ?: 0L
+                        // Sell from the shop floor (onDisplay) first, then the back room (onHand)
+                        bucket = when {
+                            onDisplay >= 1 -> "onDisplay"
+                            onHand >= 1 -> "onHand"
+                            else -> null
+                        }
+                    }
+
+                    // Stamp the reversal marker so a later delete can undo exactly this
+                    if (bucket != null) {
+                        transactionData["inventoryUpdated"] = true
+                        transactionData["inventorySku"] = scannedSku
+                        transactionData["inventoryLocationId"] = locationId
+                        transactionData["inventoryBucket"] = bucket
+                        transactionData["inventoryQuantity"] = 1
+                    } else {
+                        transactionData["inventoryUpdated"] = false
+                    }
+
+                    transaction.set(newRef, transactionData)
+
+                    if (bucket != null) {
+                        transaction.update(
+                            invRef,
+                            mapOf(
+                                bucket to FieldValue.increment(-1),
+                                "sold" to FieldValue.increment(1),
+                                "lastUpdated" to FieldValue.serverTimestamp()
+                            )
+                        )
+                    }
+                } else {
+                    transactionData["inventoryUpdated"] = false
+                    transaction.set(newRef, transactionData)
+                }
+
+                when {
+                    scannedSku.isEmpty() -> InventoryOutcome.NOT_APPLICABLE
+                    bucket != null -> InventoryOutcome.UPDATED
+                    else -> InventoryOutcome.SKIPPED
+                }
+            }.await()
+
+            Result.success(Pair(newRef.id, outcome))
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)

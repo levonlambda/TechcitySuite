@@ -428,10 +428,37 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         scope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
-                        .document(documentId)
-                        .delete()
-                        .await()
+                    val txRef = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS).document(documentId)
+
+                    db.runTransaction { tx ->
+                        // Read the transaction doc first
+                        val snap = tx.get(txRef)
+                        val inventoryDocumentId = snap.getString("inventoryDocumentId") ?: ""
+                        val originalStatus = snap.getString("originalStatus") ?: ""
+                        val originalLastUpdated = snap.getString("originalLastUpdated") ?: ""
+                        val hasOriginalLocation = snap.contains("originalLocation")
+                        val originalLocation = snap.getString("originalLocation") ?: ""
+
+                        // Revert the matching inventory record (if any) to its pre-sale state
+                        if (inventoryDocumentId.isNotEmpty()) {
+                            val invRef = db.collection(AppConstants.COLLECTION_INVENTORY)
+                                .document(inventoryDocumentId)
+                            val invSnap = tx.get(invRef)
+                            if (invSnap.exists()) {
+                                val revert = mutableMapOf<String, Any>(
+                                    "status" to originalStatus,
+                                    "lastUpdated" to originalLastUpdated
+                                )
+                                // Legacy transactions lack originalLocation — leave location as-is
+                                if (hasOriginalLocation) {
+                                    revert["location"] = originalLocation
+                                }
+                                tx.update(invRef, revert)
+                            }
+                        }
+
+                        tx.delete(txRef)
+                    }.await()
                 }
 
                 withContext(Dispatchers.Main) {

@@ -962,7 +962,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     if (matchedIdentifier != null) {
                         val isArchived = data["isArchived"] as? Boolean ?: false
                         if (!isArchived) {
-                            val item = document.toObject(InventoryItem::class.java)
+                            val item = document.toObject(InventoryItem::class.java)?.copy(id = document.id)
                             if (item != null) {
                                 matchingItems.add(Pair(item, matchedIdentifier))
                             }
@@ -1172,14 +1172,15 @@ class DeviceTransactionActivity : AppCompatActivity() {
             return
         }
 
-        // TESTING MODE: Skip the "already sold" check so we can test with same device
-        // For production, uncomment this validation:
-        /*
-        if (foundInventoryItem!!.status.equals("Sold", ignoreCase = true)) {
+        // Block selling a device that is already marked Sold
+        // (except the reusable placeholder IMEI, which is exempt so it can be reused)
+        val isPlaceholderDevice = foundInventoryItem!!.imei1 == AppConstants.PLACEHOLDER_IMEI ||
+            foundInventoryItem!!.imei2 == AppConstants.PLACEHOLDER_IMEI
+        if (!isPlaceholderDevice &&
+            foundInventoryItem!!.status.equals(AppConstants.INVENTORY_STATUS_SOLD, ignoreCase = true)) {
             showMessage("This device has already been sold", true)
             return
         }
-        */
 
         // Validate price
         if (price <= 0) {
@@ -1349,6 +1350,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                 // Inventory Reference and Status Tracking
                 "inventoryDocumentId" to inventoryItem.id,
                 "originalStatus" to inventoryItem.status,
+                "originalLocation" to inventoryItem.location,
                 "originalLastUpdated" to inventoryItem.lastUpdated,
                 "newStatus" to AppConstants.INVENTORY_STATUS_SOLD,
                 "newLastUpdated" to dateSoldString,
@@ -1559,17 +1561,56 @@ class DeviceTransactionActivity : AppCompatActivity() {
             }
 
             // -------------------------------------------------------------------------
-            // STEP 4: Save to Firestore (TESTING MODE - NO INVENTORY UPDATE)
+            // STEP 4: Save to Firestore atomically (create transaction + mark inventory Sold)
             // -------------------------------------------------------------------------
-            // This version ONLY creates a new document in device_transactions
-            // It does NOT update the inventory status
-            // -------------------------------------------------------------------------
+            // The transaction document and the inventory update are committed together,
+            // so a sale can never be recorded without its inventory record being marked Sold.
 
-            val newDocRef = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
-                .add(transactionData)
-                .await()
+            val isPlaceholder = inventoryItem.imei1 == AppConstants.PLACEHOLDER_IMEI ||
+                inventoryItem.imei2 == AppConstants.PLACEHOLDER_IMEI
 
-            Result.success(newDocRef.id)
+            if (isPlaceholder) {
+                // Reusable placeholder device: record the sale but never touch inventory,
+                // so its status stays unchanged and it can be used again. Blank the inventory
+                // marker so a later delete does not attempt to revert anything.
+                transactionData["inventoryDocumentId"] = ""
+                val newDocRef = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
+                    .add(transactionData)
+                    .await()
+                Result.success(newDocRef.id)
+            } else {
+                if (inventoryItem.id.isEmpty()) {
+                    throw IllegalStateException("Inventory record id is missing; cannot update inventory")
+                }
+
+                val newRef = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS).document()
+                val invRef = db.collection(AppConstants.COLLECTION_INVENTORY).document(inventoryItem.id)
+
+                db.runTransaction { tx ->
+                    // Read before any write
+                    val invSnap = tx.get(invRef)
+                    if (!invSnap.exists()) {
+                        throw IllegalStateException("Device is no longer in inventory")
+                    }
+                    // Guard against a race where the device was sold after the search
+                    val currentStatus = invSnap.getString("status") ?: ""
+                    if (currentStatus.equals(AppConstants.INVENTORY_STATUS_SOLD, ignoreCase = true)) {
+                        throw IllegalStateException("This device has already been sold")
+                    }
+
+                    tx.set(newRef, transactionData)
+                    tx.update(
+                        invRef,
+                        mapOf(
+                            "status" to AppConstants.INVENTORY_STATUS_SOLD,
+                            "location" to userLocation,
+                            "lastUpdated" to dateSoldString
+                        )
+                    )
+                }.await()
+
+                Result.success(newRef.id)
+            }
 
         } catch (e: Exception) {
             Result.failure(e)

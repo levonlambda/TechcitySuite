@@ -15,6 +15,7 @@ object AppConstants {
     // User and Location
     const val KEY_USER = "user"
     const val KEY_STORE_LOCATION = "store_location"
+    const val KEY_STORE_LOCATION_ID = "store_location_id"
 
     // Account Settings
     const val KEY_CASH_ACCOUNT = "cash_account"
@@ -46,6 +47,11 @@ object AppConstants {
     const val COLLECTION_SUPPLIER_LEDGER = "supplier_ledger"
     const val COLLECTION_INVENTORY_ARCHIVES = "inventory_archives"
     const val COLLECTION_FINANCING_ACCOUNTS = "financing_accounts"
+    const val COLLECTION_ACCESSORY_TRANSACTIONS = "accessory_transactions"
+    const val COLLECTION_ACCESSORY_PRODUCTS = "accessory_products"
+    const val COLLECTION_ACCESSORY_PRICING = "accessory_pricing"
+    const val COLLECTION_ACCESSORY_INVENTORY = "accessory_inventory"
+    const val COLLECTION_ACCESSORY_LOCATIONS = "accessory_locations"
 
     // ============================================================================
     // TRANSACTION TYPES
@@ -99,4 +105,11 @@ object AppConstants {
     const val INVENTORY_STATUS_ON_HAND = "On-Hand"
     const val INVENTORY_STATUS_SOLD = "Sold"
     const val INVENTORY_STATUS_ON_DISPLAY = "On-Display"
+
+    // ============================================================================
+    // PLACEHOLDER IMEI
+    // ============================================================================
+    // Reusable placeholder used for device transactions with no real IMEI recorded.
+    // Devices matching this IMEI never change inventory status, so it can be reused.
+    const val PLACEHOLDER_IMEI = "100000000000001"
 }
