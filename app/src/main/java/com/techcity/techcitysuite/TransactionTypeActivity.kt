@@ -53,6 +53,10 @@ class TransactionTypeActivity : AppCompatActivity() {
             openTransactionDetails("Home Credit Payment")
         }
 
+        binding.salmonButton.setOnClickListener {
+            openTransactionDetails("Salmon Payment")
+        }
+
         binding.miscPaymentButton.setOnClickListener {
             openTransactionDetails("Misc Payment")
         }

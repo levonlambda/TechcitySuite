@@ -43,6 +43,7 @@ class AccountReceivableActivity : AppCompatActivity() {
         ALL,
         HOME_CREDIT,
         SKYRO,
+        SALMON,
         IN_HOUSE
     }
 
@@ -141,6 +142,10 @@ class AccountReceivableActivity : AppCompatActivity() {
             setTransactionTypeFilter(TransactionTypeFilter.SKYRO)
         }
 
+        binding.filterSalmonButton.setOnClickListener {
+            setTransactionTypeFilter(TransactionTypeFilter.SALMON)
+        }
+
         binding.filterInHouseButton.setOnClickListener {
             setTransactionTypeFilter(TransactionTypeFilter.IN_HOUSE)
         }
@@ -175,6 +180,7 @@ class AccountReceivableActivity : AppCompatActivity() {
         binding.filterAllButton.alpha = outlinedAlpha
         binding.filterHomeCreditButton.alpha = outlinedAlpha
         binding.filterSkyroButton.alpha = outlinedAlpha
+        binding.filterSalmonButton.alpha = outlinedAlpha
         binding.filterInHouseButton.alpha = outlinedAlpha
 
         // Highlight the selected button
@@ -182,6 +188,7 @@ class AccountReceivableActivity : AppCompatActivity() {
             TransactionTypeFilter.ALL -> binding.filterAllButton.alpha = selectedAlpha
             TransactionTypeFilter.HOME_CREDIT -> binding.filterHomeCreditButton.alpha = selectedAlpha
             TransactionTypeFilter.SKYRO -> binding.filterSkyroButton.alpha = selectedAlpha
+            TransactionTypeFilter.SALMON -> binding.filterSalmonButton.alpha = selectedAlpha
             TransactionTypeFilter.IN_HOUSE -> binding.filterInHouseButton.alpha = selectedAlpha
         }
     }
@@ -275,6 +282,24 @@ class AccountReceivableActivity : AppCompatActivity() {
             }
         }
 
+        // Query Salmon transactions with unpaid balance
+        val salmonQuery = db.collection(COLLECTION_DEVICE_TRANSACTIONS)
+            .whereEqualTo("transactionType", AppConstants.TRANSACTION_TYPE_SALMON)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .get()
+            .await()
+
+        for (doc in salmonQuery.documents) {
+            val data = doc.data ?: continue
+            val salmonPayment = data["salmonPayment"] as? Map<*, *> ?: continue
+            val isBalancePaid = salmonPayment["isBalancePaid"] as? Boolean ?: false
+
+            if (!isBalancePaid) {
+                val item = parseDeviceReceivable(doc.id, data, "Salmon", salmonPayment)
+                if (item != null) receivablesList.add(item)
+            }
+        }
+
         // Query In-House Installment transactions with unpaid balance
         val inHouseQuery = db.collection(COLLECTION_DEVICE_TRANSACTIONS)
             .whereEqualTo("transactionType", AppConstants.TRANSACTION_TYPE_IN_HOUSE)
@@ -321,9 +346,9 @@ class AccountReceivableActivity : AppCompatActivity() {
                 else -> (paymentData["balance"] as? Number)?.toDouble() ?: 0.0
             }
 
-            // Brand Zero subsidy is only for Home Credit and Skyro
+            // Brand Zero subsidy is only for Home Credit, Skyro, and Salmon
             val brandZeroSubsidy = when (transactionType) {
-                "Home Credit", "Skyro" -> (paymentData["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0
+                "Home Credit", "Skyro", "Salmon" -> (paymentData["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0
                 else -> 0.0
             }
 
@@ -403,6 +428,24 @@ class AccountReceivableActivity : AppCompatActivity() {
 
             if (!isBalancePaid) {
                 val item = parseAccessoryReceivable(doc.id, data, "Skyro", skyroPayment)
+                if (item != null) receivablesList.add(item)
+            }
+        }
+
+        // Query Salmon transactions with unpaid balance
+        val salmonQuery = db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
+            .whereEqualTo("transactionType", AppConstants.TRANSACTION_TYPE_SALMON)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .get()
+            .await()
+
+        for (doc in salmonQuery.documents) {
+            val data = doc.data ?: continue
+            val salmonPayment = data["salmonPayment"] as? Map<*, *> ?: continue
+            val isBalancePaid = salmonPayment["isBalancePaid"] as? Boolean ?: false
+
+            if (!isBalancePaid) {
+                val item = parseAccessoryReceivable(doc.id, data, "Salmon", salmonPayment)
                 if (item != null) receivablesList.add(item)
             }
         }
@@ -501,6 +544,9 @@ class AccountReceivableActivity : AppCompatActivity() {
             TransactionTypeFilter.SKYRO -> allReceivables.filter {
                 it.transactionType == "Skyro"
             }
+            TransactionTypeFilter.SALMON -> allReceivables.filter {
+                it.transactionType == "Salmon"
+            }
             TransactionTypeFilter.IN_HOUSE -> allReceivables.filter {
                 it.transactionType == "In-House"
             }
@@ -523,6 +569,7 @@ class AccountReceivableActivity : AppCompatActivity() {
             TransactionTypeFilter.ALL -> "Total Receivable"
             TransactionTypeFilter.HOME_CREDIT -> "HC Receivable"
             TransactionTypeFilter.SKYRO -> "Skyro Receivable"
+            TransactionTypeFilter.SALMON -> "Salmon Receivable"
             TransactionTypeFilter.IN_HOUSE -> "In-House Receivable"
         }
         binding.totalReceivableLabel.text = filterLabel
@@ -741,6 +788,7 @@ class AccountReceivableActivity : AppCompatActivity() {
                     val fieldPath = when (item.transactionType) {
                         "Home Credit" -> "homeCreditPayment.isBalancePaid"
                         "Skyro" -> "skyroPayment.isBalancePaid"
+                        "Salmon" -> "salmonPayment.isBalancePaid"
                         "In-House" -> "inHouseInstallment.isBalancePaid"
                         else -> null
                     }
@@ -860,6 +908,7 @@ class AccountReceivableActivity : AppCompatActivity() {
                 val (badgeText, badgeColor) = when (item.transactionType) {
                     "Home Credit" -> "Home Credit" to R.color.red
                     "Skyro" -> "Skyro" to R.color.skyro_light_blue
+                    "Salmon" -> "Salmon" to R.color.orange
                     "In-House" -> "In-House" to R.color.purple
                     else -> item.transactionType to R.color.gray
                 }

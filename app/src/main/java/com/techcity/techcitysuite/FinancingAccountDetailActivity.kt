@@ -53,6 +53,7 @@ class FinancingAccountDetailActivity : AppCompatActivity() {
         val companyColor = when (financingCompany) {
             "Home Credit" -> ContextCompat.getColor(this, R.color.red)
             "Skyro" -> ContextCompat.getColor(this, R.color.skyro_light_blue)
+            "Salmon" -> ContextCompat.getColor(this, R.color.orange)
             "Samsung Finance" -> ContextCompat.getColor(this, R.color.financing_teal)
             else -> ContextCompat.getColor(this, R.color.gray)
         }

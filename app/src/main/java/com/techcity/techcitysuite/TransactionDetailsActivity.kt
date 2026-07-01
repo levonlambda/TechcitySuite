@@ -86,6 +86,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
         val titleText = when (transactionType) {
             "Skyro Payment" -> "Skyro Payment"
             "Home Credit Payment" -> "Home Credit Payment"
+            "Salmon Payment" -> "Salmon Payment"
             "Mobile Loading Service" -> "Mobile Loading Service"
             "Misc Payment" -> "Misc Payment"
             else -> "$transactionType Transaction"
@@ -112,6 +113,10 @@ class TransactionDetailsActivity : AppCompatActivity() {
                 // Red color for Home Credit
                 binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
             }
+            "Salmon Payment" -> {
+                // Orange color for Salmon
+                binding.titleText.setTextColor(ContextCompat.getColor(this, R.color.orange))
+            }
             "Misc Payment" -> {
                 // Gray color for Misc Payment
                 binding.titleText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
@@ -120,7 +125,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
         // Show/Hide Paid with field based on transaction type
         when (transactionType) {
-            "Cash In", "Mobile Loading Service", "Skyro Payment", "Home Credit Payment" -> {
+            "Cash In", "Mobile Loading Service", "Skyro Payment", "Home Credit Payment", "Salmon Payment" -> {
                 // Show Paid with field
                 binding.paymentMethodCheckbox.visibility = View.VISIBLE
                 binding.paymentMethodLayout.visibility = View.VISIBLE
@@ -140,8 +145,8 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
         // Handle fee options based on transaction type
         when (transactionType) {
-            "Skyro Payment", "Home Credit Payment", "Mobile Loading Service" -> {
-                // For Skyro, Home Credit, and Mobile Loading: Only Add Fee is enabled
+            "Skyro Payment", "Home Credit Payment", "Salmon Payment", "Mobile Loading Service" -> {
+                // For Skyro, Home Credit, Salmon, and Mobile Loading: Only Add Fee is enabled
                 binding.radioAddToAmount.isChecked = true
                 binding.radioDeductFromAmount.isEnabled = false
                 binding.radioFree.isEnabled = false
@@ -152,6 +157,10 @@ class TransactionDetailsActivity : AppCompatActivity() {
                 } else if (transactionType == "Skyro Payment") {
                     // Fixed fee of 15 pesos for Skyro
                     transactionFee = 15.0
+                    binding.feeInput.setText(formatCurrency(transactionFee))
+                } else if (transactionType == "Salmon Payment") {
+                    // Fixed fee of 18 pesos for Salmon
+                    transactionFee = 18.0
                     binding.feeInput.setText(formatCurrency(transactionFee))
                 } else if (transactionType == "Home Credit Payment") {
                     // Home Credit fee depends on payment method (default GCash = 0)
@@ -246,7 +255,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
             "Cash Out" -> {
                 binding.sourceOfFundsLabel.text = "Source of Funds"
             }
-            "Skyro Payment", "Home Credit Payment" -> {
+            "Skyro Payment", "Home Credit Payment", "Salmon Payment" -> {
                 binding.sourceOfFundsLabel.text = "Payment Method"
             }
             "Mobile Loading Service" -> {
@@ -330,7 +339,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
                     }
                 } else {
                     amount = 0.0
-                    if (transactionType != "Skyro Payment" && transactionType != "Home Credit Payment") {
+                    if (transactionType != "Skyro Payment" && transactionType != "Home Credit Payment" && transactionType != "Salmon Payment") {
                         transactionFee = 0.0
                     }
                     customerPays = 0.0
@@ -417,6 +426,11 @@ class TransactionDetailsActivity : AppCompatActivity() {
             return 15.0
         }
 
+        // Fixed fee for Salmon Payment
+        if (transactionType == "Salmon Payment") {
+            return 18.0
+        }
+
         // Fee for Home Credit Payment based on payment method
         if (transactionType == "Home Credit Payment") {
             val paymentMethod = binding.sourceOfFundsDropdown.text.toString()
@@ -491,6 +505,8 @@ class TransactionDetailsActivity : AppCompatActivity() {
             // For fixed fee services, still show fee even with 0 amount
             if (transactionType == "Skyro Payment") {
                 transactionFee = 15.0
+            } else if (transactionType == "Salmon Payment") {
+                transactionFee = 18.0
             } else if (transactionType == "Home Credit Payment") {
                 // Home Credit fee depends on payment method
                 val paymentMethod = binding.sourceOfFundsDropdown.text.toString()
@@ -666,6 +682,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
             "Mobile Loading Service" -> ContextCompat.getColor(this, R.color.mobile_loading_purple)
             "Skyro Payment" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
             "Home Credit Payment" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+            "Salmon Payment" -> ContextCompat.getColor(this, R.color.orange)
             "Misc Payment" -> ContextCompat.getColor(this, android.R.color.darker_gray)
             else -> ContextCompat.getColor(this, android.R.color.black)
         }
@@ -713,7 +730,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
         // Handle "Paid With" field based on transaction type
         when (transactionType) {
-            "Cash In", "Mobile Loading Service", "Skyro Payment", "Home Credit Payment" -> {
+            "Cash In", "Mobile Loading Service", "Skyro Payment", "Home Credit Payment", "Salmon Payment" -> {
                 // For these transactions, show what customer paid with (Cash by default or selected payment method)
                 paidWithRow.visibility = View.VISIBLE
                 val actualPaidWith = if (binding.paymentMethodCheckbox.isChecked && paymentMethod != null) {
@@ -899,6 +916,60 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
                 // "Home Credit payment " in black
                 val part1 = "Home Credit payment "
+                messageText.append(part1)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    0,
+                    part1.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Amount in dark green
+                val startAmount = messageText.length
+                messageText.append(formatCurrency(amount))
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, R.color.cash_dark_green)),
+                    startAmount,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // " paid via " in black
+                val part2 = " paid via "
+                val startPaidVia = messageText.length
+                messageText.append(part2)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
+                    startPaidVia,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Source in its specific color
+                val sourceColor = when (sourceOfFunds) {
+                    "GCash" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+                    "PayMaya" -> ContextCompat.getColor(this, android.R.color.holo_green_light)
+                    "Others" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
+                    else -> ContextCompat.getColor(this, android.R.color.black)
+                }
+
+                val startSource = messageText.length
+                messageText.append(sourceOfFunds)
+                messageText.setSpan(
+                    android.text.style.ForegroundColorSpan(sourceColor),
+                    startSource,
+                    messageText.length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                dialogMessage.text = messageText
+            }
+            "Salmon Payment" -> {
+                // For Salmon: "Salmon payment ₱X.XX paid via [source]"
+                val messageText = android.text.SpannableStringBuilder()
+
+                // "Salmon payment " in black
+                val part1 = "Salmon payment "
                 messageText.append(part1)
                 messageText.setSpan(
                     android.text.style.ForegroundColorSpan(ContextCompat.getColor(this, android.R.color.black)),
@@ -1353,6 +1424,19 @@ class TransactionDetailsActivity : AppCompatActivity() {
                     debitLedgerType = sourceOfFunds,
                     debitAmount = amount,  // Full amount paid to Home Credit
                     debitDescription = "Home Credit Payment via $sourceOfFunds"
+                )
+            }
+
+            "Salmon Payment" -> {
+                // Customer pays cash → We pay Salmon via e-wallet
+                // Debit the full amount (not customerReceives) because we pay the full bill
+                LedgerEntryData(
+                    creditLedgerType = defaultCreditLedger,
+                    creditAmount = customerPays,
+                    creditDescription = "Salmon Payment",
+                    debitLedgerType = sourceOfFunds,
+                    debitAmount = amount,  // Full amount paid to Salmon
+                    debitDescription = "Salmon Payment via $sourceOfFunds"
                 )
             }
 

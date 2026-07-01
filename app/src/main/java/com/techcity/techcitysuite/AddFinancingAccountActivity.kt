@@ -33,7 +33,7 @@ class AddFinancingAccountActivity : AppCompatActivity() {
     private lateinit var db: FirebaseFirestore
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
-    private val financingCompanies = listOf("Home Credit", "Skyro", "Samsung Finance")
+    private val financingCompanies = listOf("Home Credit", "Salmon", "Samsung Finance", "Skyro")
 
     // Date storage format (yyyy-MM-dd) and display format (MMM dd, yyyy)
     private val storageDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)

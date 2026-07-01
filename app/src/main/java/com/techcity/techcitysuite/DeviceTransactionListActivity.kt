@@ -64,6 +64,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         CASH,
         HOME_CREDIT,
         SKYRO,
+        SALMON,
         IN_HOUSE
     }
 
@@ -72,6 +73,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
     private val COLOR_CASH = R.color.cash_dark_green
     private val COLOR_HOME_CREDIT = R.color.red
     private val COLOR_SKYRO = R.color.skyro_light_blue
+    private val COLOR_SALMON = R.color.orange
     private val COLOR_IN_HOUSE = R.color.purple
 
     // Data class to hold transaction with server timestamp for local time conversion
@@ -524,6 +526,12 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             applyFilter()
         }
 
+        binding.filterSalmonButton.setOnClickListener {
+            currentFilter = TransactionTypeFilter.SALMON
+            updateFilterButtonStates(currentFilter)
+            applyFilter()
+        }
+
         binding.filterInHouseButton.setOnClickListener {
             currentFilter = TransactionTypeFilter.IN_HOUSE
             updateFilterButtonStates(currentFilter)
@@ -537,6 +545,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         binding.filterCashButton.alpha = 0.5f
         binding.filterHomeCreditButton.alpha = 0.5f
         binding.filterSkyroButton.alpha = 0.5f
+        binding.filterSalmonButton.alpha = 0.5f
         binding.filterInHouseButton.alpha = 0.5f
 
         // Highlight selected button
@@ -545,6 +554,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             TransactionTypeFilter.CASH -> binding.filterCashButton.alpha = 1.0f
             TransactionTypeFilter.HOME_CREDIT -> binding.filterHomeCreditButton.alpha = 1.0f
             TransactionTypeFilter.SKYRO -> binding.filterSkyroButton.alpha = 1.0f
+            TransactionTypeFilter.SALMON -> binding.filterSalmonButton.alpha = 1.0f
             TransactionTypeFilter.IN_HOUSE -> binding.filterInHouseButton.alpha = 1.0f
         }
     }
@@ -663,6 +673,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     cashPayment = parseCashPayment(data["cashPayment"] as? Map<*, *>),
                     homeCreditPayment = parseHomeCreditPayment(data["homeCreditPayment"] as? Map<*, *>),
                     skyroPayment = parseSkyroPayment(data["skyroPayment"] as? Map<*, *>),
+                    salmonPayment = parseSkyroPayment(data["salmonPayment"] as? Map<*, *>),
                     inHouseInstallment = parseInHouseInstallment(data["inHouseInstallment"] as? Map<*, *>),
                     status = data["status"] as? String ?: "",
                     createdBy = data["createdBy"] as? String ?: "",
@@ -776,6 +787,9 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             TransactionTypeFilter.SKYRO -> transactions.filter {
                 it.transaction.transactionType == AppConstants.TRANSACTION_TYPE_SKYRO
             }
+            TransactionTypeFilter.SALMON -> transactions.filter {
+                it.transaction.transactionType == AppConstants.TRANSACTION_TYPE_SALMON
+            }
             TransactionTypeFilter.IN_HOUSE -> transactions.filter {
                 it.transaction.transactionType == AppConstants.TRANSACTION_TYPE_IN_HOUSE
             }
@@ -798,6 +812,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             TransactionTypeFilter.CASH -> "Total Sales (Cash)"
             TransactionTypeFilter.HOME_CREDIT -> "Total Sales (HC)"
             TransactionTypeFilter.SKYRO -> "Total Sales (Skyro)"
+            TransactionTypeFilter.SALMON -> "Total Sales (SLM)"
             TransactionTypeFilter.IN_HOUSE -> "Total Sales (IH)"
         }
         binding.totalSalesLabel.text = filterLabel
@@ -806,6 +821,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         when (currentFilter) {
             TransactionTypeFilter.HOME_CREDIT,
             TransactionTypeFilter.SKYRO,
+            TransactionTypeFilter.SALMON,
             TransactionTypeFilter.IN_HOUSE -> {
                 // Show DP and Balance columns
                 binding.dpSummaryLayout.visibility = View.VISIBLE
@@ -827,6 +843,12 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                             item.transaction.skyroPayment?.let { skyro ->
                                 totalDP += skyro.downpaymentAmount
                                 totalBalance += skyro.balance
+                            }
+                        }
+                        AppConstants.TRANSACTION_TYPE_SALMON -> {
+                            item.transaction.salmonPayment?.let { salmon ->
+                                totalDP += salmon.downpaymentAmount
+                                totalBalance += salmon.balance
                             }
                         }
                         AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
@@ -1008,6 +1030,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             AppConstants.TRANSACTION_TYPE_CASH -> COLOR_CASH
             AppConstants.TRANSACTION_TYPE_HOME_CREDIT -> COLOR_HOME_CREDIT
             AppConstants.TRANSACTION_TYPE_SKYRO -> COLOR_SKYRO
+            AppConstants.TRANSACTION_TYPE_SALMON -> COLOR_SALMON
             AppConstants.TRANSACTION_TYPE_IN_HOUSE -> COLOR_IN_HOUSE
             else -> COLOR_ALL
         }
@@ -1021,6 +1044,7 @@ class DeviceTransactionListActivity : AppCompatActivity() {
             AppConstants.TRANSACTION_TYPE_CASH -> "CASH"
             AppConstants.TRANSACTION_TYPE_HOME_CREDIT -> "HOME CREDIT"
             AppConstants.TRANSACTION_TYPE_SKYRO -> "SKYRO"
+            AppConstants.TRANSACTION_TYPE_SALMON -> "SALMON"
             AppConstants.TRANSACTION_TYPE_IN_HOUSE -> "IN-HOUSE"
             else -> "OTHER"
         }
@@ -1323,6 +1347,44 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                             binding.balanceText.text = formatCurrency(skyro.balance)
                             val balanceColor =
                                 if (skyro.isBalancePaid) R.color.cash_dark_green else R.color.red
+                            binding.balanceText.setTextColor(
+                                ContextCompat.getColor(itemView.context, balanceColor)
+                            )
+                        }
+                    }
+
+                    AppConstants.TRANSACTION_TYPE_SALMON -> {
+                        binding.paymentInfoBadge.visibility = View.GONE
+                        binding.financingDetailsLayout.visibility = View.VISIBLE
+                        transaction.salmonPayment?.let { salmon ->
+                            // Downpayment
+                            binding.downpaymentText.text = formatCurrency(salmon.downpaymentAmount)
+
+                            // Downpayment source badge
+                            if (salmon.downpaymentSource.isNotEmpty() && salmon.downpaymentAmount > 0) {
+                                binding.downpaymentSourceBadge.text = salmon.downpaymentSource
+                                binding.downpaymentSourceBadge.backgroundTintList =
+                                    ContextCompat.getColorStateList(
+                                        itemView.context,
+                                        getPaymentSourceColor(salmon.downpaymentSource)
+                                    )
+                                binding.downpaymentSourceBadge.visibility = View.VISIBLE
+                            } else {
+                                binding.downpaymentSourceBadge.visibility = View.GONE
+                            }
+
+                            // Brand Zero
+                            if (salmon.brandZero && salmon.brandZeroSubsidy > 0) {
+                                binding.brandZeroLayout.visibility = View.VISIBLE
+                                binding.subsidyText.text = formatCurrency(salmon.brandZeroSubsidy)
+                            } else {
+                                binding.brandZeroLayout.visibility = View.GONE
+                            }
+
+                            // Balance
+                            binding.balanceText.text = formatCurrency(salmon.balance)
+                            val balanceColor =
+                                if (salmon.isBalancePaid) R.color.cash_dark_green else R.color.red
                             binding.balanceText.setTextColor(
                                 ContextCompat.getColor(itemView.context, balanceColor)
                             )

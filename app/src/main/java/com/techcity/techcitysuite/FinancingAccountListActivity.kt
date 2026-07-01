@@ -40,7 +40,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
     enum class FinancingFilter {
-        ALL, HOME_CREDIT, SKYRO, SAMSUNG_FINANCE
+        ALL, HOME_CREDIT, SALMON, SKYRO, SAMSUNG_FINANCE
     }
 
     private var currentFilter: FinancingFilter = FinancingFilter.ALL
@@ -103,6 +103,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
     private fun setupFilterButtons() {
         binding.filterAllButton.setOnClickListener { selectFilter(FinancingFilter.ALL) }
         binding.filterHomeCreditButton.setOnClickListener { selectFilter(FinancingFilter.HOME_CREDIT) }
+        binding.filterSalmonButton.setOnClickListener { selectFilter(FinancingFilter.SALMON) }
         binding.filterSkyroButton.setOnClickListener { selectFilter(FinancingFilter.SKYRO) }
         binding.filterSamsungButton.setOnClickListener { selectFilter(FinancingFilter.SAMSUNG_FINANCE) }
 
@@ -325,6 +326,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
             val matchesFilter = when (currentFilter) {
                 FinancingFilter.ALL -> true
                 FinancingFilter.HOME_CREDIT -> account.financingCompany == "Home Credit"
+                FinancingFilter.SALMON -> account.financingCompany == "Salmon"
                 FinancingFilter.SKYRO -> account.financingCompany == "Skyro"
                 FinancingFilter.SAMSUNG_FINANCE -> account.financingCompany == "Samsung Finance"
             }
@@ -407,6 +409,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
 
         binding.filterAllButton.alpha = if (currentFilter == FinancingFilter.ALL) activeAlpha else inactiveAlpha
         binding.filterHomeCreditButton.alpha = if (currentFilter == FinancingFilter.HOME_CREDIT) activeAlpha else inactiveAlpha
+        binding.filterSalmonButton.alpha = if (currentFilter == FinancingFilter.SALMON) activeAlpha else inactiveAlpha
         binding.filterSkyroButton.alpha = if (currentFilter == FinancingFilter.SKYRO) activeAlpha else inactiveAlpha
         binding.filterSamsungButton.alpha = if (currentFilter == FinancingFilter.SAMSUNG_FINANCE) activeAlpha else inactiveAlpha
     }
@@ -699,6 +702,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
             val badgeColor = when (account.financingCompany) {
                 "Home Credit" -> ContextCompat.getColor(this@FinancingAccountListActivity, R.color.red)
                 "Skyro" -> ContextCompat.getColor(this@FinancingAccountListActivity, R.color.skyro_light_blue)
+                "Salmon" -> ContextCompat.getColor(this@FinancingAccountListActivity, R.color.orange)
                 "Samsung Finance" -> ContextCompat.getColor(this@FinancingAccountListActivity, R.color.financing_teal)
                 else -> ContextCompat.getColor(this@FinancingAccountListActivity, R.color.gray)
             }

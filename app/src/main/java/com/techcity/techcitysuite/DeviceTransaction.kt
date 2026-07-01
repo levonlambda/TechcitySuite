@@ -62,6 +62,7 @@ data class DeviceTransaction(
     val cashPayment: CashPaymentDetails? = null,
     val homeCreditPayment: HomeCreditPaymentDetails? = null,
     val skyroPayment: SkyroPaymentDetails? = null,
+    val salmonPayment: SkyroPaymentDetails? = null,
     val inHouseInstallment: InHouseInstallmentDetails? = null,
 
     // Account Settings Snapshot (captured at time of transaction for audit trail)
