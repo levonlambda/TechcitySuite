@@ -69,6 +69,7 @@ class ServiceTransactionListActivity : AppCompatActivity() {
         MOBILE_LOADING,
         SKYRO_PAYMENT,
         HOME_CREDIT_PAYMENT,
+        SALMON_PAYMENT,
         MISC_PAYMENT
     }
 
@@ -476,6 +477,12 @@ class ServiceTransactionListActivity : AppCompatActivity() {
             applyFilter()
         }
 
+        binding.filterSlmButton.setOnClickListener {
+            currentFilter = TransactionTypeFilter.SALMON_PAYMENT
+            updateFilterButtonStates(currentFilter)
+            applyFilter()
+        }
+
         binding.filterMiscButton.setOnClickListener {
             currentFilter = TransactionTypeFilter.MISC_PAYMENT
             updateFilterButtonStates(currentFilter)
@@ -491,6 +498,7 @@ class ServiceTransactionListActivity : AppCompatActivity() {
         binding.filterLoadButton.alpha = 0.5f
         binding.filterSkyroButton.alpha = 0.5f
         binding.filterHCButton.alpha = 0.5f
+        binding.filterSlmButton.alpha = 0.5f
         binding.filterMiscButton.alpha = 0.5f
 
         // Highlight selected button
@@ -501,6 +509,7 @@ class ServiceTransactionListActivity : AppCompatActivity() {
             TransactionTypeFilter.MOBILE_LOADING -> binding.filterLoadButton.alpha = 1.0f
             TransactionTypeFilter.SKYRO_PAYMENT -> binding.filterSkyroButton.alpha = 1.0f
             TransactionTypeFilter.HOME_CREDIT_PAYMENT -> binding.filterHCButton.alpha = 1.0f
+            TransactionTypeFilter.SALMON_PAYMENT -> binding.filterSlmButton.alpha = 1.0f
             TransactionTypeFilter.MISC_PAYMENT -> binding.filterMiscButton.alpha = 1.0f
         }
     }
@@ -661,6 +670,9 @@ class ServiceTransactionListActivity : AppCompatActivity() {
             TransactionTypeFilter.HOME_CREDIT_PAYMENT -> transactions.filter {
                 it.transaction.transactionType == "Home Credit Payment"
             }
+            TransactionTypeFilter.SALMON_PAYMENT -> transactions.filter {
+                it.transaction.transactionType == "Salmon Payment"
+            }
             TransactionTypeFilter.MISC_PAYMENT -> transactions.filter {
                 it.transaction.transactionType == "Misc Payment"
             }
@@ -687,6 +699,7 @@ class ServiceTransactionListActivity : AppCompatActivity() {
             TransactionTypeFilter.MOBILE_LOADING -> "Total Amount (Load)"
             TransactionTypeFilter.SKYRO_PAYMENT -> "Total Amount (Skyro)"
             TransactionTypeFilter.HOME_CREDIT_PAYMENT -> "Total Amount (HC)"
+            TransactionTypeFilter.SALMON_PAYMENT -> "Total Amount (SLM)"
             TransactionTypeFilter.MISC_PAYMENT -> "Total Amount (Misc)"
         }
         binding.totalAmountLabel.text = filterLabel
@@ -859,6 +872,7 @@ class ServiceTransactionListActivity : AppCompatActivity() {
             "Mobile Loading Service" -> R.color.mobile_loading_purple
             "Skyro Payment" -> R.color.skyro_light_blue
             "Home Credit Payment" -> R.color.red
+            "Salmon Payment" -> R.color.orange
             "Misc Payment" -> android.R.color.darker_gray
             else -> R.color.techcity_blue
         }
@@ -869,7 +883,7 @@ class ServiceTransactionListActivity : AppCompatActivity() {
             "Cash In" -> "Transfer To:"
             "Cash Out" -> "Source:"
             "Mobile Loading Service" -> "Load Source:"
-            "Skyro Payment", "Home Credit Payment" -> "Payment Method:"
+            "Skyro Payment", "Home Credit Payment", "Salmon Payment" -> "Payment Method:"
             "Misc Payment" -> "Payment Method:"
             else -> "Source:"
         }

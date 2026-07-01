@@ -87,6 +87,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
         val cashSales: TransactionBreakdown,
         val homeCreditSales: InstallmentBreakdown,
         val skyroSales: InstallmentBreakdown,
+        val salmonSales: InstallmentBreakdown,
         val inHouseSales: InstallmentBreakdown
     )
 
@@ -109,6 +110,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
         val cashOut: ServiceTypeBreakdown,
         val mobileLoading: ServiceTypeBreakdown,
         val skyroPayment: ServiceTypeBreakdown,
+        val salmonPayment: ServiceTypeBreakdown,
         val hcPayment: ServiceTypeBreakdown,
         val miscPayment: MiscPaymentBreakdown
     )
@@ -133,6 +135,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
         val others: Double,
         val hcReceivable: Double,
         val skyroReceivable: Double,
+        val salmonReceivable: Double,
         val inHouseReceivable: Double,
         val brandZeroSubsidy: Double
     )
@@ -167,6 +170,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
     data class ReceivablesBreakdown(
         val homeCredit: Double,
         val skyro: Double,
+        val salmon: Double,
         val inHouse: Double,
         val total: Double
     )
@@ -406,12 +410,14 @@ class EndOfDayReportActivity : AppCompatActivity() {
             cashSales = TransactionBreakdown(0, 0.0),
             homeCreditSales = InstallmentBreakdown(0, 0.0, 0.0, 0.0),
             skyroSales = InstallmentBreakdown(0, 0.0, 0.0, 0.0),
+            salmonSales = InstallmentBreakdown(0, 0.0, 0.0, 0.0),
             inHouseSales = InstallmentBreakdown(0, 0.0, 0.0, 0.0)
         )
 
         val cashData = data["cash"] as? Map<*, *>
         val hcData = data["homeCredit"] as? Map<*, *>
         val skyroData = data["skyro"] as? Map<*, *>
+        val salmonData = data["salmon"] as? Map<*, *>
         val inHouseData = data["inHouse"] as? Map<*, *>
 
         return SalesSummary(
@@ -431,6 +437,12 @@ class EndOfDayReportActivity : AppCompatActivity() {
                 amount = (skyroData?.get("amount") as? Number)?.toDouble() ?: 0.0,
                 downpayment = (skyroData?.get("downpayment") as? Number)?.toDouble() ?: 0.0,
                 balance = (skyroData?.get("balance") as? Number)?.toDouble() ?: 0.0
+            ),
+            salmonSales = InstallmentBreakdown(
+                count = (salmonData?.get("count") as? Number)?.toInt() ?: 0,
+                amount = (salmonData?.get("amount") as? Number)?.toDouble() ?: 0.0,
+                downpayment = (salmonData?.get("downpayment") as? Number)?.toDouble() ?: 0.0,
+                balance = (salmonData?.get("balance") as? Number)?.toDouble() ?: 0.0
             ),
             inHouseSales = InstallmentBreakdown(
                 count = (inHouseData?.get("count") as? Number)?.toInt() ?: 0,
@@ -455,6 +467,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             cashOut = ServiceTypeBreakdown(0, 0.0, 0.0),
             mobileLoading = ServiceTypeBreakdown(0, 0.0, 0.0),
             skyroPayment = ServiceTypeBreakdown(0, 0.0, 0.0),
+            salmonPayment = ServiceTypeBreakdown(0, 0.0, 0.0),
             hcPayment = ServiceTypeBreakdown(0, 0.0, 0.0),
             miscPayment = MiscPaymentBreakdown(0, 0.0)
         )
@@ -464,7 +477,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
      * Parse CashFlowSummary from saved Firebase data
      */
     private fun parseCashFlowSummary(data: Map<*, *>?): CashFlowSummary {
-        if (data == null) return CashFlowSummary(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        if (data == null) return CashFlowSummary(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
         return CashFlowSummary(
             cash = (data["cash"] as? Number)?.toDouble() ?: 0.0,
@@ -475,6 +488,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             others = (data["others"] as? Number)?.toDouble() ?: 0.0,
             hcReceivable = (data["hcReceivable"] as? Number)?.toDouble() ?: 0.0,
             skyroReceivable = (data["skyroReceivable"] as? Number)?.toDouble() ?: 0.0,
+            salmonReceivable = (data["salmonReceivable"] as? Number)?.toDouble() ?: 0.0,
             inHouseReceivable = (data["inHouseReceivable"] as? Number)?.toDouble() ?: 0.0,
             brandZeroSubsidy = (data["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0
         )
@@ -545,9 +559,11 @@ class EndOfDayReportActivity : AppCompatActivity() {
             receivables = ReceivablesBreakdown(
                 homeCredit = deviceCashFlow.hcReceivable + accessoryCashFlow.hcReceivable,
                 skyro = deviceCashFlow.skyroReceivable + accessoryCashFlow.skyroReceivable,
+                salmon = deviceCashFlow.salmonReceivable + accessoryCashFlow.salmonReceivable,
                 inHouse = deviceCashFlow.inHouseReceivable + accessoryCashFlow.inHouseReceivable,
                 total = deviceCashFlow.hcReceivable + accessoryCashFlow.hcReceivable +
                         deviceCashFlow.skyroReceivable + accessoryCashFlow.skyroReceivable +
+                        deviceCashFlow.salmonReceivable + accessoryCashFlow.salmonReceivable +
                         deviceCashFlow.inHouseReceivable + accessoryCashFlow.inHouseReceivable
             )
         )
@@ -809,8 +825,8 @@ class EndOfDayReportActivity : AppCompatActivity() {
         val totalMiscIncome = serviceSummary.miscPayment.amount
         val totalRevenue = totalProductSales + totalServiceFees + totalMiscIncome
 
-        val totalReceivables = deviceCashFlow.hcReceivable + deviceCashFlow.skyroReceivable + deviceCashFlow.inHouseReceivable +
-                accessoryCashFlow.hcReceivable + accessoryCashFlow.skyroReceivable + accessoryCashFlow.inHouseReceivable
+        val totalReceivables = deviceCashFlow.hcReceivable + deviceCashFlow.skyroReceivable + deviceCashFlow.salmonReceivable + deviceCashFlow.inHouseReceivable +
+                accessoryCashFlow.hcReceivable + accessoryCashFlow.skyroReceivable + accessoryCashFlow.salmonReceivable + accessoryCashFlow.inHouseReceivable
 
         val totalBrandZeroSubsidy = deviceCashFlow.brandZeroSubsidy + accessoryCashFlow.brandZeroSubsidy
 
@@ -820,10 +836,11 @@ class EndOfDayReportActivity : AppCompatActivity() {
         val servicePaymayaNet = serviceCashFlow.paymayaInflow - serviceCashFlow.paymayaOutflow
         val serviceOthersNet = serviceCashFlow.othersInflow - serviceCashFlow.othersOutflow
 
-        // Calculate ledger summary with net receivables (minus Brand Zero subsidy)
-        val hcReceivableNet = (deviceCashFlow.hcReceivable + accessoryCashFlow.hcReceivable) -
-                (deviceCashFlow.brandZeroSubsidy + accessoryCashFlow.brandZeroSubsidy)
+        // HC receivable balance already excludes the Brand Zero subsidy (balance = finalPrice - downPayment - subsidy),
+        // so it must NOT be subtracted again here (mirrors Skyro/Salmon and the saved-report path).
+        val hcReceivableNet = deviceCashFlow.hcReceivable + accessoryCashFlow.hcReceivable
         val skyroReceivableNet = deviceCashFlow.skyroReceivable + accessoryCashFlow.skyroReceivable
+        val salmonReceivableNet = deviceCashFlow.salmonReceivable + accessoryCashFlow.salmonReceivable
         val inHouseReceivableNet = deviceCashFlow.inHouseReceivable + accessoryCashFlow.inHouseReceivable
 
         val ledgerSummary = LedgerSummaryData(
@@ -860,8 +877,9 @@ class EndOfDayReportActivity : AppCompatActivity() {
             receivables = ReceivablesBreakdown(
                 homeCredit = hcReceivableNet,
                 skyro = skyroReceivableNet,
+                salmon = salmonReceivableNet,
                 inHouse = inHouseReceivableNet,
-                total = hcReceivableNet + skyroReceivableNet + inHouseReceivableNet
+                total = hcReceivableNet + skyroReceivableNet + salmonReceivableNet + inHouseReceivableNet
             )
         )
 
@@ -931,6 +949,11 @@ class EndOfDayReportActivity : AppCompatActivity() {
         var skyroDownpayment = 0.0
         var skyroBalance = 0.0
 
+        var salmonCount = 0
+        var salmonAmount = 0.0
+        var salmonDownpayment = 0.0
+        var salmonBalance = 0.0
+
         var inHouseCount = 0
         var inHouseAmount = 0.0
         var inHouseDownpayment = 0.0
@@ -968,6 +991,17 @@ class EndOfDayReportActivity : AppCompatActivity() {
                     skyroDownpayment += downpayment
                     skyroBalance += balance
                 }
+                AppConstants.TRANSACTION_TYPE_SALMON -> {
+                    // Get nested salmonPayment object
+                    val salmonPayment = data["salmonPayment"] as? Map<String, Any?> ?: emptyMap()
+                    val downpayment = (salmonPayment["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
+                    val balance = (salmonPayment["balance"] as? Number)?.toDouble() ?: 0.0
+
+                    salmonCount++
+                    salmonAmount += finalPrice
+                    salmonDownpayment += downpayment
+                    salmonBalance += balance
+                }
                 AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
                     // Get nested inHouseInstallment object
                     val ihPayment = data["inHouseInstallment"] as? Map<String, Any?> ?: emptyMap()
@@ -984,13 +1018,14 @@ class EndOfDayReportActivity : AppCompatActivity() {
             }
         }
 
-        val totalSales = cashAmount + hcAmount + skyroAmount + inHouseAmount
+        val totalSales = cashAmount + hcAmount + skyroAmount + salmonAmount + inHouseAmount
 
         return SalesSummary(
             totalSales = totalSales,
             cashSales = TransactionBreakdown(cashCount, cashAmount),
             homeCreditSales = InstallmentBreakdown(hcCount, hcAmount, hcDownpayment, hcBalance),
             skyroSales = InstallmentBreakdown(skyroCount, skyroAmount, skyroDownpayment, skyroBalance),
+            salmonSales = InstallmentBreakdown(salmonCount, salmonAmount, salmonDownpayment, salmonBalance),
             inHouseSales = InstallmentBreakdown(inHouseCount, inHouseAmount, inHouseDownpayment, inHouseBalance)
         )
     }
@@ -1011,6 +1046,11 @@ class EndOfDayReportActivity : AppCompatActivity() {
         var skyroAmount = 0.0
         var skyroDownpayment = 0.0
         var skyroBalance = 0.0
+
+        var salmonCount = 0
+        var salmonAmount = 0.0
+        var salmonDownpayment = 0.0
+        var salmonBalance = 0.0
 
         var inHouseCount = 0
         var inHouseAmount = 0.0
@@ -1046,6 +1086,16 @@ class EndOfDayReportActivity : AppCompatActivity() {
                     skyroDownpayment += downpayment
                     skyroBalance += balance
                 }
+                AppConstants.TRANSACTION_TYPE_SALMON -> {
+                    val salmonPayment = data["salmonPayment"] as? Map<String, Any?> ?: emptyMap()
+                    val downpayment = (salmonPayment["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
+                    val balance = (salmonPayment["balance"] as? Number)?.toDouble() ?: 0.0
+
+                    salmonCount++
+                    salmonAmount += finalPrice
+                    salmonDownpayment += downpayment
+                    salmonBalance += balance
+                }
                 AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
                     val ihPayment = data["inHouseInstallment"] as? Map<String, Any?> ?: emptyMap()
                     val downpayment = (ihPayment["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
@@ -1060,13 +1110,14 @@ class EndOfDayReportActivity : AppCompatActivity() {
             }
         }
 
-        val totalSales = cashAmount + hcAmount + skyroAmount + inHouseAmount
+        val totalSales = cashAmount + hcAmount + skyroAmount + salmonAmount + inHouseAmount
 
         return SalesSummary(
             totalSales = totalSales,
             cashSales = TransactionBreakdown(cashCount, cashAmount),
             homeCreditSales = InstallmentBreakdown(hcCount, hcAmount, hcDownpayment, hcBalance),
             skyroSales = InstallmentBreakdown(skyroCount, skyroAmount, skyroDownpayment, skyroBalance),
+            salmonSales = InstallmentBreakdown(salmonCount, salmonAmount, salmonDownpayment, salmonBalance),
             inHouseSales = InstallmentBreakdown(inHouseCount, inHouseAmount, inHouseDownpayment, inHouseBalance)
         )
     }
@@ -1087,6 +1138,10 @@ class EndOfDayReportActivity : AppCompatActivity() {
         var skyroCount = 0
         var skyroVolume = 0.0
         var skyroFees = 0.0
+
+        var salmonCount = 0
+        var salmonVolume = 0.0
+        var salmonFees = 0.0
 
         var hcCount = 0
         var hcVolume = 0.0
@@ -1121,6 +1176,11 @@ class EndOfDayReportActivity : AppCompatActivity() {
                     skyroVolume += amount
                     skyroFees += fee
                 }
+                "Salmon Payment" -> {
+                    salmonCount++
+                    salmonVolume += amount
+                    salmonFees += fee
+                }
                 "Home Credit Payment" -> {
                     hcCount++
                     hcVolume += amount
@@ -1133,8 +1193,8 @@ class EndOfDayReportActivity : AppCompatActivity() {
             }
         }
 
-        val totalFees = cashInFees + cashOutFees + mobileLoadFees + skyroFees + hcFees
-        val totalVolume = cashInVolume + cashOutVolume + mobileLoadVolume + skyroVolume + hcVolume + miscAmount
+        val totalFees = cashInFees + cashOutFees + mobileLoadFees + skyroFees + salmonFees + hcFees
+        val totalVolume = cashInVolume + cashOutVolume + mobileLoadVolume + skyroVolume + salmonVolume + hcVolume + miscAmount
 
         return ServiceSummary(
             totalFees = totalFees,
@@ -1143,6 +1203,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             cashOut = ServiceTypeBreakdown(cashOutCount, cashOutVolume, cashOutFees),
             mobileLoading = ServiceTypeBreakdown(mobileLoadCount, mobileLoadVolume, mobileLoadFees),
             skyroPayment = ServiceTypeBreakdown(skyroCount, skyroVolume, skyroFees),
+            salmonPayment = ServiceTypeBreakdown(salmonCount, salmonVolume, salmonFees),
             hcPayment = ServiceTypeBreakdown(hcCount, hcVolume, hcFees),
             miscPayment = MiscPaymentBreakdown(miscCount, miscAmount)
         )
@@ -1161,6 +1222,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
 
         var hcReceivable = 0.0
         var skyroReceivable = 0.0
+        var salmonReceivable = 0.0
         var inHouseReceivable = 0.0
         var brandZeroSubsidy = 0.0
 
@@ -1227,6 +1289,27 @@ class EndOfDayReportActivity : AppCompatActivity() {
                     skyroReceivable += balance
                     brandZeroSubsidy += subsidy
                 }
+                AppConstants.TRANSACTION_TYPE_SALMON -> {
+                    val salmonPayment = data["salmonPayment"] as? Map<String, Any?> ?: emptyMap()
+                    val downpayment = (salmonPayment["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
+                    val balance = (salmonPayment["balance"] as? Number)?.toDouble() ?: 0.0
+                    val dpSource = salmonPayment["downpaymentSource"] as? String ?: "Cash"
+                    val subsidy = (salmonPayment["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0
+
+                    if (downpayment > 0) {
+                        when (dpSource) {
+                            "Cash" -> cash += downpayment
+                            "GCash" -> gcash += downpayment
+                            "PayMaya" -> paymaya += downpayment
+                            "Bank Transfer" -> bankTransfer += downpayment
+                            "Credit Card" -> creditCard += downpayment
+                            "Others" -> others += downpayment
+                            else -> cash += downpayment
+                        }
+                    }
+                    salmonReceivable += balance
+                    brandZeroSubsidy += subsidy
+                }
                 AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
                     val ihPayment = data["inHouseInstallment"] as? Map<String, Any?> ?: emptyMap()
                     val downpayment = (ihPayment["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
@@ -1259,6 +1342,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             others = others,
             hcReceivable = hcReceivable,
             skyroReceivable = skyroReceivable,
+            salmonReceivable = salmonReceivable,
             inHouseReceivable = inHouseReceivable,
             brandZeroSubsidy = brandZeroSubsidy
         )
@@ -1277,6 +1361,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
 
         var hcReceivable = 0.0
         var skyroReceivable = 0.0
+        var salmonReceivable = 0.0
         var inHouseReceivable = 0.0
         var brandZeroSubsidy = 0.0
 
@@ -1341,6 +1426,27 @@ class EndOfDayReportActivity : AppCompatActivity() {
                     skyroReceivable += balance
                     brandZeroSubsidy += subsidy
                 }
+                AppConstants.TRANSACTION_TYPE_SALMON -> {
+                    val salmonPayment = data["salmonPayment"] as? Map<String, Any?> ?: emptyMap()
+                    val downpayment = (salmonPayment["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
+                    val balance = (salmonPayment["balance"] as? Number)?.toDouble() ?: 0.0
+                    val dpSource = salmonPayment["downpaymentSource"] as? String ?: "Cash"
+                    val subsidy = (salmonPayment["brandZeroSubsidy"] as? Number)?.toDouble() ?: 0.0
+
+                    if (downpayment > 0) {
+                        when (dpSource) {
+                            "Cash" -> cash += downpayment
+                            "GCash" -> gcash += downpayment
+                            "PayMaya" -> paymaya += downpayment
+                            "Bank Transfer" -> bankTransfer += downpayment
+                            "Credit Card" -> creditCard += downpayment
+                            "Others" -> others += downpayment
+                            else -> cash += downpayment
+                        }
+                    }
+                    salmonReceivable += balance
+                    brandZeroSubsidy += subsidy
+                }
                 AppConstants.TRANSACTION_TYPE_IN_HOUSE -> {
                     val ihPayment = data["inHouseInstallment"] as? Map<String, Any?> ?: emptyMap()
                     val downpayment = (ihPayment["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
@@ -1373,6 +1479,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             others = others,
             hcReceivable = hcReceivable,
             skyroReceivable = skyroReceivable,
+            salmonReceivable = salmonReceivable,
             inHouseReceivable = inHouseReceivable,
             brandZeroSubsidy = brandZeroSubsidy
         )
@@ -1478,6 +1585,19 @@ class EndOfDayReportActivity : AppCompatActivity() {
             binding.deviceSkyroBalanceRow.visibility = View.GONE
         }
 
+        binding.deviceSalmonCount.text = "(${sales.salmonSales.count})"
+        binding.deviceSalmonAmount.text = formatCurrency(sales.salmonSales.amount)
+
+        if (sales.salmonSales.downpayment > 0) {
+            binding.deviceSalmonDpRow.visibility = View.VISIBLE
+            binding.deviceSalmonBalanceRow.visibility = View.VISIBLE
+            binding.deviceSalmonDpAmount.text = formatCurrency(sales.salmonSales.downpayment)
+            binding.deviceSalmonBalanceAmount.text = formatCurrency(sales.salmonSales.balance)
+        } else {
+            binding.deviceSalmonDpRow.visibility = View.GONE
+            binding.deviceSalmonBalanceRow.visibility = View.GONE
+        }
+
         binding.deviceInHouseCount.text = "(${sales.inHouseSales.count})"
         binding.deviceInHouseAmount.text = formatCurrency(sales.inHouseSales.amount)
 
@@ -1522,6 +1642,19 @@ class EndOfDayReportActivity : AppCompatActivity() {
         } else {
             binding.accessorySkyroDpRow.visibility = View.GONE
             binding.accessorySkyroBalanceRow.visibility = View.GONE
+        }
+
+        binding.accessorySalmonCount.text = "(${sales.salmonSales.count})"
+        binding.accessorySalmonAmount.text = formatCurrency(sales.salmonSales.amount)
+
+        if (sales.salmonSales.downpayment > 0) {
+            binding.accessorySalmonDpRow.visibility = View.VISIBLE
+            binding.accessorySalmonBalanceRow.visibility = View.VISIBLE
+            binding.accessorySalmonDpAmount.text = formatCurrency(sales.salmonSales.downpayment)
+            binding.accessorySalmonBalanceAmount.text = formatCurrency(sales.salmonSales.balance)
+        } else {
+            binding.accessorySalmonDpRow.visibility = View.GONE
+            binding.accessorySalmonBalanceRow.visibility = View.GONE
         }
 
         binding.accessoryInHouseCount.text = "(${sales.inHouseSales.count})"
@@ -1577,6 +1710,15 @@ class EndOfDayReportActivity : AppCompatActivity() {
             binding.serviceSkyroRow.visibility = View.GONE
         }
 
+        if (summary.salmonPayment.count > 0) {
+            binding.serviceSalmonRow.visibility = View.VISIBLE
+            binding.serviceSalmonCount.text = summary.salmonPayment.count.toString()
+            binding.serviceSalmonVolume.text = formatCurrencyShort(summary.salmonPayment.volume)
+            binding.serviceSalmonFees.text = formatCurrencyShort(summary.salmonPayment.fees)
+        } else {
+            binding.serviceSalmonRow.visibility = View.GONE
+        }
+
         if (summary.hcPayment.count > 0) {
             binding.serviceHcPaymentRow.visibility = View.VISIBLE
             binding.serviceHcPaymentCount.text = summary.hcPayment.count.toString()
@@ -1606,7 +1748,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
         // Calculate total cash flow (payment methods + receivables + subsidy = total sales)
         val totalCashFlow = cashFlow.cash + cashFlow.gcash + cashFlow.paymaya +
                 cashFlow.bankTransfer + cashFlow.creditCard + cashFlow.others +
-                cashFlow.hcReceivable + cashFlow.skyroReceivable + cashFlow.inHouseReceivable +
+                cashFlow.hcReceivable + cashFlow.skyroReceivable + cashFlow.salmonReceivable + cashFlow.inHouseReceivable +
                 cashFlow.brandZeroSubsidy
         binding.deviceCashFlowTotal.text = formatCurrency(totalCashFlow)
 
@@ -1674,6 +1816,14 @@ class EndOfDayReportActivity : AppCompatActivity() {
             binding.deviceCfSkyroReceivableRow.visibility = View.GONE
         }
 
+        if (cashFlow.salmonReceivable > 0) {
+            binding.deviceCfSalmonReceivableRow.visibility = View.VISIBLE
+            binding.deviceCfSalmonReceivable.text = formatCurrency(cashFlow.salmonReceivable)
+            hasAnyReceivable = true
+        } else {
+            binding.deviceCfSalmonReceivableRow.visibility = View.GONE
+        }
+
         if (cashFlow.inHouseReceivable > 0) {
             binding.deviceCfInHouseReceivableRow.visibility = View.VISIBLE
             binding.deviceCfInHouseReceivable.text = formatCurrency(cashFlow.inHouseReceivable)
@@ -1701,7 +1851,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
         // Calculate total cash flow (payment methods + receivables + subsidy = total sales)
         val totalCashFlow = cashFlow.cash + cashFlow.gcash + cashFlow.paymaya +
                 cashFlow.bankTransfer + cashFlow.creditCard + cashFlow.others +
-                cashFlow.hcReceivable + cashFlow.skyroReceivable + cashFlow.inHouseReceivable +
+                cashFlow.hcReceivable + cashFlow.skyroReceivable + cashFlow.salmonReceivable + cashFlow.inHouseReceivable +
                 cashFlow.brandZeroSubsidy
         binding.accessoryCashFlowTotal.text = formatCurrency(totalCashFlow)
 
@@ -1767,6 +1917,14 @@ class EndOfDayReportActivity : AppCompatActivity() {
             hasAnyReceivable = true
         } else {
             binding.accessoryCfSkyroReceivableRow.visibility = View.GONE
+        }
+
+        if (cashFlow.salmonReceivable > 0) {
+            binding.accessoryCfSalmonReceivableRow.visibility = View.VISIBLE
+            binding.accessoryCfSalmonReceivable.text = formatCurrency(cashFlow.salmonReceivable)
+            hasAnyReceivable = true
+        } else {
+            binding.accessoryCfSalmonReceivableRow.visibility = View.GONE
         }
 
         if (cashFlow.inHouseReceivable > 0) {
@@ -2037,6 +2195,10 @@ class EndOfDayReportActivity : AppCompatActivity() {
                 binding.ledgerReceivablesSkyroRow.visibility = View.VISIBLE
                 binding.ledgerReceivablesSkyro.text = formatCurrency(ledger.receivables.skyro)
             }
+            if (ledger.receivables.salmon != 0.0) {
+                binding.ledgerReceivablesSalmonRow.visibility = View.VISIBLE
+                binding.ledgerReceivablesSalmon.text = formatCurrency(ledger.receivables.salmon)
+            }
             if (ledger.receivables.inHouse != 0.0) {
                 binding.ledgerReceivablesInHouseRow.visibility = View.VISIBLE
                 binding.ledgerReceivablesInHouse.text = formatCurrency(ledger.receivables.inHouse)
@@ -2144,6 +2306,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
                             "cash" to hashMapOf("count" to data.deviceSales.cashSales.count, "amount" to data.deviceSales.cashSales.amount),
                             "homeCredit" to hashMapOf("count" to data.deviceSales.homeCreditSales.count, "amount" to data.deviceSales.homeCreditSales.amount, "downpayment" to data.deviceSales.homeCreditSales.downpayment, "balance" to data.deviceSales.homeCreditSales.balance),
                             "skyro" to hashMapOf("count" to data.deviceSales.skyroSales.count, "amount" to data.deviceSales.skyroSales.amount, "downpayment" to data.deviceSales.skyroSales.downpayment, "balance" to data.deviceSales.skyroSales.balance),
+                            "salmon" to hashMapOf("count" to data.deviceSales.salmonSales.count, "amount" to data.deviceSales.salmonSales.amount, "downpayment" to data.deviceSales.salmonSales.downpayment, "balance" to data.deviceSales.salmonSales.balance),
                             "inHouse" to hashMapOf("count" to data.deviceSales.inHouseSales.count, "amount" to data.deviceSales.inHouseSales.amount, "downpayment" to data.deviceSales.inHouseSales.downpayment, "balance" to data.deviceSales.inHouseSales.balance)
                         ),
                         "accessories" to hashMapOf(
@@ -2151,6 +2314,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
                             "cash" to hashMapOf("count" to data.accessorySales.cashSales.count, "amount" to data.accessorySales.cashSales.amount),
                             "homeCredit" to hashMapOf("count" to data.accessorySales.homeCreditSales.count, "amount" to data.accessorySales.homeCreditSales.amount, "downpayment" to data.accessorySales.homeCreditSales.downpayment, "balance" to data.accessorySales.homeCreditSales.balance),
                             "skyro" to hashMapOf("count" to data.accessorySales.skyroSales.count, "amount" to data.accessorySales.skyroSales.amount, "downpayment" to data.accessorySales.skyroSales.downpayment, "balance" to data.accessorySales.skyroSales.balance),
+                            "salmon" to hashMapOf("count" to data.accessorySales.salmonSales.count, "amount" to data.accessorySales.salmonSales.amount, "downpayment" to data.accessorySales.salmonSales.downpayment, "balance" to data.accessorySales.salmonSales.balance),
                             "inHouse" to hashMapOf("count" to data.accessorySales.inHouseSales.count, "amount" to data.accessorySales.inHouseSales.amount, "downpayment" to data.accessorySales.inHouseSales.downpayment, "balance" to data.accessorySales.inHouseSales.balance)
                         ),
                         "services" to hashMapOf(
@@ -2160,8 +2324,8 @@ class EndOfDayReportActivity : AppCompatActivity() {
                     ),
 
                     "cashFlowSummary" to hashMapOf(
-                        "devices" to hashMapOf("cash" to data.deviceCashFlow.cash, "gcash" to data.deviceCashFlow.gcash, "paymaya" to data.deviceCashFlow.paymaya, "bankTransfer" to data.deviceCashFlow.bankTransfer, "creditCard" to data.deviceCashFlow.creditCard, "others" to data.deviceCashFlow.others, "hcReceivable" to data.deviceCashFlow.hcReceivable, "skyroReceivable" to data.deviceCashFlow.skyroReceivable, "inHouseReceivable" to data.deviceCashFlow.inHouseReceivable),
-                        "accessories" to hashMapOf("cash" to data.accessoryCashFlow.cash, "gcash" to data.accessoryCashFlow.gcash, "paymaya" to data.accessoryCashFlow.paymaya, "bankTransfer" to data.accessoryCashFlow.bankTransfer, "creditCard" to data.accessoryCashFlow.creditCard, "others" to data.accessoryCashFlow.others, "hcReceivable" to data.accessoryCashFlow.hcReceivable, "skyroReceivable" to data.accessoryCashFlow.skyroReceivable, "inHouseReceivable" to data.accessoryCashFlow.inHouseReceivable),
+                        "devices" to hashMapOf("cash" to data.deviceCashFlow.cash, "gcash" to data.deviceCashFlow.gcash, "paymaya" to data.deviceCashFlow.paymaya, "bankTransfer" to data.deviceCashFlow.bankTransfer, "creditCard" to data.deviceCashFlow.creditCard, "others" to data.deviceCashFlow.others, "hcReceivable" to data.deviceCashFlow.hcReceivable, "skyroReceivable" to data.deviceCashFlow.skyroReceivable, "salmonReceivable" to data.deviceCashFlow.salmonReceivable, "inHouseReceivable" to data.deviceCashFlow.inHouseReceivable),
+                        "accessories" to hashMapOf("cash" to data.accessoryCashFlow.cash, "gcash" to data.accessoryCashFlow.gcash, "paymaya" to data.accessoryCashFlow.paymaya, "bankTransfer" to data.accessoryCashFlow.bankTransfer, "creditCard" to data.accessoryCashFlow.creditCard, "others" to data.accessoryCashFlow.others, "hcReceivable" to data.accessoryCashFlow.hcReceivable, "skyroReceivable" to data.accessoryCashFlow.skyroReceivable, "salmonReceivable" to data.accessoryCashFlow.salmonReceivable, "inHouseReceivable" to data.accessoryCashFlow.inHouseReceivable),
                         "services" to hashMapOf("cashInflow" to data.serviceCashFlow.cashInflow, "cashOutflow" to data.serviceCashFlow.cashOutflow, "gcashInflow" to data.serviceCashFlow.gcashInflow, "gcashOutflow" to data.serviceCashFlow.gcashOutflow, "paymayaInflow" to data.serviceCashFlow.paymayaInflow, "paymayaOutflow" to data.serviceCashFlow.paymayaOutflow, "othersInflow" to data.serviceCashFlow.othersInflow, "othersOutflow" to data.serviceCashFlow.othersOutflow)
                     ),
 

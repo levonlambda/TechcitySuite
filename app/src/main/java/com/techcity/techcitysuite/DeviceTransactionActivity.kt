@@ -48,6 +48,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
         "Cash Transaction",
         "Home Credit Transaction",
         "Skyro Transaction",
+        "Salmon Transaction",
         "In-House Installment"
     )
 
@@ -212,6 +213,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
             "Cash Transaction" -> ContextCompat.getColor(this, R.color.cash_dark_green)
             "Home Credit Transaction" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
             "Skyro Transaction" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+            "Salmon Transaction" -> ContextCompat.getColor(this, R.color.orange)
             "In-House Installment" -> ContextCompat.getColor(this, R.color.mobile_loading_purple)
             else -> ContextCompat.getColor(this, android.R.color.black)
         }
@@ -295,6 +297,16 @@ class DeviceTransactionActivity : AppCompatActivity() {
                 binding.homeCreditTitle.text = "Skyro Details"
                 binding.homeCreditTitle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
                 binding.hcBalanceInput.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
+                updateHCBalance()
+                updateSubsidyVisibility()
+            }
+            "Salmon Transaction" -> {
+                binding.homeCreditCard.visibility = View.VISIBLE
+                // Set Salmon colors (orange)
+                binding.homeCreditCard.strokeColor = ContextCompat.getColor(this, R.color.orange)
+                binding.homeCreditTitle.text = "Salmon Details"
+                binding.homeCreditTitle.setTextColor(ContextCompat.getColor(this, R.color.orange))
+                binding.hcBalanceInput.setTextColor(ContextCompat.getColor(this, R.color.orange))
                 updateHCBalance()
                 updateSubsidyVisibility()
             }
@@ -512,7 +524,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
         private fun updateAllCalculations() {
             when (transactionType) {
                 "Cash Transaction" -> updateCashAmount()
-                "Home Credit Transaction", "Skyro Transaction" -> {
+                "Home Credit Transaction", "Skyro Transaction", "Salmon Transaction" -> {
                     updateHCBalance()
                     // Update subsidy when price changes
                     if (brandZero) {
@@ -1197,7 +1209,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     return
                 }
             }
-            AppConstants.TRANSACTION_TYPE_HOME_CREDIT, AppConstants.TRANSACTION_TYPE_SKYRO -> {
+            AppConstants.TRANSACTION_TYPE_HOME_CREDIT, AppConstants.TRANSACTION_TYPE_SKYRO, AppConstants.TRANSACTION_TYPE_SALMON -> {
                 val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
                 if (downPayment > 0) {
                     val downPaymentSource = binding.hcDownPaymentSourceDropdown.text.toString()
@@ -1426,6 +1438,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     )
                     transactionData["homeCreditPayment"] = null
                     transactionData["skyroPayment"] = null
+                    transactionData["salmonPayment"] = null
                     transactionData["inHouseInstallment"] = null
                 }
 
@@ -1470,6 +1483,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     )
                     transactionData["cashPayment"] = null
                     transactionData["skyroPayment"] = null
+                    transactionData["salmonPayment"] = null
                     transactionData["inHouseInstallment"] = null
                 }
 
@@ -1514,6 +1528,52 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     )
                     transactionData["cashPayment"] = null
                     transactionData["homeCreditPayment"] = null
+                    transactionData["salmonPayment"] = null
+                    transactionData["inHouseInstallment"] = null
+                }
+
+                AppConstants.TRANSACTION_TYPE_SALMON -> {
+                    val downPayment = binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                    val downPaymentSource = binding.hcDownPaymentSourceDropdown.text.toString()
+
+                    // Calculate subsidy
+                    val subsidyPercent = if (brandZero) {
+                        when (deviceType.lowercase()) {
+                            "laptop" -> AppConstants.SUBSIDY_PERCENT_LAPTOP
+                            else -> AppConstants.SUBSIDY_PERCENT_PHONE
+                        }
+                    } else 0.0
+                    val subsidyAmount = if (brandZero) price * (subsidyPercent / 100.0) else 0.0
+
+                    // Calculate balance
+                    val balance = finalPrice - downPayment - subsidyAmount
+
+                    // Get account details for downpayment source (if downpayment > 0)
+                    val accountDetails = if (downPayment > 0) {
+                        getAccountDetailsForPaymentSource(downPaymentSource, prefs)
+                    } else {
+                        AccountDetails()
+                    }
+
+                    transactionData["salmonPayment"] = hashMapOf(
+                        "downpaymentAmount" to downPayment,
+                        "downpaymentSource" to if (downPayment > 0) downPaymentSource else "",
+                        "accountDetails" to hashMapOf(
+                            "accountName" to accountDetails.accountName,
+                            "accountType" to accountDetails.accountType
+                        ),
+                        "brandZero" to brandZero,
+                        "brandZeroSubsidy" to subsidyAmount,
+                        "subsidyPercent" to subsidyPercent,
+                        "balance" to balance,
+                        "isBalancePaid" to false,
+                        "balancePaidDate" to null,
+                        "balancePaidBy" to null,
+                        "balancePaidTimestamp" to null
+                    )
+                    transactionData["cashPayment"] = null
+                    transactionData["homeCreditPayment"] = null
+                    transactionData["skyroPayment"] = null
                     transactionData["inHouseInstallment"] = null
                 }
 
@@ -1557,6 +1617,7 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     transactionData["cashPayment"] = null
                     transactionData["homeCreditPayment"] = null
                     transactionData["skyroPayment"] = null
+                    transactionData["salmonPayment"] = null
                 }
             }
 

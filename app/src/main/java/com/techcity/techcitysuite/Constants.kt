@@ -60,6 +60,7 @@ object AppConstants {
     const val TRANSACTION_TYPE_CASH = "Cash Transaction"
     const val TRANSACTION_TYPE_HOME_CREDIT = "Home Credit Transaction"
     const val TRANSACTION_TYPE_SKYRO = "Skyro Transaction"
+    const val TRANSACTION_TYPE_SALMON = "Salmon Transaction"
     const val TRANSACTION_TYPE_IN_HOUSE = "In-House Installment"
 
     // ============================================================================

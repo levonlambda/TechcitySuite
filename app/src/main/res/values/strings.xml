@@ -48,6 +48,7 @@
     <string name="no_financing_accounts">No financing accounts found</string>
     <string name="filter_all">All</string>
     <string name="filter_home_credit">Home Credit</string>
+    <string name="filter_salmon">Salmon</string>
     <string name="filter_skyro">Skyro</string>
     <string name="filter_samsung_finance">Samsung</string>
     <string name="label_financing_company">Financing Company</string>

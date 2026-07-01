@@ -35,6 +35,7 @@ data class AccessoryTransaction(
     val cashPayment: CashPaymentDetails? = null,
     val homeCreditPayment: AccessoryHomeCreditPaymentDetails? = null,
     val skyroPayment: AccessorySkyroPaymentDetails? = null,
+    val salmonPayment: AccessorySkyroPaymentDetails? = null,
     val inHouseInstallment: AccessoryInHouseInstallmentDetails? = null,
 
     // Transaction Status

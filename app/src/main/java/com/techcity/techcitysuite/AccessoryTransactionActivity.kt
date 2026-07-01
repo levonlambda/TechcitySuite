@@ -65,6 +65,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
         "Cash Transaction",
         "Home Credit Transaction",
         "Skyro Transaction",
+        "Salmon Transaction",
         "In-House Installment"
     )
 
@@ -190,6 +191,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
             "Cash Transaction" -> ContextCompat.getColor(this, R.color.cash_dark_green)
             "Home Credit Transaction" -> ContextCompat.getColor(this, android.R.color.holo_red_dark)
             "Skyro Transaction" -> ContextCompat.getColor(this, android.R.color.holo_blue_dark)
+            "Salmon Transaction" -> ContextCompat.getColor(this, R.color.orange)
             "In-House Installment" -> ContextCompat.getColor(this, R.color.mobile_loading_purple)
             else -> ContextCompat.getColor(this, android.R.color.black)
         }
@@ -263,6 +265,15 @@ class AccessoryTransactionActivity : AppCompatActivity() {
                 binding.homeCreditTitle.text = "Skyro Details"
                 binding.homeCreditTitle.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
                 binding.hcBalanceInput.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
+                updateHCBalance()
+            }
+            "Salmon Transaction" -> {
+                binding.homeCreditCard.visibility = View.VISIBLE
+                // Set Salmon colors (orange)
+                binding.homeCreditCard.strokeColor = ContextCompat.getColor(this, R.color.orange)
+                binding.homeCreditTitle.text = "Salmon Details"
+                binding.homeCreditTitle.setTextColor(ContextCompat.getColor(this, R.color.orange))
+                binding.hcBalanceInput.setTextColor(ContextCompat.getColor(this, R.color.orange))
                 updateHCBalance()
             }
             "In-House Installment" -> {
@@ -660,7 +671,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
         private fun updateAllCalculations() {
             when (transactionType) {
                 "Cash Transaction" -> updateCashAmount()
-                "Home Credit Transaction", "Skyro Transaction" -> updateHCBalance()
+                "Home Credit Transaction", "Skyro Transaction", "Salmon Transaction" -> updateHCBalance()
                 "In-House Installment" -> {
                     updateInHouseBalance()
                     updateMonthlyAmount()
@@ -1203,6 +1214,23 @@ class AccessoryTransactionActivity : AppCompatActivity() {
                         "isBalancePaid" to false
                     )
                 }
+                "Salmon Transaction" -> {
+                    val downPayment = binding.hcDownPaymentInput.text.toString()
+                        .replace(",", "").toDoubleOrNull() ?: 0.0
+                    val downPaymentSource = binding.hcDownPaymentSourceDropdown.text.toString()
+                    val balance = finalPrice - downPayment
+
+                    transactionData["salmonPayment"] = hashMapOf(
+                        "downpaymentAmount" to downPayment,
+                        "downpaymentSource" to downPaymentSource,
+                        "accountDetails" to hashMapOf(
+                            "accountName" to getAccountName(downPaymentSource, prefs),
+                            "accountType" to downPaymentSource
+                        ),
+                        "balance" to balance,
+                        "isBalancePaid" to false
+                    )
+                }
                 "In-House Installment" -> {
                     val interestPercent = binding.interestInput.text.toString().toDoubleOrNull() ?: 0.0
                     val interestAmount = price * (interestPercent / 100)
@@ -1309,6 +1337,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
             "Cash Transaction" -> AppConstants.TRANSACTION_TYPE_CASH
             "Home Credit Transaction" -> AppConstants.TRANSACTION_TYPE_HOME_CREDIT
             "Skyro Transaction" -> AppConstants.TRANSACTION_TYPE_SKYRO
+            "Salmon Transaction" -> AppConstants.TRANSACTION_TYPE_SALMON
             "In-House Installment" -> AppConstants.TRANSACTION_TYPE_IN_HOUSE
             else -> AppConstants.TRANSACTION_TYPE_CASH
         }
