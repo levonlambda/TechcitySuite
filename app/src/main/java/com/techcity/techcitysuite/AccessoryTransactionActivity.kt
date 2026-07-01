@@ -10,8 +10,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.BaseAdapter
+import android.widget.ListPopupWindow
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -44,6 +49,9 @@ class AccessoryTransactionActivity : AppCompatActivity() {
     // Flag to prevent the accessory name TextWatcher from clearing the
     // scanned barcode/SKU during a programmatic auto-fill from a lookup
     private var isAutoFillingFromScan = false
+
+    // Dropdown showing accessory search results (dismissed in onDestroy to avoid leaks)
+    private var searchResultsPopup: ListPopupWindow? = null
 
     // Barcode scanner result launcher
     private val barcodeScannerLauncher = registerForActivityResult(
@@ -127,6 +135,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        searchResultsPopup?.dismiss()
         scope.cancel()
     }
 
@@ -323,7 +332,7 @@ class AccessoryTransactionActivity : AppCompatActivity() {
         }
 
         binding.searchButton.setOnClickListener {
-            searchByBarcode()
+            searchAccessories()
         }
 
         // If the user manually edits the barcode, the previously matched
@@ -341,16 +350,185 @@ class AccessoryTransactionActivity : AppCompatActivity() {
     }
 
     /**
-     * Look up the (possibly partial) barcode the user typed into the barcode field.
+     * Search the accessory catalog by the text the user typed into the field.
+     * Matches active products on manufacturer, model, or barcode (case-insensitive,
+     * partial) and shows a dropdown of results. Requires at least 3 characters.
      */
-    private fun searchByBarcode() {
-        val typedBarcode = binding.barcodeInput.text.toString().trim()
-        if (typedBarcode.isEmpty()) {
-            showMessage("Please enter a barcode", true)
+    private fun searchAccessories() {
+        val searchTerm = binding.barcodeInput.text.toString().trim()
+        if (searchTerm.isEmpty()) {
+            showMessage("Please enter a barcode, manufacturer, or model", true)
             return
         }
-        lookupAccessoryByBarcode(typedBarcode)
+        if (searchTerm.length < 3) {
+            showMessage("Enter at least 3 characters to search", true)
+            return
+        }
+        runAccessorySearch(searchTerm)
     }
+
+    /**
+     * Query active catalog products and match the search term against manufacturer,
+     * model, or barcode. Fetches each match's retail price, then shows the results
+     * in a dropdown anchored to the search field.
+     */
+    private fun runAccessorySearch(searchTerm: String) {
+        binding.progressBar.visibility = View.VISIBLE
+        binding.searchButton.isEnabled = false
+        binding.barcodeButton.isEnabled = false
+
+        scope.launch {
+            try {
+                val results = withContext(Dispatchers.IO) {
+                    val productSnapshot = db.collection("accessory_products")
+                        .get()
+                        .await()
+
+                    val matches = mutableListOf<AccessorySearchResult>()
+                    for (document in productSnapshot.documents) {
+                        // Skip inactive (soft-deleted) products
+                        val active = document.getBoolean("active") ?: true
+                        if (!active) continue
+
+                        val manufacturer = document.getString("manufacturer") ?: ""
+                        val model = document.getString("model") ?: ""
+                        val barcode = document.getString("barcode") ?: ""
+
+                        // Match on manufacturer, model, or barcode. Products without a
+                        // barcode are still searchable by manufacturer/model.
+                        val isMatch = manufacturer.contains(searchTerm, ignoreCase = true) ||
+                            model.contains(searchTerm, ignoreCase = true) ||
+                            (barcode.isNotEmpty() && barcode.contains(searchTerm, ignoreCase = true))
+                        if (!isMatch) continue
+
+                        val sku = document.getString("internalSku") ?: document.id
+                        matches.add(
+                            AccessorySearchResult(
+                                sku = sku,
+                                barcode = barcode,
+                                manufacturer = manufacturer,
+                                model = model,
+                                displayName = "$manufacturer $model".trim(),
+                                retailPrice = null
+                            )
+                        )
+                    }
+
+                    // Fetch each match's retail price concurrently
+                    matches.map { match ->
+                        async {
+                            val pricingDoc = db.collection("accessory_pricing")
+                                .document(match.sku)
+                                .get()
+                                .await()
+                            match.copy(retailPrice = pricingDoc.getDouble("retailPrice"))
+                        }
+                    }.awaitAll()
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.searchButton.isEnabled = true
+                    binding.barcodeButton.isEnabled = true
+
+                    when {
+                        results.isEmpty() ->
+                            showMessage("No matching accessories found. Please enter details manually.", true)
+                        // Exactly one match: skip the dropdown and fill the form directly
+                        results.size == 1 -> applySearchSelection(results[0])
+                        else -> showSearchResultsDropdown(results)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    binding.searchButton.isEnabled = true
+                    binding.barcodeButton.isEnabled = true
+                    showMessage("Could not search accessories, check connection", true)
+                }
+            }
+        }
+    }
+
+    /**
+     * Show the search results in a dropdown anchored to the search field.
+     * Selecting a row auto-fills the accessory name and price.
+     */
+    private fun showSearchResultsDropdown(results: List<AccessorySearchResult>) {
+        val popup = ListPopupWindow(this)
+        popup.anchorView = binding.barcodeInput
+        popup.width = ListPopupWindow.MATCH_PARENT
+        popup.height = ListPopupWindow.WRAP_CONTENT
+        popup.isModal = true
+        popup.setAdapter(SearchResultAdapter(results))
+        popup.setOnItemClickListener { _, _, position, _ ->
+            applySearchSelection(results[position])
+            popup.dismiss()
+        }
+        searchResultsPopup = popup
+        popup.show()
+    }
+
+    /**
+     * Auto-fill the form from a selected search result. Mirrors the "Found" branch
+     * of the barcode lookup so the saved transaction and inventory decrement behave
+     * exactly the same regardless of how the item was found.
+     */
+    private fun applySearchSelection(result: AccessorySearchResult) {
+        // Guard the watchers so the matched SKU/barcode are preserved
+        isAutoFillingFromScan = true
+        binding.barcodeInput.setText(result.barcode)
+        binding.accessoryNameInput.setText(result.displayName)
+        isAutoFillingFromScan = false
+
+        // Store the matched identifiers for the saved transaction
+        scannedBarcode = result.barcode
+        scannedSku = result.sku
+
+        // Feed a clean numeric string so the price TextWatcher parses it
+        binding.priceInput.setText(String.format(Locale.US, "%.2f", result.retailPrice ?: 0.0))
+        showMessage("Product selected and filled in", false)
+    }
+
+    /**
+     * Adapter for the accessory search results dropdown. Renders each result as a
+     * two-line row: manufacturer on top, model + price indented below.
+     */
+    private inner class SearchResultAdapter(
+        private val items: List<AccessorySearchResult>
+    ) : BaseAdapter() {
+        override fun getCount(): Int = items.size
+        override fun getItem(position: Int): Any = items[position]
+        override fun getItemId(position: Int): Long = position.toLong()
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+            val view = convertView ?: LayoutInflater.from(this@AccessoryTransactionActivity)
+                .inflate(R.layout.item_accessory_search_result, parent, false)
+            val item = items[position]
+
+            val manufacturerView = view.findViewById<TextView>(R.id.resultManufacturer)
+            val modelPriceView = view.findViewById<TextView>(R.id.resultModelPrice)
+
+            manufacturerView.text = item.manufacturer.ifBlank { item.displayName }
+            modelPriceView.text =
+                "${item.model}  •  ₱${String.format("%,.2f", item.retailPrice ?: 0.0)}"
+
+            return view
+        }
+    }
+
+    /**
+     * A catalog product that matched an accessory search.
+     */
+    private data class AccessorySearchResult(
+        val sku: String,
+        val barcode: String,
+        val manufacturer: String,
+        val model: String,
+        val displayName: String,
+        val retailPrice: Double?
+    )
 
     /**
      * Look up a barcode against the accessory catalog using partial matching
