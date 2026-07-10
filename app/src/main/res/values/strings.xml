@@ -47,10 +47,10 @@
     <string name="search_financing_accounts">Search by name, account #, contact, device, date…</string>
     <string name="no_financing_accounts">No financing accounts found</string>
     <string name="filter_all">All</string>
-    <string name="filter_home_credit">Home Credit</string>
-    <string name="filter_salmon">Salmon</string>
-    <string name="filter_skyro">Skyro</string>
-    <string name="filter_samsung_finance">Samsung</string>
+    <string name="filter_home_credit">HC</string>
+    <string name="filter_salmon">SLM</string>
+    <string name="filter_skyro">SKY</string>
+    <string name="filter_samsung_finance">SAM</string>
     <string name="label_financing_company">Financing Company</string>
     <string name="label_customer_name">Customer Name</string>
     <string name="label_account_number">Account Number</string>
