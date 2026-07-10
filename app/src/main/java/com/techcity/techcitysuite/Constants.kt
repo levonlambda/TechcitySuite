@@ -92,6 +92,12 @@ object AppConstants {
     const val SUBSIDY_PERCENT_LAPTOP = 8.0     // 8% for laptops
 
     // ============================================================================
+    // CREDIT CARD FEE
+    // ============================================================================
+
+    const val CREDIT_CARD_FEE_PERCENT = 3.5    // Bank fee deducted from credit card reimbursements
+
+    // ============================================================================
     // TRANSACTION STATUS
     // ============================================================================
 

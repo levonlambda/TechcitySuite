@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
@@ -22,6 +23,7 @@ import com.techcity.techcitysuite.databinding.ItemAccountReceivableBinding
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.util.*
 
 class AccountReceivableActivity : AppCompatActivity() {
@@ -85,7 +87,12 @@ class AccountReceivableActivity : AppCompatActivity() {
         val user: String,                        // User who made the sale
         val timestamp: Timestamp?,               // For sorting
         val customerName: String = ""            // Customer name for In-House transactions
-    )
+    ) {
+        // Unique selection key: one document can yield two rows (e.g. an HC balance
+        // receivable plus a Credit Card downpayment receivable), so the doc id alone
+        // is not enough to identify a row.
+        val selectionKey: String get() = "$source|$id|$transactionType"
+    }
 
     // ============================================================================
     // END OF PART 1: PROPERTIES AND INITIALIZATION
@@ -318,6 +325,21 @@ class AccountReceivableActivity : AppCompatActivity() {
             }
         }
 
+        // Query transactions with an unpaid credit-card reimbursement block (any transaction type).
+        // Legacy docs without the block never match an equality filter, so they are excluded.
+        val creditCardQuery = db.collection(COLLECTION_DEVICE_TRANSACTIONS)
+            .whereEqualTo("creditCardReceivable.isPaid", false)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .get()
+            .await()
+
+        for (doc in creditCardQuery.documents) {
+            val data = doc.data ?: continue
+            val ccReceivable = data["creditCardReceivable"] as? Map<*, *> ?: continue
+            val item = parseDeviceReceivable(doc.id, data, "Credit Card", ccReceivable)
+            if (item != null) receivablesList.add(item)
+        }
+
         return receivablesList
     }
 
@@ -343,6 +365,7 @@ class AccountReceivableActivity : AppCompatActivity() {
 
             val balance = when (transactionType) {
                 "In-House" -> (paymentData["remainingBalance"] as? Number)?.toDouble() ?: 0.0
+                "Credit Card" -> (paymentData["netReceivable"] as? Number)?.toDouble() ?: 0.0
                 else -> (paymentData["balance"] as? Number)?.toDouble() ?: 0.0
             }
 
@@ -377,7 +400,11 @@ class AccountReceivableActivity : AppCompatActivity() {
                 itemDetails = itemDetails,
                 transactionType = transactionType,
                 dateSold = data["dateSold"] as? String ?: "",
-                finalPrice = (data["finalPrice"] as? Number)?.toDouble() ?: 0.0,
+                finalPrice = if (transactionType == "Credit Card") {
+                    (paymentData["amountCharged"] as? Number)?.toDouble() ?: 0.0
+                } else {
+                    (data["finalPrice"] as? Number)?.toDouble() ?: 0.0
+                },
                 downpayment = (paymentData["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0,
                 downpaymentSource = paymentData["downpaymentSource"] as? String ?: "",
                 brandZeroSubsidy = brandZeroSubsidy,
@@ -468,6 +495,21 @@ class AccountReceivableActivity : AppCompatActivity() {
             }
         }
 
+        // Query transactions with an unpaid credit-card reimbursement block (any transaction type).
+        // Legacy docs without the block never match an equality filter, so they are excluded.
+        val creditCardQuery = db.collection(COLLECTION_ACCESSORY_TRANSACTIONS)
+            .whereEqualTo("creditCardReceivable.isPaid", false)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .get()
+            .await()
+
+        for (doc in creditCardQuery.documents) {
+            val data = doc.data ?: continue
+            val ccReceivable = data["creditCardReceivable"] as? Map<*, *> ?: continue
+            val item = parseAccessoryReceivable(doc.id, data, "Credit Card", ccReceivable)
+            if (item != null) receivablesList.add(item)
+        }
+
         return receivablesList
     }
 
@@ -480,6 +522,7 @@ class AccountReceivableActivity : AppCompatActivity() {
         try {
             val balance = when (transactionType) {
                 "In-House" -> (paymentData["remainingBalance"] as? Number)?.toDouble() ?: 0.0
+                "Credit Card" -> (paymentData["netReceivable"] as? Number)?.toDouble() ?: 0.0
                 else -> (paymentData["balance"] as? Number)?.toDouble() ?: 0.0
             }
 
@@ -509,7 +552,11 @@ class AccountReceivableActivity : AppCompatActivity() {
                 itemDetails = "",  // Accessories don't have variant details
                 transactionType = transactionType,
                 dateSold = data["dateSold"] as? String ?: "",
-                finalPrice = (data["finalPrice"] as? Number)?.toDouble() ?: 0.0,
+                finalPrice = if (transactionType == "Credit Card") {
+                    (paymentData["amountCharged"] as? Number)?.toDouble() ?: 0.0
+                } else {
+                    (data["finalPrice"] as? Number)?.toDouble() ?: 0.0
+                },
                 downpayment = (paymentData["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0,
                 downpaymentSource = paymentData["downpaymentSource"] as? String ?: "",
                 brandZeroSubsidy = 0.0,  // No BZ for accessories
@@ -548,7 +595,7 @@ class AccountReceivableActivity : AppCompatActivity() {
                 it.transactionType == "Salmon"
             }
             TransactionTypeFilter.IN_HOUSE -> allReceivables.filter {
-                it.transactionType == "In-House"
+                it.transactionType == "In-House" || it.transactionType == "Credit Card"
             }
         }
 
@@ -609,12 +656,12 @@ class AccountReceivableActivity : AppCompatActivity() {
 
             // Check if any In-House item is already selected
             val hasInHouseSelected = selectedItems.any { selectedId ->
-                allReceivables.find { it.id == selectedId }?.transactionType == "In-House"
+                allReceivables.find { it.selectionKey == selectedId }?.transactionType == "In-House"
             }
 
             // Check if any non-In-House item is already selected
             val hasOtherSelected = selectedItems.any { selectedId ->
-                allReceivables.find { it.id == selectedId }?.transactionType != "In-House"
+                allReceivables.find { it.selectionKey == selectedId }?.transactionType != "In-House"
             }
 
             if (isInHouse) {
@@ -636,10 +683,10 @@ class AccountReceivableActivity : AppCompatActivity() {
             }
 
             // Selection allowed
-            selectedItems.add(item.id)
+            selectedItems.add(item.selectionKey)
         } else {
             // Deselecting an item - always allowed
-            selectedItems.remove(item.id)
+            selectedItems.remove(item.selectionKey)
         }
 
         updateSelectionUI()
@@ -649,7 +696,7 @@ class AccountReceivableActivity : AppCompatActivity() {
     private fun updateSelectionUI() {
         val selectedCount = selectedItems.size
         val selectedTotal = filteredReceivables
-            .filter { selectedItems.contains(it.id) }
+            .filter { selectedItems.contains(it.selectionKey) }
             .sumOf { it.balance }
 
         binding.selectedCountText.text = "$selectedCount selected"
@@ -658,7 +705,7 @@ class AccountReceivableActivity : AppCompatActivity() {
 
         // Check if selected item is In-House to change button text
         val hasInHouseSelected = selectedItems.any { selectedId ->
-            allReceivables.find { it.id == selectedId }?.transactionType == "In-House"
+            allReceivables.find { it.selectionKey == selectedId }?.transactionType == "In-House"
         }
 
         // Update button text and color based on selection type
@@ -696,7 +743,7 @@ class AccountReceivableActivity : AppCompatActivity() {
      */
     private fun handleActionButtonClick() {
         val hasInHouseSelected = selectedItems.any { selectedId ->
-            allReceivables.find { it.id == selectedId }?.transactionType == "In-House"
+            allReceivables.find { it.selectionKey == selectedId }?.transactionType == "In-House"
         }
 
         if (hasInHouseSelected) {
@@ -711,7 +758,7 @@ class AccountReceivableActivity : AppCompatActivity() {
     private fun openInHousePaymentActivity() {
         // Get the selected In-House item (there should be only one)
         val selectedId = selectedItems.firstOrNull() ?: return
-        val selectedItem = allReceivables.find { it.id == selectedId } ?: return
+        val selectedItem = allReceivables.find { it.selectionKey == selectedId } ?: return
 
         val intent = Intent(this, InHousePaymentActivity::class.java).apply {
             putExtra("documentId", selectedItem.id)
@@ -732,12 +779,12 @@ class AccountReceivableActivity : AppCompatActivity() {
     private fun showMarkAsPaidConfirmation() {
         val selectedCount = selectedItems.size
         val selectedTotal = filteredReceivables
-            .filter { selectedItems.contains(it.id) }
+            .filter { selectedItems.contains(it.selectionKey) }
             .sumOf { it.balance }
 
         // Build item list for the dialog
         val selectedItemsList = filteredReceivables
-            .filter { selectedItems.contains(it.id) }
+            .filter { selectedItems.contains(it.selectionKey) }
 
         // Create message with details
         val message = StringBuilder()
@@ -771,13 +818,19 @@ class AccountReceivableActivity : AppCompatActivity() {
     private fun markSelectedAsPaid() {
         binding.progressBar.visibility = View.VISIBLE
 
+        val prefs = getSharedPreferences(AppConstants.PREFS_NAME, MODE_PRIVATE)
+        val paidBy = prefs.getString(AppConstants.KEY_USER, "") ?: ""
+        val paidDateFormat = SimpleDateFormat("M/d/yyyy", Locale.US)
+        paidDateFormat.timeZone = TimeZone.getTimeZone("GMT+08:00")
+        val paidDate = paidDateFormat.format(Date())
+
         scope.launch {
             try {
                 var successCount = 0
                 var failCount = 0
 
-                for (itemId in selectedItems.toList()) {
-                    val item = allReceivables.find { it.id == itemId } ?: continue
+                for (selectedKey in selectedItems.toList()) {
+                    val item = allReceivables.find { it.selectionKey == selectedKey } ?: continue
 
                     val collection = if (item.source == "device") {
                         COLLECTION_DEVICE_TRANSACTIONS
@@ -785,20 +838,26 @@ class AccountReceivableActivity : AppCompatActivity() {
                         COLLECTION_ACCESSORY_TRANSACTIONS
                     }
 
-                    val fieldPath = when (item.transactionType) {
-                        "Home Credit" -> "homeCreditPayment.isBalancePaid"
-                        "Skyro" -> "skyroPayment.isBalancePaid"
-                        "Salmon" -> "salmonPayment.isBalancePaid"
-                        "In-House" -> "inHouseInstallment.isBalancePaid"
+                    val updates: Map<String, Any>? = when (item.transactionType) {
+                        "Home Credit" -> mapOf("homeCreditPayment.isBalancePaid" to true)
+                        "Skyro" -> mapOf("skyroPayment.isBalancePaid" to true)
+                        "Salmon" -> mapOf("salmonPayment.isBalancePaid" to true)
+                        "In-House" -> mapOf("inHouseInstallment.isBalancePaid" to true)
+                        "Credit Card" -> mapOf(
+                            "creditCardReceivable.isPaid" to true,
+                            "creditCardReceivable.paidDate" to paidDate,
+                            "creditCardReceivable.paidBy" to paidBy,
+                            "creditCardReceivable.paidTimestamp" to FieldValue.serverTimestamp()
+                        )
                         else -> null
                     }
 
-                    if (fieldPath != null) {
+                    if (updates != null) {
                         try {
                             withContext(Dispatchers.IO) {
                                 db.collection(collection)
-                                    .document(itemId)
-                                    .update(fieldPath, true)
+                                    .document(item.id)
+                                    .update(updates)
                                     .await()
                             }
                             successCount++
@@ -971,7 +1030,7 @@ class AccountReceivableActivity : AppCompatActivity() {
 
                 // Checkbox state
                 binding.selectCheckbox.setOnCheckedChangeListener(null)
-                binding.selectCheckbox.isChecked = selectedItems.contains(item.id)
+                binding.selectCheckbox.isChecked = selectedItems.contains(item.selectionKey)
                 binding.selectCheckbox.setOnCheckedChangeListener { _, isChecked ->
                     onItemSelected(item, isChecked)
                 }
@@ -982,7 +1041,7 @@ class AccountReceivableActivity : AppCompatActivity() {
                 }
 
                 // Update card appearance based on selection
-                if (selectedItems.contains(item.id)) {
+                if (selectedItems.contains(item.selectionKey)) {
                     binding.cardView.strokeColor = ContextCompat.getColor(itemView.context, R.color.cash_dark_green)
                     binding.cardView.strokeWidth = 3
                 } else {

@@ -65,6 +65,9 @@ data class DeviceTransaction(
     val salmonPayment: SkyroPaymentDetails? = null,
     val inHouseInstallment: InHouseInstallmentDetails? = null,
 
+    // Credit Card Receivable (populated when payment/downpayment source is Credit Card)
+    val creditCardReceivable: CreditCardReceivableDetails? = null,
+
     // Account Settings Snapshot (captured at time of transaction for audit trail)
     val accountSettingsSnapshot: AccountSettingsSnapshot = AccountSettingsSnapshot(),
 
