@@ -159,8 +159,8 @@ class TransactionDetailsActivity : AppCompatActivity() {
                     transactionFee = 15.0
                     binding.feeInput.setText(formatCurrency(transactionFee))
                 } else if (transactionType == "Salmon Payment") {
-                    // Fixed fee of 18 pesos for Salmon
-                    transactionFee = 18.0
+                    // Fixed fee of 15 pesos for Salmon
+                    transactionFee = 15.0
                     binding.feeInput.setText(formatCurrency(transactionFee))
                 } else if (transactionType == "Home Credit Payment") {
                     // Home Credit fee depends on payment method (default GCash = 0)
@@ -428,7 +428,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
 
         // Fixed fee for Salmon Payment
         if (transactionType == "Salmon Payment") {
-            return 18.0
+            return 15.0
         }
 
         // Fee for Home Credit Payment based on payment method
@@ -506,7 +506,7 @@ class TransactionDetailsActivity : AppCompatActivity() {
             if (transactionType == "Skyro Payment") {
                 transactionFee = 15.0
             } else if (transactionType == "Salmon Payment") {
-                transactionFee = 18.0
+                transactionFee = 15.0
             } else if (transactionType == "Home Credit Payment") {
                 // Home Credit fee depends on payment method
                 val paymentMethod = binding.sourceOfFundsDropdown.text.toString()
