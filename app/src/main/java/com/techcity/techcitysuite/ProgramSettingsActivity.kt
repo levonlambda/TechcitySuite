@@ -44,6 +44,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         private const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
         private const val KEY_FINANCING_ACCOUNTS_ENABLED = "financing_accounts_enabled"
         private const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
+        private const val KEY_EXPENSES_ENABLED = "expenses_enabled"
         private const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
         private const val KEY_STORE_LOCATION_ID = "store_location_id"
     }
@@ -176,6 +177,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         binding.phoneInventorySwitch.isChecked = prefs.getBoolean(KEY_PHONE_INVENTORY_ENABLED, false)
         binding.financingAccountsSwitch.isChecked = prefs.getBoolean(KEY_FINANCING_ACCOUNTS_ENABLED, true)
         binding.deviceTransactionNotificationsSwitch.isChecked = prefs.getBoolean(KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED, true)
+        binding.expensesSwitch.isChecked = prefs.getBoolean(KEY_EXPENSES_ENABLED, false)
 
         // Load inventory status filter (default to "On-Display")
         val inventoryStatusFilter = prefs.getString(KEY_INVENTORY_STATUS_FILTER, "On-Display") ?: "On-Display"
@@ -210,6 +212,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         editor.putBoolean(KEY_PHONE_INVENTORY_ENABLED, binding.phoneInventorySwitch.isChecked)
         editor.putBoolean(KEY_FINANCING_ACCOUNTS_ENABLED, binding.financingAccountsSwitch.isChecked)
         editor.putBoolean(KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED, binding.deviceTransactionNotificationsSwitch.isChecked)
+        editor.putBoolean(KEY_EXPENSES_ENABLED, binding.expensesSwitch.isChecked)
 
         // Save inventory status filter
         editor.putString(KEY_INVENTORY_STATUS_FILTER, binding.inventoryStatusDropdown.text.toString())

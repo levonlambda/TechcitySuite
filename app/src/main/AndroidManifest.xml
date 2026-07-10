@@ -125,6 +125,11 @@
             android:exported="false"
             android:label="End of Day Report" />
 
+        <activity
+            android:name="com.techcity.techcitysuite.ExpenseListActivity"
+            android:exported="false"
+            android:label="Expenses" />
+
         <!-- ADD THESE TWO NEW ACTIVITIES HERE -->
         <activity
             android:name="com.techcity.techcitysuite.PhoneInventoryListActivity"
