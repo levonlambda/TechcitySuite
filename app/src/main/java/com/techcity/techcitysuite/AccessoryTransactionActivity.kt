@@ -1441,6 +1441,40 @@ class AccessoryTransactionActivity : AppCompatActivity() {
                 }
             }
 
+            // Credit Card receivable tagging: when the money was charged to a credit card,
+            // record the pending bank reimbursement (gross less fee) for Accounts Receivable.
+            val ccChargeSource = when (transactionType) {
+                "Cash Transaction" -> binding.paymentSourceDropdown.text.toString()
+                "Home Credit Transaction",
+                "Skyro Transaction",
+                "Salmon Transaction" -> binding.hcDownPaymentSourceDropdown.text.toString()
+                "In-House Installment" -> binding.ihDownPaymentSourceDropdown.text.toString()
+                else -> ""
+            }
+            val ccChargeAmount = when (transactionType) {
+                "Cash Transaction" -> finalPrice
+                "Home Credit Transaction",
+                "Skyro Transaction",
+                "Salmon Transaction" ->
+                    binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                "In-House Installment" ->
+                    binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                else -> 0.0
+            }
+            if (ccChargeSource == AppConstants.PAYMENT_SOURCE_CREDIT_CARD && ccChargeAmount > 0) {
+                val ccNetReceivable =
+                    Math.round(ccChargeAmount * (1 - AppConstants.CREDIT_CARD_FEE_PERCENT / 100.0) * 100) / 100.0
+                transactionData["creditCardReceivable"] = hashMapOf<String, Any?>(
+                    "amountCharged" to ccChargeAmount,
+                    "feePercent" to AppConstants.CREDIT_CARD_FEE_PERCENT,
+                    "netReceivable" to ccNetReceivable,
+                    "isPaid" to false,
+                    "paidDate" to null,
+                    "paidBy" to null,
+                    "paidTimestamp" to null
+                )
+            }
+
             // Save the transaction and decrement inventory atomically.
             // Only catalog items (non-empty SKU) with a configured location touch inventory.
             val canTouchInventory = scannedSku.isNotEmpty() && locationId.isNotEmpty()

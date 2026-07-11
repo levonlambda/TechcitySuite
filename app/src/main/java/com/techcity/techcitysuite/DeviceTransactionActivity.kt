@@ -1621,6 +1621,40 @@ class DeviceTransactionActivity : AppCompatActivity() {
                 }
             }
 
+            // Credit Card receivable tagging: when the money was charged to a credit card,
+            // record the pending bank reimbursement (gross less fee) for Accounts Receivable.
+            val ccChargeSource = when (transactionType) {
+                AppConstants.TRANSACTION_TYPE_CASH -> binding.paymentSourceDropdown.text.toString()
+                AppConstants.TRANSACTION_TYPE_HOME_CREDIT,
+                AppConstants.TRANSACTION_TYPE_SKYRO,
+                AppConstants.TRANSACTION_TYPE_SALMON -> binding.hcDownPaymentSourceDropdown.text.toString()
+                AppConstants.TRANSACTION_TYPE_IN_HOUSE -> binding.ihDownPaymentSourceDropdown.text.toString()
+                else -> ""
+            }
+            val ccChargeAmount = when (transactionType) {
+                AppConstants.TRANSACTION_TYPE_CASH -> finalPrice
+                AppConstants.TRANSACTION_TYPE_HOME_CREDIT,
+                AppConstants.TRANSACTION_TYPE_SKYRO,
+                AppConstants.TRANSACTION_TYPE_SALMON ->
+                    binding.hcDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                AppConstants.TRANSACTION_TYPE_IN_HOUSE ->
+                    binding.ihDownPaymentInput.text.toString().replace(",", "").toDoubleOrNull() ?: 0.0
+                else -> 0.0
+            }
+            if (ccChargeSource == AppConstants.PAYMENT_SOURCE_CREDIT_CARD && ccChargeAmount > 0) {
+                val ccNetReceivable =
+                    Math.round(ccChargeAmount * (1 - AppConstants.CREDIT_CARD_FEE_PERCENT / 100.0) * 100) / 100.0
+                transactionData["creditCardReceivable"] = hashMapOf<String, Any?>(
+                    "amountCharged" to ccChargeAmount,
+                    "feePercent" to AppConstants.CREDIT_CARD_FEE_PERCENT,
+                    "netReceivable" to ccNetReceivable,
+                    "isPaid" to false,
+                    "paidDate" to null,
+                    "paidBy" to null,
+                    "paidTimestamp" to null
+                )
+            }
+
             // -------------------------------------------------------------------------
             // STEP 4: Save to Firestore atomically (create transaction + mark inventory Sold)
             // -------------------------------------------------------------------------

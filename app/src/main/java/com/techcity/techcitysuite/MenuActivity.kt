@@ -113,6 +113,14 @@ class MenuActivity : AppCompatActivity() {
         } else {
             binding.financingAccountsCard.visibility = View.GONE
         }
+
+        // Expenses visibility
+        val expensesEnabled = prefs.getBoolean(AppConstants.KEY_EXPENSES_ENABLED, false)
+        if (expensesEnabled) {
+            binding.expensesCard.visibility = View.VISIBLE
+        } else {
+            binding.expensesCard.visibility = View.GONE
+        }
     }
 
     // ============================================================================
@@ -189,6 +197,12 @@ class MenuActivity : AppCompatActivity() {
         // Financing Accounts button
         binding.financingAccountsButton.setOnClickListener {
             val intent = Intent(this, FinancingAccountListActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Expenses button
+        binding.expensesButton.setOnClickListener {
+            val intent = Intent(this, ExpenseListActivity::class.java)
             startActivity(intent)
         }
     }

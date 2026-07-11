@@ -38,6 +38,9 @@ data class AccessoryTransaction(
     val salmonPayment: AccessorySkyroPaymentDetails? = null,
     val inHouseInstallment: AccessoryInHouseInstallmentDetails? = null,
 
+    // Credit Card Receivable (populated when payment/downpayment source is Credit Card)
+    val creditCardReceivable: CreditCardReceivableDetails? = null,
+
     // Transaction Status
     val status: String = "",                  // "completed", "cancelled", etc.
     val createdBy: String = "",

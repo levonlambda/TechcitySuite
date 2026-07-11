@@ -31,6 +31,7 @@ object AppConstants {
     const val KEY_PHONE_INVENTORY_ENABLED = "phone_inventory_enabled"
     const val KEY_FINANCING_ACCOUNTS_ENABLED = "financing_accounts_enabled"
     const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
+    const val KEY_EXPENSES_ENABLED = "expenses_enabled"
     const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
 
     // ============================================================================
@@ -52,6 +53,7 @@ object AppConstants {
     const val COLLECTION_ACCESSORY_PRICING = "accessory_pricing"
     const val COLLECTION_ACCESSORY_INVENTORY = "accessory_inventory"
     const val COLLECTION_ACCESSORY_LOCATIONS = "accessory_locations"
+    const val COLLECTION_EXPENSES = "expenses"
 
     // ============================================================================
     // TRANSACTION TYPES
@@ -90,6 +92,12 @@ object AppConstants {
     const val SUBSIDY_PERCENT_PHONE = 3.0      // 3% for phones
     const val SUBSIDY_PERCENT_TABLET = 3.0     // 3% for tablets
     const val SUBSIDY_PERCENT_LAPTOP = 8.0     // 8% for laptops
+
+    // ============================================================================
+    // CREDIT CARD FEE
+    // ============================================================================
+
+    const val CREDIT_CARD_FEE_PERCENT = 3.5    // Bank fee deducted from credit card reimbursements
 
     // ============================================================================
     // TRANSACTION STATUS
