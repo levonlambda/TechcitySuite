@@ -200,6 +200,15 @@ class EndOfDayListActivity : AppCompatActivity() {
         binding.reportsRecyclerView.visibility = View.GONE
         binding.emptyStateLayout.visibility = View.GONE
 
+        // Store location must be configured; only this store's reports are listed
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.progressBar.visibility = View.GONE
+            binding.emptyStateLayout.visibility = View.VISIBLE
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            binding.reportCountLabel.text = "0 reports generated"
+            return
+        }
+
         scope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
@@ -259,7 +268,22 @@ class EndOfDayListActivity : AppCompatActivity() {
             .get()
             .await()
 
-        return querySnapshot.documents.mapNotNull { doc ->
+        // Only this store's reports (legacy reports without storeLocation only on a primary-store device)
+        val documents = querySnapshot.documents.filter { doc ->
+            StoreLocationHelper.matches(this, doc.getString("storeLocation"))
+        }
+
+        // When a legacy and a per-store report exist for the same date, keep the per-store one
+        val datesWithPerStoreReport = documents
+            .filter { !it.getString("storeLocation").isNullOrBlank() }
+            .mapNotNull { it.getString("date") }
+            .toSet()
+        val dedupedDocuments = documents.filter { doc ->
+            !doc.getString("storeLocation").isNullOrBlank() ||
+                doc.getString("date") !in datesWithPerStoreReport
+        }
+
+        return dedupedDocuments.mapNotNull { doc ->
             try {
                 val data = doc.data ?: return@mapNotNull null
 

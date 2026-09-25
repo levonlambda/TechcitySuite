@@ -543,6 +543,15 @@ class ServiceTransactionListActivity : AppCompatActivity() {
         // Remove any existing listener
         transactionListener?.remove()
 
+        // Store location must be configured; only same-store transactions are shown
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.progressBar.visibility = View.GONE
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            binding.emptyMessage.visibility = View.VISIBLE
+            binding.transactionRecyclerView.visibility = View.GONE
+            return
+        }
+
         // Convert selected date to query format (yyyy-MM-dd)
         val queryDate = convertDisplayDateToQueryFormat(selectedDate)
 
@@ -567,6 +576,9 @@ class ServiceTransactionListActivity : AppCompatActivity() {
                 for (document in result?.documents ?: emptyList()) {
                     try {
                         val data = document.data ?: continue
+
+                        // Only this device's store location
+                        if (!StoreLocationHelper.matches(this, data["userLocation"] as? String)) continue
 
                         val transaction = ServiceTransaction(
                             id = document.id,

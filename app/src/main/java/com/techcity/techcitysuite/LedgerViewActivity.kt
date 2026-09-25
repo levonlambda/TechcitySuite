@@ -460,6 +460,14 @@ class LedgerViewActivity : AppCompatActivity() {
      * Load transactions from Firebase for the selected date
      */
     private fun loadTransactionsFromFirebase() {
+        // Store location must be configured; only same-store transactions build the ledger
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            binding.emptyMessage.visibility = View.VISIBLE
+            binding.ledgerRecyclerView.visibility = View.GONE
+            return
+        }
+
         // Convert display date to query format
         val queryDate = convertDisplayDateToQueryFormat(selectedDate)
 
@@ -498,6 +506,9 @@ class LedgerViewActivity : AppCompatActivity() {
                 for (document in serviceResult.documents) {
                     try {
                         val data = document.data ?: continue
+
+                        // Only this device's store location
+                        if (!StoreLocationHelper.matches(this@LedgerViewActivity, data["userLocation"] as? String)) continue
 
                         val transaction = ServiceTransaction(
                             id = document.id,
@@ -539,10 +550,10 @@ class LedgerViewActivity : AppCompatActivity() {
                     }
                 }
 
-                // Store device transactions as raw maps (with document ID)
+                // Store device transactions as raw maps (with document ID), same-store only
                 val loadedDeviceTransactions = deviceResult.documents.mapNotNull { doc ->
                     doc.data?.toMutableMap()?.also { it["_id"] = doc.id }
-                }
+                }.filter { StoreLocationHelper.matches(this@LedgerViewActivity, it["userLocation"] as? String) }
 
                 // Debug: Log device transaction count
                 android.util.Log.d("LedgerView", "Loaded ${loadedDeviceTransactions.size} device transactions for date: $queryDate")
@@ -550,10 +561,10 @@ class LedgerViewActivity : AppCompatActivity() {
                     android.util.Log.d("LedgerView", "Device: ${data["transactionType"]} - ${data["paymentSource"]} - ${data["totalAmount"]}")
                 }
 
-                // Store accessory transactions as raw maps (with document ID)
+                // Store accessory transactions as raw maps (with document ID), same-store only
                 val loadedAccessoryTransactions = accessoryResult.documents.mapNotNull { doc ->
                     doc.data?.toMutableMap()?.also { it["_id"] = doc.id }
-                }
+                }.filter { StoreLocationHelper.matches(this@LedgerViewActivity, it["userLocation"] as? String) }
 
                 // Debug: Log accessory transaction count
                 android.util.Log.d("LedgerView", "Loaded ${loadedAccessoryTransactions.size} accessory transactions for date: $queryDate")

@@ -593,6 +593,16 @@ class DeviceTransactionListActivity : AppCompatActivity() {
         // Remove any existing listener
         transactionListener?.remove()
 
+        // Store location must be configured; only same-store transactions are shown
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.progressBar.visibility = View.GONE
+            transactions.clear()
+            applyFilter()
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            binding.emptyMessage.visibility = View.VISIBLE
+            return
+        }
+
         // Convert selected date from M/d/yyyy to yyyy-MM-dd for query
         val queryDate = convertDisplayDateToQueryDate(selectedDate)
 
@@ -617,8 +627,9 @@ class DeviceTransactionListActivity : AppCompatActivity() {
                     return@addSnapshotListener
                 }
 
-                // Use existing parsing logic
+                // Use existing parsing logic, then keep only this device's store location
                 val results = parseSnapshotDocuments(snapshots.documents)
+                    .filter { StoreLocationHelper.matches(this, it.transaction.userLocation) }
                 transactions = results.toMutableList()
                 applyFilter()
             }

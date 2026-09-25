@@ -229,6 +229,19 @@ class ReconciliationDetailActivity : AppCompatActivity() {
                     return@launch
                 }
 
+                // Only reconciliations for this device's store location can be opened
+                // (legacy "All" reconciliations only on a primary-store device)
+                val isVisible = StoreLocationHelper.matches(this@ReconciliationDetailActivity, reconciliation.location) ||
+                    (StoreLocationHelper.isPrimary(this@ReconciliationDetailActivity) &&
+                        reconciliation.location.equals("All", ignoreCase = true))
+                if (!isVisible) {
+                    withContext(Dispatchers.Main) {
+                        showMessage("This reconciliation belongs to another store location", true)
+                        finish()
+                    }
+                    return@launch
+                }
+
                 reconciliationData = reconciliation
 
                 // Update header UI
