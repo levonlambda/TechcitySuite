@@ -115,10 +115,26 @@ class ServiceTransactionListActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        updateBranchLocationLabel()
         // Real-time listener handles updates automatically
         // Only reload if listener was removed
         if (transactionListener == null) {
             loadTransactions()
+        }
+    }
+
+    /**
+     * Show the configured branch (store) location beside the date.
+     * Warning colour when no store location is set.
+     */
+    private fun updateBranchLocationLabel() {
+        binding.branchLocationLabel.text = StoreLocationHelper.getDisplayName(this)
+        if (StoreLocationHelper.isConfigured(this)) {
+            binding.branchLocationLabel.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.branchLocationLabel.alpha = 0.8f
+        } else {
+            binding.branchLocationLabel.setTextColor(ContextCompat.getColor(this, R.color.yellow))
+            binding.branchLocationLabel.alpha = 1.0f
         }
     }
 
@@ -543,6 +559,15 @@ class ServiceTransactionListActivity : AppCompatActivity() {
         // Remove any existing listener
         transactionListener?.remove()
 
+        // Store location must be configured; only same-store transactions are shown
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.progressBar.visibility = View.GONE
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            binding.emptyMessage.visibility = View.VISIBLE
+            binding.transactionRecyclerView.visibility = View.GONE
+            return
+        }
+
         // Convert selected date to query format (yyyy-MM-dd)
         val queryDate = convertDisplayDateToQueryFormat(selectedDate)
 
@@ -567,6 +592,9 @@ class ServiceTransactionListActivity : AppCompatActivity() {
                 for (document in result?.documents ?: emptyList()) {
                     try {
                         val data = document.data ?: continue
+
+                        // Only this device's store location
+                        if (!StoreLocationHelper.matches(this, data["userLocation"] as? String)) continue
 
                         val transaction = ServiceTransaction(
                             id = document.id,

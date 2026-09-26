@@ -1156,6 +1156,13 @@ class TransactionDetailsActivity : AppCompatActivity() {
             return
         }
 
+        if (userLocation.isEmpty()) {
+            binding.progressBar.visibility = View.GONE
+            binding.saveButton.isEnabled = true
+            showMessage(StoreLocationHelper.NOT_CONFIGURED_MESSAGE, true)
+            return
+        }
+
         // Get device ID
         val deviceId = android.provider.Settings.Secure.getString(
             contentResolver,

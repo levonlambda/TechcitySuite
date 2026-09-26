@@ -38,6 +38,13 @@ class EndOfDayReportActivity : AppCompatActivity() {
     private var selectedDate: String = ""
     private var queryDate: String = ""
 
+    // Store location this device is configured for; reports are generated and saved per store
+    private var storeLocation: String = ""
+
+    // daily_summaries document ID for this date and store: "<yyyy-MM-dd>_<storeLocation>"
+    private val reportDocumentId: String
+        get() = "${queryDate}_$storeLocation"
+
     private var reportData: DailySummaryData? = null
     private var isReportGenerated = false
 
@@ -55,6 +62,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
         val displayDate: String,
         val generatedAt: String,
         val generatedBy: String,
+        val storeLocation: String,
         val deviceCount: Int,
         val accessoryCount: Int,
         val serviceCount: Int,
@@ -193,6 +201,8 @@ class EndOfDayReportActivity : AppCompatActivity() {
 
         setupUI()
 
+        storeLocation = StoreLocationHelper.getStoreLocation(this)
+
         val intentDate = intent.getStringExtra("selected_date")
         val documentId = intent.getStringExtra("document_id")
 
@@ -203,6 +213,15 @@ class EndOfDayReportActivity : AppCompatActivity() {
         }
         queryDate = convertDisplayDateToQueryDate(selectedDate)
         updateDateLabel()
+
+        // Store location must be configured; the report is per store
+        if (storeLocation.isBlank()) {
+            binding.statusMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            binding.generateButton.isEnabled = false
+            binding.saveButton.isEnabled = false
+            return
+        }
+        binding.titleText.text = "End of Day Report - $storeLocation"
 
         // Check if a saved report exists for this date and load it
         if (documentId != null) {
@@ -220,8 +239,10 @@ class EndOfDayReportActivity : AppCompatActivity() {
     }
 
     /**
-     * Check if a saved report already exists for the selected date.
+     * Check if a saved report already exists for the selected date and store location.
      * If so, load and display it automatically.
+     * On a primary-store device, falls back to the legacy date-only document when no
+     * per-store report exists.
      */
     private fun checkForExistingReport() {
         binding.progressBar.visibility = View.VISIBLE
@@ -230,10 +251,20 @@ class EndOfDayReportActivity : AppCompatActivity() {
         scope.launch {
             try {
                 val existingReport = withContext(Dispatchers.IO) {
-                    db.collection(COLLECTION_DAILY_SUMMARIES)
-                        .document(queryDate)
+                    val perStoreReport = db.collection(COLLECTION_DAILY_SUMMARIES)
+                        .document(reportDocumentId)
                         .get()
                         .await()
+
+                    if (!perStoreReport.exists() && StoreLocationHelper.isPrimary(this@EndOfDayReportActivity)) {
+                        // Legacy report (saved before per-store reports existed)
+                        db.collection(COLLECTION_DAILY_SUMMARIES)
+                            .document(queryDate)
+                            .get()
+                            .await()
+                    } else {
+                        perStoreReport
+                    }
                 }
 
                 withContext(Dispatchers.Main) {
@@ -360,6 +391,8 @@ class EndOfDayReportActivity : AppCompatActivity() {
                 displayDate = selectedDate,
                 generatedAt = data["generatedAt"] as? String ?: "",
                 generatedBy = data["generatedBy"] as? String ?: "",
+                // Legacy reports have no storeLocation; attribute them to this device's store
+                storeLocation = data["storeLocation"] as? String ?: storeLocation,
                 deviceCount = deviceCount,
                 accessoryCount = accessoryCount,
                 serviceCount = serviceCount,
@@ -755,6 +788,9 @@ class EndOfDayReportActivity : AppCompatActivity() {
         }
     }
 
+    // Every transaction used by the report passes through these three fetches, which keep
+    // only this device's store location (see StoreLocationHelper.matches).
+
     private suspend fun fetchDeviceTransactions(): List<Map<String, Any?>> {
         val querySnapshot = db.collection(COLLECTION_DEVICE_TRANSACTIONS)
             .whereEqualTo("date", queryDate)
@@ -766,7 +802,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             val data = doc.data?.toMutableMap() ?: mutableMapOf()
             data["_id"] = doc.id
             data
-        }
+        }.filter { StoreLocationHelper.matches(this, it["userLocation"] as? String) }
     }
 
     private suspend fun fetchAccessoryTransactions(): List<Map<String, Any?>> {
@@ -780,7 +816,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             val data = doc.data?.toMutableMap() ?: mutableMapOf()
             data["_id"] = doc.id
             data
-        }
+        }.filter { StoreLocationHelper.matches(this, it["userLocation"] as? String) }
     }
 
     private suspend fun fetchServiceTransactions(): List<Map<String, Any?>> {
@@ -794,7 +830,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             val data = doc.data?.toMutableMap() ?: mutableMapOf()
             data["_id"] = doc.id
             data
-        }
+        }.filter { StoreLocationHelper.matches(this, it["userLocation"] as? String) }
     }
 
     // ============================================================================
@@ -904,6 +940,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
             displayDate = selectedDate,
             generatedAt = generatedAt,
             generatedBy = generatedBy,
+            storeLocation = storeLocation,
             deviceCount = deviceTransactions.size,
             accessoryCount = accessoryTransactions.size,
             serviceCount = serviceTransactions.size,
@@ -2266,7 +2303,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
             .setTitle("Save Report")
-            .setMessage("Save End of Day report for ${data.displayDate}?\n\nThis will overwrite any existing report for this date.")
+            .setMessage("Save End of Day report for ${data.displayDate} (${data.storeLocation})?\n\nThis will overwrite any existing report for this date and store.")
             .setPositiveButton("Save") { _, _ ->
                 performSave(data)
             }
@@ -2285,6 +2322,7 @@ class EndOfDayReportActivity : AppCompatActivity() {
                     "displayDate" to data.displayDate,
                     "generatedAt" to data.generatedAt,
                     "generatedBy" to data.generatedBy,
+                    "storeLocation" to data.storeLocation,
                     "timestamp" to FieldValue.serverTimestamp(),
 
                     "transactionCounts" to hashMapOf(
@@ -2351,8 +2389,9 @@ class EndOfDayReportActivity : AppCompatActivity() {
                 )
 
                 withContext(Dispatchers.IO) {
+                    // Per-store document; legacy date-only documents are never overwritten
                     db.collection(COLLECTION_DAILY_SUMMARIES)
-                        .document(data.date)
+                        .document(reportDocumentId)
                         .set(documentData)
                         .await()
                 }

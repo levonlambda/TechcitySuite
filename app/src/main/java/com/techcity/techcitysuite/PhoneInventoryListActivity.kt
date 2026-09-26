@@ -87,6 +87,10 @@ class PhoneInventoryListActivity : AppCompatActivity() {
 
         // Setup FAB click listener
         binding.addButton.setOnClickListener {
+            if (!StoreLocationHelper.isConfigured(this)) {
+                showMessage(StoreLocationHelper.NOT_CONFIGURED_MESSAGE, true)
+                return@setOnClickListener
+            }
             showPasswordDialog()
         }
 
@@ -211,7 +215,7 @@ class PhoneInventoryListActivity : AppCompatActivity() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_new_reconciliation, null)
 
         // Get references to dialog views
-        val locationInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.locationInput)
+        val locationInput = dialogView.findViewById<AutoCompleteTextView>(R.id.locationInput)
         val statusFilterDropdown = dialogView.findViewById<AutoCompleteTextView>(R.id.statusFilterDropdown)
         val errorMessage = dialogView.findViewById<android.widget.TextView>(R.id.errorMessage)
         val submitButton = dialogView.findViewById<android.widget.Button>(R.id.submitButton)
@@ -225,8 +229,31 @@ class PhoneInventoryListActivity : AppCompatActivity() {
         statusFilterDropdown.setAdapter(statusAdapter)
         statusFilterDropdown.setText("All", false)
 
-        // Set default location value
-        locationInput.setText("All")
+        // Store location dropdown: active locations from accessory_locations,
+        // pre-selected to this device's store location. Create is disabled until loaded.
+        val deviceStoreLocation = StoreLocationHelper.getStoreLocation(this)
+        submitButton.isEnabled = false
+        scope.launch {
+            try {
+                val locationNames = withContext(Dispatchers.IO) {
+                    StoreLocationHelper.loadActiveLocations(db).map { it.name }
+                }
+                val locationAdapter = ArrayAdapter(
+                    this@PhoneInventoryListActivity,
+                    android.R.layout.simple_dropdown_item_1line,
+                    locationNames
+                )
+                locationInput.setAdapter(locationAdapter)
+                if (locationNames.contains(deviceStoreLocation)) {
+                    locationInput.setText(deviceStoreLocation, false)
+                }
+                submitButton.isEnabled = true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage.text = "Error loading store locations: ${e.message}"
+                errorMessage.visibility = View.VISIBLE
+            }
+        }
 
         // Create the dialog
         val dialog = AlertDialog.Builder(this)
@@ -246,7 +273,7 @@ class PhoneInventoryListActivity : AppCompatActivity() {
 
             // Validate location
             if (location.isEmpty()) {
-                errorMessage.text = "Please enter a location"
+                errorMessage.text = "Please select a store location"
                 errorMessage.visibility = View.VISIBLE
                 return@setOnClickListener
             }
@@ -265,7 +292,12 @@ class PhoneInventoryListActivity : AppCompatActivity() {
 
                     if (success) {
                         dialog.dismiss()
-                        showMessage("Reconciliation created successfully", false)
+                        if (location != deviceStoreLocation) {
+                            // Belongs to another store; it will not show on this device
+                            showMessage("Reconciliation created for $location. It will only appear on devices set to that store.", false)
+                        } else {
+                            showMessage("Reconciliation created successfully", false)
+                        }
                         loadReconciliations()
                     } else {
                         progressBar.visibility = View.GONE
@@ -305,9 +337,6 @@ class PhoneInventoryListActivity : AppCompatActivity() {
                 var query = db.collection(COLLECTION_INVENTORY)
                     .whereIn("status", listOf("On-Hand", "On-Display"))
 
-                // Apply location filter (case-insensitive check for "All")
-                val isAllLocations = location.equals("All", ignoreCase = true)
-
                 // Fetch inventory items
                 val querySnapshot = query.get().await()
 
@@ -327,8 +356,8 @@ class PhoneInventoryListActivity : AppCompatActivity() {
                         return@filter false
                     }
 
-                    // Check location filter
-                    val locationMatch = isAllLocations || itemLocation.equals(location, ignoreCase = true)
+                    // Check location filter (case-insensitive: inventory items come from the web app)
+                    val locationMatch = itemLocation.equals(location, ignoreCase = true)
 
                     // Check status filter
                     val statusMatch = when (statusFilter) {
@@ -371,7 +400,7 @@ class PhoneInventoryListActivity : AppCompatActivity() {
                 // Create reconciliation document
                 val reconciliationData = hashMapOf(
                     "date" to currentDate,
-                    "location" to if (isAllLocations) "All" else location,
+                    "location" to location,
                     "statusFilter" to statusFilter,
                     "qtyOnDisplay" to qtyOnDisplay,
                     "qtyOnDisplayVerified" to 0,
@@ -411,6 +440,14 @@ class PhoneInventoryListActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
         binding.emptyStateLayout.visibility = View.GONE
         binding.reconciliationRecyclerView.visibility = View.GONE
+
+        // Store location must be configured; only this store's reconciliations are listed
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.progressBar.visibility = View.GONE
+            binding.emptyStateLayout.visibility = View.VISIBLE
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            return
+        }
 
         scope.launch {
             try {
@@ -486,7 +523,16 @@ class PhoneInventoryListActivity : AppCompatActivity() {
                 e.printStackTrace()
                 null
             }
-        }
+        }.filter { isReconciliationVisible(it.location) }
+    }
+
+    /**
+     * A reconciliation is visible when its location matches this device's store location.
+     * Legacy "All" reconciliations are visible only on a primary-store device.
+     */
+    private fun isReconciliationVisible(location: String): Boolean {
+        return StoreLocationHelper.matches(this, location) ||
+            (StoreLocationHelper.isPrimary(this) && location.equals("All", ignoreCase = true))
     }
 
     /**

@@ -16,6 +16,7 @@ object AppConstants {
     const val KEY_USER = "user"
     const val KEY_STORE_LOCATION = "store_location"
     const val KEY_STORE_LOCATION_ID = "store_location_id"
+    const val KEY_STORE_LOCATION_IS_PRIMARY = "store_location_is_primary"
 
     // Account Settings
     const val KEY_CASH_ACCOUNT = "cash_account"

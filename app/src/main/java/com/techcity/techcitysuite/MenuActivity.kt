@@ -68,6 +68,17 @@ class MenuActivity : AppCompatActivity() {
         super.onResume()
         // Re-check feature settings when returning from settings
         updateFeatureVisibility()
+        updateBranchLocationLabel()
+    }
+
+    /**
+     * Show the configured branch (store) location under the subtitle.
+     * Warning colour when no store location is set.
+     */
+    private fun updateBranchLocationLabel() {
+        binding.branchLocationLabel.text = StoreLocationHelper.getDisplayName(this)
+        val color = if (StoreLocationHelper.isConfigured(this)) R.color.gray else R.color.orange
+        binding.branchLocationLabel.setTextColor(androidx.core.content.ContextCompat.getColor(this, color))
     }
 
     override fun onDestroy() {
@@ -353,8 +364,10 @@ class MenuActivity : AppCompatActivity() {
                         val createdAt = data["createdAt"] as? com.google.firebase.Timestamp
                         val createdTimeMillis = createdAt?.toDate()?.time ?: 0
 
-                        // Only notify for documents created AFTER the listener started
-                        if (createdTimeMillis > listenerStartTime) {
+                        // Only notify for documents created AFTER the listener started,
+                        // and only for this device's store location
+                        val sameStore = StoreLocationHelper.matches(this, data["userLocation"] as? String)
+                        if (createdTimeMillis > listenerStartTime && sameStore) {
                             val model = data["model"] as? String ?: "Unknown"
                             val price = (data["finalPrice"] as? Number)?.toDouble() ?: 0.0
                             val transactionType = data["transactionType"] as? String ?: "Unknown"

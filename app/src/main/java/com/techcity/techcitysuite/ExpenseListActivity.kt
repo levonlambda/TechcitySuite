@@ -239,6 +239,16 @@ class ExpenseListActivity : AppCompatActivity() {
         binding.expensesRecyclerView.visibility = View.GONE
         binding.emptyStateLayout.visibility = View.GONE
 
+        // Store location must be configured; only same-store expenses are shown
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.progressBar.visibility = View.GONE
+            expenses = mutableListOf()
+            updateTotalLabel()
+            binding.emptyStateLayout.visibility = View.VISIBLE
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            return
+        }
+
         scope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
@@ -306,7 +316,8 @@ class ExpenseListActivity : AppCompatActivity() {
                 e.printStackTrace()
                 null
             }
-        }.sortedWith(compareByDescending { it.timestamp?.toDate()?.time ?: 0L })
+        }.filter { StoreLocationHelper.matches(this, it.storeLocation) }
+            .sortedWith(compareByDescending { it.timestamp?.toDate()?.time ?: 0L })
     }
 
     private fun updateTotalLabel() {
@@ -425,6 +436,11 @@ class ExpenseListActivity : AppCompatActivity() {
         val createdBy = prefs.getString(AppConstants.KEY_USER, "") ?: ""
         val storeLocation = prefs.getString(AppConstants.KEY_STORE_LOCATION, "") ?: ""
         val storeLocationId = prefs.getString(AppConstants.KEY_STORE_LOCATION_ID, "") ?: ""
+
+        if (storeLocation.isBlank()) {
+            onFailure(StoreLocationHelper.NOT_CONFIGURED_MESSAGE)
+            return
+        }
 
         val expenseData = hashMapOf(
             "description" to description,

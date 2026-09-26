@@ -36,7 +36,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Select location and inventory status to reconcile"
+        android:text="Select store location and inventory status to reconcile"
         android:textSize="14sp"
         android:textColor="@color/gray"
         android:layout_gravity="center"
@@ -53,24 +53,25 @@
     <!-- START OF PART 2: FORM FIELDS -->
     <!-- ========================================================================== -->
 
-    <!-- Location Input Field -->
+    <!-- Store Location Dropdown -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/locationInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Location"
+        android:hint="Store Location"
         app:boxStrokeColor="@color/techcity_blue"
         app:hintTextColor="@color/techcity_blue"
-        app:helperText="Enter 'All' to include all locations"
+        app:helperText="Store location for this reconciliation"
         app:helperTextEnabled="true"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
-        <com.google.android.material.textfield.TextInputEditText
+        <AutoCompleteTextView
             android:id="@+id/locationInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text"
-            android:imeOptions="actionNext" />
+            android:inputType="none"
+            android:cursorVisible="false"
+            android:focusable="false" />
 
     </com.google.android.material.textfield.TextInputLayout>
 

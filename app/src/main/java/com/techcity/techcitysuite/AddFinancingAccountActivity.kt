@@ -319,7 +319,8 @@ class AddFinancingAccountActivity : AppCompatActivity() {
         // Get user info from AppSettingsManager
         val settings = AppSettingsManager.getCurrentSettings()
         val createdBy = if (isEditMode) originalCreatedBy else (settings?.user ?: "")
-        val storeLocation = if (isEditMode) originalStoreLocation else (settings?.storeLocation ?: "")
+        // Store location comes from Program Settings (same source as every other module)
+        val storeLocation = if (isEditMode) originalStoreLocation else StoreLocationHelper.getStoreLocation(this)
 
         // Build data map
         val data = hashMapOf<String, Any?>(

@@ -123,10 +123,26 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        updateBranchLocationLabel()
         // Real-time listener handles updates automatically
         // Only reload if listener was removed
         if (transactionListener == null) {
             loadTransactions()
+        }
+    }
+
+    /**
+     * Show the configured branch (store) location beside the date.
+     * Warning colour when no store location is set.
+     */
+    private fun updateBranchLocationLabel() {
+        binding.branchLocationLabel.text = StoreLocationHelper.getDisplayName(this)
+        if (StoreLocationHelper.isConfigured(this)) {
+            binding.branchLocationLabel.setTextColor(ContextCompat.getColor(this, R.color.white))
+            binding.branchLocationLabel.alpha = 0.8f
+        } else {
+            binding.branchLocationLabel.setTextColor(ContextCompat.getColor(this, R.color.yellow))
+            binding.branchLocationLabel.alpha = 1.0f
         }
     }
 
@@ -593,6 +609,16 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
         // Remove any existing listener
         transactionListener?.remove()
 
+        // Store location must be configured; only same-store transactions are shown
+        if (!StoreLocationHelper.isConfigured(this)) {
+            binding.progressBar.visibility = View.GONE
+            transactions.clear()
+            applyFilter()
+            binding.emptyMessage.text = StoreLocationHelper.NOT_CONFIGURED_MESSAGE
+            binding.emptyMessage.visibility = View.VISIBLE
+            return
+        }
+
         // Convert selected date from M/d/yyyy to yyyy-MM-dd for query
         val queryDate = convertDisplayDateToQueryDate(selectedDate)
 
@@ -618,8 +644,9 @@ class AccessoryTransactionListActivity : AppCompatActivity() {
                     return@addSnapshotListener
                 }
 
-                // Use existing parsing logic
+                // Use existing parsing logic, then keep only this device's store location
                 val results = parseSnapshotDocuments(snapshots.documents)
+                    .filter { StoreLocationHelper.matches(this, it.transaction.userLocation) }
                 transactions = results.toMutableList()
                 applyFilter()
             }

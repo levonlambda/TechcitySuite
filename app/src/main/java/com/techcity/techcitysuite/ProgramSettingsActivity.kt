@@ -25,6 +25,9 @@ class ProgramSettingsActivity : AppCompatActivity() {
     // Store location name -> accessory_locations document ID
     private val locationNameToId = mutableMapOf<String, String>()
 
+    // Store location name -> accessory_locations isPrimary flag
+    private val locationNameToIsPrimary = mutableMapOf<String, Boolean>()
+
     // Inventory status options
     private val inventoryStatusOptions = arrayOf("On-Display", "In-Stock", "Both")
 
@@ -47,6 +50,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
         private const val KEY_EXPENSES_ENABLED = "expenses_enabled"
         private const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
         private const val KEY_STORE_LOCATION_ID = "store_location_id"
+        private const val KEY_STORE_LOCATION_IS_PRIMARY = "store_location_is_primary"
     }
 
     // ============================================================================
@@ -116,12 +120,14 @@ class ProgramSettingsActivity : AppCompatActivity() {
                         .await()
 
                     locationNameToId.clear()
+                    locationNameToIsPrimary.clear()
                     val list = mutableListOf<String>()
                     for (document in snapshot.documents) {
                         val active = document.getBoolean("active") ?: true
                         if (!active) continue
                         val name = document.getString("name") ?: continue
                         locationNameToId[name] = document.id
+                        locationNameToIsPrimary[name] = document.getBoolean("isPrimary") ?: false
                         list.add(name)
                     }
                     list
@@ -190,15 +196,29 @@ class ProgramSettingsActivity : AppCompatActivity() {
         binding.inventoryStatusLayout.alpha = if (phoneInventoryEnabled) 1.0f else 0.5f
     }
 
-    private fun saveSettings() {
+    /**
+     * Save settings to SharedPreferences.
+     * Returns false (and saves nothing) when the store location is not a value from the dropdown.
+     */
+    private fun saveSettings(): Boolean {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val editor = prefs.edit()
 
+        val selectedLocation = binding.storeLocationInput.text.toString().trim()
+        if (locationNameToId.isNotEmpty() && !locationNameToId.containsKey(selectedLocation)) {
+            Toast.makeText(this, "Please select a store location from the list", Toast.LENGTH_SHORT).show()
+            return false
+        }
+
         // Save all field values
         editor.putString(KEY_USER, binding.userInput.text.toString().trim())
-        val selectedLocation = binding.storeLocationInput.text.toString().trim()
-        editor.putString(KEY_STORE_LOCATION, selectedLocation)
-        editor.putString(KEY_STORE_LOCATION_ID, locationNameToId[selectedLocation] ?: "")
+        // Store location is only saved when the dropdown loaded; otherwise the saved location
+        // (name, ID, primary flag) is left untouched so an offline save cannot blank it out.
+        if (locationNameToId.isNotEmpty()) {
+            editor.putString(KEY_STORE_LOCATION, selectedLocation)
+            editor.putString(KEY_STORE_LOCATION_ID, locationNameToId[selectedLocation] ?: "")
+            editor.putBoolean(KEY_STORE_LOCATION_IS_PRIMARY, locationNameToIsPrimary[selectedLocation] ?: false)
+        }
         editor.putString(KEY_CASH_ACCOUNT, binding.cashAccountInput.text.toString().trim())
         editor.putString(KEY_GCASH_ACCOUNT, binding.gcashAccountInput.text.toString().trim())
         editor.putString(KEY_PAYMAYA_ACCOUNT, binding.paymayaAccountInput.text.toString().trim())
@@ -221,6 +241,7 @@ class ProgramSettingsActivity : AppCompatActivity() {
 
         // Show confirmation
         Toast.makeText(this, "Settings saved successfully!", Toast.LENGTH_SHORT).show()
+        return true
     }
 
     // ============================================================================
@@ -235,8 +256,30 @@ class ProgramSettingsActivity : AppCompatActivity() {
     private fun setupButtonListeners() {
         // Save button
         binding.saveButton.setOnClickListener {
-            saveSettings()
-            finish()
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val savedLocation = prefs.getString(KEY_STORE_LOCATION, "") ?: ""
+            val selectedLocation = binding.storeLocationInput.text.toString().trim()
+
+            if (savedLocation.isNotEmpty() && selectedLocation != savedLocation) {
+                // Changing store location switches which records this device can see
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Change Store Location?")
+                    .setMessage(
+                        "This device will switch from \"$savedLocation\" to \"$selectedLocation\" and will " +
+                        "only show records for the new store location. Existing records are not moved."
+                    )
+                    .setPositiveButton("Confirm") { _, _ ->
+                        if (saveSettings()) {
+                            finish()
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            } else {
+                if (saveSettings()) {
+                    finish()
+                }
+            }
         }
 
         // Cancel button
