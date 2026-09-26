@@ -15,6 +15,7 @@ import kotlinx.coroutines.tasks.await
 object StoreLocationHelper {
 
     const val NOT_CONFIGURED_MESSAGE = "Please configure Store Location in Settings first"
+    const val NO_STORE_LOCATION_LABEL = "No store location set"
 
     data class StoreLocationOption(
         val name: String,
@@ -34,6 +35,16 @@ object StoreLocationHelper {
 
     fun isConfigured(context: Context): Boolean {
         return getStoreLocation(context).isNotBlank()
+    }
+
+    /**
+     * Display-only label for the store location: the name without its "TC-" prefix,
+     * or NO_STORE_LOCATION_LABEL when none is configured. Never use this for matching.
+     */
+    fun getDisplayName(context: Context): String {
+        val storeLocation = getStoreLocation(context)
+        if (storeLocation.isBlank()) return NO_STORE_LOCATION_LABEL
+        return storeLocation.removePrefix("TC-").trim()
     }
 
     /**

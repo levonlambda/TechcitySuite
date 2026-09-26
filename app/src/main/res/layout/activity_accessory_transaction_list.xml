@@ -46,16 +46,42 @@
 
         </LinearLayout>
 
-        <!-- Date Label -->
-        <TextView
-            android:id="@+id/dateLabel"
-            android:layout_width="wrap_content"
+        <!-- Date Row: date on the left, branch location centered.
+             Ends at the calendar button column so the branch label is centered
+             the same way as on the Device / Service Transactions screens. -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Today"
-            android:textSize="14sp"
-            android:textColor="@color/white"
-            android:alpha="0.8"
-            android:layout_marginTop="4dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="40dp">
+
+            <!-- Date Label -->
+            <TextView
+                android:id="@+id/dateLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Today"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                android:alpha="0.8" />
+
+            <!-- Branch Location Label -->
+            <TextView
+                android:id="@+id/branchLocationLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:gravity="center"
+                android:textSize="14sp"
+                android:textColor="@color/white"
+                android:alpha="0.8"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+        </LinearLayout>
 
         <!-- Summary Row -->
         <LinearLayout
