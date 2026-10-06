@@ -38,6 +38,12 @@ class MenuActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Refuse to show without a signed-in Firebase user
+        if (!AuthManager.isSignedIn()) {
+            AuthManager.goToLogin(this, AuthManager.MODE_SIGN_IN)
+            return
+        }
+
         // Initialize View Binding
         binding = ActivityMenuBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -66,9 +72,36 @@ class MenuActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!::binding.isInitialized) return
         // Re-check feature settings when returning from settings
         updateFeatureVisibility()
         updateBranchLocationLabel()
+        checkAccessOnResume()
+    }
+
+    /**
+     * Throttled online re-verification of the signed-in account (at most once per hour).
+     * A revoked account is sent to Login; an offline device past the grace period is
+     * sent to the Verification Required state.
+     */
+    private fun checkAccessOnResume() {
+        if (!AuthManager.isSignedIn()) {
+            AuthManager.goToLogin(this, AuthManager.MODE_SIGN_IN)
+            return
+        }
+        if (!AuthManager.needsVerification(this)) return
+
+        scope.launch {
+            when (AuthManager.verifyAccess(this@MenuActivity)) {
+                AuthManager.VerifyResult.VALID -> { /* continue as normal */ }
+                AuthManager.VerifyResult.REVOKED -> AuthManager.handleRevoked(this@MenuActivity)
+                AuthManager.VerifyResult.OFFLINE -> {
+                    if (!AuthManager.isWithinGracePeriod(this@MenuActivity)) {
+                        AuthManager.goToLogin(this@MenuActivity, AuthManager.MODE_VERIFICATION_REQUIRED)
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -149,6 +182,9 @@ class MenuActivity : AppCompatActivity() {
                 AppSettingsManager.loadSettings(this@MenuActivity)
             } catch (e: Exception) {
                 // Settings will use defaults if loading fails
+                if (AuthManager.isPermissionDenied(e)) {
+                    AuthManager.handleRevoked(this@MenuActivity)
+                }
             }
         }
     }
@@ -353,6 +389,10 @@ class MenuActivity : AppCompatActivity() {
         deviceTransactionListener = db.collection(AppConstants.COLLECTION_DEVICE_TRANSACTIONS)
             .addSnapshotListener { snapshots, error ->
                 if (error != null) {
+                    // Firestore refused the listener: the account was revoked
+                    if (AuthManager.isPermissionDenied(error)) {
+                        AuthManager.handleRevoked(this)
+                    }
                     return@addSnapshotListener
                 }
 

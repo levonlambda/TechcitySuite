@@ -90,4 +90,12 @@
     <string name="ledger_icon">Ledger Icon</string>
     <string name="more_options">More Options</string>
     <string name="menu_button">Menu Button</string>
+    <string name="login_title">Sign in to continue</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_sign_in">Sign In</string>
+    <string name="login_retry">Retry</string>
+    <string name="settings_account_section">Account</string>
+    <string name="settings_signed_in_as">Signed in as</string>
+    <string name="settings_sign_out">Sign Out</string>
 </resources>

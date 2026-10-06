@@ -35,6 +35,14 @@
             android:name=".MenuActivity"
             android:exported="false" />
 
+        <!-- Login Activity - Firebase Authentication gate -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:label="Sign In"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Your existing IMEI Search Activity (keeping the original name) -->
         <activity
             android:name="com.techcity.techcitysuite.MainActivity"
