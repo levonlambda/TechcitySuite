@@ -86,6 +86,9 @@ class ProgramSettingsActivity : AppCompatActivity() {
 
         // Set up button listeners
         setupButtonListeners()
+
+        // Show the signed-in account and wire up Sign Out
+        setupAccountSection()
     }
 
     override fun onDestroy() {
@@ -285,6 +288,29 @@ class ProgramSettingsActivity : AppCompatActivity() {
         // Cancel button
         binding.cancelButton.setOnClickListener {
             finish()
+        }
+    }
+
+    /**
+     * Account card: show the signed-in Firebase user and allow signing out of this device.
+     * Sign-out keeps all per-device settings; only the session and in-memory state are cleared.
+     */
+    private fun setupAccountSection() {
+        binding.signedInEmailText.text = AuthManager.currentEmail()
+
+        binding.signOutButton.setOnClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Sign Out?")
+                .setMessage(
+                    "Sign out of TechCity Suite on this device? " +
+                    "You will need the account email and password to sign in again."
+                )
+                .setPositiveButton("Sign Out") { _, _ ->
+                    AuthManager.signOut(this)
+                    AuthManager.goToLogin(this, AuthManager.MODE_SIGN_IN)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
     }
 
