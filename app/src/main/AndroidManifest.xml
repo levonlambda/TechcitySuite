@@ -155,6 +155,21 @@
             android:label="Manufacturer Details" />
 
         <activity
+            android:name="com.techcity.techcitysuite.StockTransferListActivity"
+            android:exported="false"
+            android:label="Stock Transfer" />
+
+        <activity
+            android:name="com.techcity.techcitysuite.NewStockTransferActivity"
+            android:exported="false"
+            android:label="New Stock Transfer" />
+
+        <activity
+            android:name="com.techcity.techcitysuite.StockTransferDetailActivity"
+            android:exported="false"
+            android:label="Stock Transfer Details" />
+
+        <activity
             android:name=".FinancingAccountListActivity"
             android:exported="false"
             android:label="Financing Accounts" />

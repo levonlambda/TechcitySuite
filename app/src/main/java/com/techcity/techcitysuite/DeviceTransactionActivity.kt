@@ -1194,6 +1194,17 @@ class DeviceTransactionActivity : AppCompatActivity() {
             return
         }
 
+        // Block selling a Reserved device (stock transfer in transit, or reserved in the web app)
+        if (!isPlaceholderDevice &&
+            foundInventoryItem!!.status.equals(AppConstants.INVENTORY_STATUS_RESERVED, ignoreCase = true)) {
+            if (foundInventoryItem!!.transferId.isNotBlank()) {
+                showMessage("This device is reserved for a stock transfer", true)
+            } else {
+                showMessage("This device is reserved. Change its status in the inventory system before selling.", true)
+            }
+            return
+        }
+
         // Validate price
         if (price <= 0) {
             showMessage("Please enter a valid price", true)
@@ -1691,6 +1702,9 @@ class DeviceTransactionActivity : AppCompatActivity() {
                     val currentStatus = invSnap.getString("status") ?: ""
                     if (currentStatus.equals(AppConstants.INVENTORY_STATUS_SOLD, ignoreCase = true)) {
                         throw IllegalStateException("This device has already been sold")
+                    }
+                    if (currentStatus.equals(AppConstants.INVENTORY_STATUS_RESERVED, ignoreCase = true)) {
+                        throw IllegalStateException("This device is reserved and cannot be sold")
                     }
 
                     tx.set(newRef, transactionData)

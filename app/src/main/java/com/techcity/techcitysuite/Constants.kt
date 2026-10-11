@@ -34,6 +34,7 @@ object AppConstants {
     const val KEY_FINANCING_ACCOUNTS_ENABLED = "financing_accounts_enabled"
     const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
     const val KEY_EXPENSES_ENABLED = "expenses_enabled"
+    const val KEY_STOCK_TRANSFER_ENABLED = "stock_transfer_enabled"
     const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
 
     // ============================================================================
@@ -55,7 +56,9 @@ object AppConstants {
     const val COLLECTION_ACCESSORY_PRICING = "accessory_pricing"
     const val COLLECTION_ACCESSORY_INVENTORY = "accessory_inventory"
     const val COLLECTION_ACCESSORY_LOCATIONS = "accessory_locations"
+    const val COLLECTION_ACCESSORY_INVENTORY_ADJUSTMENTS = "accessory_inventory_adjustments"
     const val COLLECTION_EXPENSES = "expenses"
+    const val COLLECTION_STOCK_TRANSFERS = "stock_transfers"
 
     // ============================================================================
     // TRANSACTION TYPES
@@ -116,6 +119,18 @@ object AppConstants {
     const val INVENTORY_STATUS_ON_HAND = "On-Hand"
     const val INVENTORY_STATUS_SOLD = "Sold"
     const val INVENTORY_STATUS_ON_DISPLAY = "On-Display"
+    const val INVENTORY_STATUS_RESERVED = "Reserved"
+
+    // ============================================================================
+    // STOCK TRANSFER
+    // ============================================================================
+
+    const val TRANSFER_STATUS_PENDING = "pending"
+    const val TRANSFER_STATUS_COMPLETED = "completed"
+    const val TRANSFER_MAX_PHONES = 150
+    const val TRANSFER_MAX_ACCESSORY_SKUS = 80
+    const val TRANSFER_AUDIT_SOURCE = "mobile-stock-transfer"
+    val TRANSFER_EXCLUDED_MANUFACTURERS = listOf("Techcity")
 
     // ============================================================================
     // PLACEHOLDER IMEI

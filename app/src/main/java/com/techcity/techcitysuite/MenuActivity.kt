@@ -165,6 +165,14 @@ class MenuActivity : AppCompatActivity() {
         } else {
             binding.expensesCard.visibility = View.GONE
         }
+
+        // Stock Transfer visibility
+        val stockTransferEnabled = prefs.getBoolean(AppConstants.KEY_STOCK_TRANSFER_ENABLED, false)
+        if (stockTransferEnabled) {
+            binding.stockTransferCard.visibility = View.VISIBLE
+        } else {
+            binding.stockTransferCard.visibility = View.GONE
+        }
     }
 
     // ============================================================================
@@ -250,6 +258,12 @@ class MenuActivity : AppCompatActivity() {
         // Expenses button
         binding.expensesButton.setOnClickListener {
             val intent = Intent(this, ExpenseListActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Stock Transfer button
+        binding.stockTransferButton.setOnClickListener {
+            val intent = Intent(this, StockTransferListActivity::class.java)
             startActivity(intent)
         }
     }
