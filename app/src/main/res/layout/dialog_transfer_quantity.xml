@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@android:color/white">
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: DIALOG HEADER -->
+    <!-- ========================================================================== -->
+
+    <!-- Icon -->
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_charger"
+        android:layout_gravity="center"
+        app:tint="@color/techcity_blue"
+        android:contentDescription="Accessory Icon" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Transfer Quantity"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/techcity_blue"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp" />
+
+    <!-- Item name -->
+    <TextView
+        android:id="@+id/itemNameText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Anker PowerPort III 65W"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:layout_marginTop="8dp" />
+
+    <!-- Stock info -->
+    <TextView
+        android:id="@+id/stockInfoText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Available at origin: 24 on hand, 2 on display"
+        android:textSize="13sp"
+        android:textColor="@color/gray"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="24dp" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: DIALOG HEADER -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 2: QUANTITY INPUT -->
+    <!-- ========================================================================== -->
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/quantityInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Quantity"
+        app:boxStrokeColor="@color/techcity_blue"
+        app:hintTextColor="@color/techcity_blue"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/quantityInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:imeOptions="actionDone"
+            android:maxLength="6" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Error Message -->
+    <TextView
+        android:id="@+id/errorMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter a quantity between 1 and 26"
+        android:textSize="12sp"
+        android:textColor="@android:color/holo_red_dark"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 2: QUANTITY INPUT -->
+    <!-- ========================================================================== -->
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 3: DIALOG BUTTONS -->
+    <!-- ========================================================================== -->
+
+    <LinearLayout
+        android:id="@+id/buttonsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginTop="24dp">
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:textColor="@color/gray"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/techcity_blue"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 3: DIALOG BUTTONS -->
+    <!-- ========================================================================== -->
+
+
+</LinearLayout>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="2dp"
+    app:strokeColor="@color/light_gray"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+
+    <!-- ========================================================================== -->
+    <!-- START OF PART 1: CARD CONTENT -->
+    <!-- ========================================================================== -->
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:id="@+id/detailsColumn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginEnd="12dp"
+            app:layout_goneMarginEnd="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/receivedCheck"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <!-- Name -->
+            <TextView
+                android:id="@+id/nameText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Anker PowerPort III 65W"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
+
+            <!-- SKU -->
+            <TextView
+                android:id="@+id/skuText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SKU: ACC-CHG-0001"
+                android:textSize="12sp"
+                android:textColor="@color/gray"
+                android:layout_marginTop="2dp" />
+
+            <!-- Barcode -->
+            <TextView
+                android:id="@+id/barcodeText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="8801234567890"
+                android:textSize="12sp"
+                android:textColor="@color/gray"
+                android:fontFamily="monospace" />
+
+            <!-- Quantity -->
+            <TextView
+                android:id="@+id/quantityText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Qty: 10 · Available: 24 on hand / 2 on display"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/orange"
+                android:layout_marginTop="6dp" />
+
+            <!-- Missing (completed with discrepancies) -->
+            <TextView
+                android:id="@+id/missingText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Missing: 5"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_red_dark"
+                android:layout_marginTop="2dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Received by (detail screen only) -->
+        <TextView
+            android:id="@+id/receivedByText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Verified by Admin"
+            android:textSize="11sp"
+            android:textColor="@color/cash_dark_green"
+            android:gravity="end"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/detailsColumn" />
+
+        <!-- Fully received check -->
+        <ImageView
+            android:id="@+id/receivedCheck"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_check_circle"
+            android:contentDescription="Fully received"
+            android:visibility="gone"
+            app:tint="@color/cash_dark_green"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/detailsColumn"
+            app:layout_constraintBottom_toBottomOf="@id/detailsColumn" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ========================================================================== -->
+    <!-- END OF PART 1: CARD CONTENT -->
+    <!-- ========================================================================== -->
+
+
+</com.google.android.material.card.MaterialCardView>

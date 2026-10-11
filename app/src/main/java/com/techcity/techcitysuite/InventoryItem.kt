@@ -20,7 +20,8 @@ data class InventoryItem(
     val procurementId: String = "",
     val dateAdded: String = "",
     val lastUpdated: String = "",
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    val transferId: String = ""
 ) {
     // No-argument constructor required for Firestore
     constructor() : this("")

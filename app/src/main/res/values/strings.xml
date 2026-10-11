@@ -23,6 +23,9 @@
     <string name="business_management_system">Business Management System</string>
     <string name="phone_inventory">Phone Inventory</string>
     <string name="search_phones_by_imei">Search phones by IMEI number</string>
+    <string name="stock_transfer">Stock Transfer</string>
+    <string name="stock_transfer_subtitle">Transfer stock between branches</string>
+    <string name="stock_transfer_icon">Stock Transfer Icon</string>
     <string name="devices_transactions">Device Transaction</string>
     <string name="add_devices_inventory">Phones, Tablets, Laptops, Printers</string>
     <string name="accessories_transactions">Accessory Transaction</string>

@@ -343,6 +343,32 @@ class AccountReceivableActivity : AppCompatActivity() {
         return receivablesList
     }
 
+    /**
+     * Remaining balance for an In-House installment, derived the same way
+     * InHousePaymentActivity computes it:
+     *   (Final Price - Downpayment + Interest Amount) - sum of payments[].amount
+     * Stored balance fields are not used: remainingBalance is never updated after
+     * creation, and balance is stored pre-interest for device transactions until
+     * the first payment. Result is floored at 0.
+     */
+    private fun computeInHouseRemainingBalance(
+        data: Map<String, Any>,
+        paymentData: Map<*, *>
+    ): Double {
+        val finalPrice = (data["finalPrice"] as? Number)?.toDouble() ?: 0.0
+        val downpayment = (paymentData["downpaymentAmount"] as? Number)?.toDouble() ?: 0.0
+        val interestAmount = (paymentData["interestAmount"] as? Number)?.toDouble() ?: 0.0
+
+        val paymentsArray = paymentData["payments"] as? List<*>
+        val totalPaid = paymentsArray?.sumOf { payment ->
+            val paymentMap = payment as? Map<*, *>
+            (paymentMap?.get("amount") as? Number)?.toDouble() ?: 0.0
+        } ?: 0.0
+
+        val remaining = (finalPrice - downpayment) + interestAmount - totalPaid
+        return if (remaining < 0.01) 0.0 else remaining
+    }
+
     private fun parseDeviceReceivable(
         docId: String,
         data: Map<String, Any>,
@@ -364,7 +390,7 @@ class AccountReceivableActivity : AppCompatActivity() {
             }
 
             val balance = when (transactionType) {
-                "In-House" -> (paymentData["remainingBalance"] as? Number)?.toDouble() ?: 0.0
+                "In-House" -> computeInHouseRemainingBalance(data, paymentData)
                 "Credit Card" -> (paymentData["netReceivable"] as? Number)?.toDouble() ?: 0.0
                 else -> (paymentData["balance"] as? Number)?.toDouble() ?: 0.0
             }
@@ -521,7 +547,7 @@ class AccountReceivableActivity : AppCompatActivity() {
     ): ReceivableItem? {
         try {
             val balance = when (transactionType) {
-                "In-House" -> (paymentData["remainingBalance"] as? Number)?.toDouble() ?: 0.0
+                "In-House" -> computeInHouseRemainingBalance(data, paymentData)
                 "Credit Card" -> (paymentData["netReceivable"] as? Number)?.toDouble() ?: 0.0
                 else -> (paymentData["balance"] as? Number)?.toDouble() ?: 0.0
             }
