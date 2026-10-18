@@ -48,6 +48,27 @@ object StoreLocationHelper {
     }
 
     /**
+     * Display-only label for an arbitrary store location name: the name without its "TC-" prefix.
+     * Never use this for matching or saving.
+     */
+    fun getDisplayName(storeLocationName: String): String {
+        return storeLocationName.removePrefix("TC-").trim()
+    }
+
+    /**
+     * Save the device's store location (name, document ID, primary flag). Writes the same
+     * SharedPreferences keys as Program Settings; no other settings are touched.
+     */
+    fun saveStoreLocation(context: Context, option: StoreLocationOption) {
+        val prefs = context.getSharedPreferences(AppConstants.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(AppConstants.KEY_STORE_LOCATION, option.name)
+            .putString(AppConstants.KEY_STORE_LOCATION_ID, option.id)
+            .putBoolean(AppConstants.KEY_STORE_LOCATION_IS_PRIMARY, option.isPrimary)
+            .apply()
+    }
+
+    /**
      * Visibility rule: exact (case-sensitive) match on the store location name, or,
      * on a primary-store device, a record with a missing/empty location (legacy rule).
      */
