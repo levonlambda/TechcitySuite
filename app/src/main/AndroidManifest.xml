@@ -183,6 +183,11 @@
             android:name=".FinancingAccountDetailActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".OverviewActivity"
+            android:exported="false"
+            android:label="Overview" />
+
     </application>
 
 </manifest>
