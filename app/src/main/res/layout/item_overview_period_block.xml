@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/periodBlock"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Divider between period blocks -->
+    <View
+        android:id="@+id/periodDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/light_gray" />
+
+    <!-- Collapsible header: chevron, title, period label, total. Tap to expand / collapse. -->
+    <LinearLayout
+        android:id="@+id/periodHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:minHeight="44dp"
+        android:paddingVertical="6dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/periodChevron"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/arrow_down_float"
+            android:contentDescription="Expand"
+            app:tint="@color/gray" />
+
+        <TextView
+            android:id="@+id/periodTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/techcity_blue"
+            android:layout_marginStart="8dp" />
+
+        <TextView
+            android:id="@+id/periodLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:textColor="@color/gray"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:layout_marginStart="8dp" />
+
+        <TextView
+            android:id="@+id/periodTotal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/techcity_blue" />
+
+    </LinearLayout>
+
+    <!-- Expanded content: status line or the five figure rows -->
+    <LinearLayout
+        android:id="@+id/periodContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingBottom="6dp">
+
+        <TextView
+            android:id="@+id/periodStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/gray"
+            android:paddingVertical="4dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/periodRows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Cash Sale -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="3dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Cash Sale"
+                    android:textSize="13sp"
+                    android:textColor="@color/cash_dark_green" />
+
+                <TextView
+                    android:id="@+id/cashValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black"
+                    android:gravity="end" />
+
+                <TextView
+                    android:id="@+id/cashPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="34dp"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray"
+                    android:gravity="end"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <!-- Home Credit Sale -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="3dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Home Credit Sale"
+                    android:textSize="13sp"
+                    android:textColor="@color/red" />
+
+                <TextView
+                    android:id="@+id/homeCreditValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black"
+                    android:gravity="end" />
+
+                <TextView
+                    android:id="@+id/homeCreditPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="34dp"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray"
+                    android:gravity="end"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <!-- Skyro Sale -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="3dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Skyro Sale"
+                    android:textSize="13sp"
+                    android:textColor="@color/skyro_light_blue" />
+
+                <TextView
+                    android:id="@+id/skyroValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black"
+                    android:gravity="end" />
+
+                <TextView
+                    android:id="@+id/skyroPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="34dp"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray"
+                    android:gravity="end"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <!-- Salmon Sale -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="3dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Salmon Sale"
+                    android:textSize="13sp"
+                    android:textColor="@color/orange" />
+
+                <TextView
+                    android:id="@+id/salmonValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black"
+                    android:gravity="end" />
+
+                <TextView
+                    android:id="@+id/salmonPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="34dp"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray"
+                    android:gravity="end"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <!-- In-House Sale -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="3dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="In-House Sale"
+                    android:textSize="13sp"
+                    android:textColor="@color/purple" />
+
+                <TextView
+                    android:id="@+id/inHouseValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/black"
+                    android:gravity="end" />
+
+                <TextView
+                    android:id="@+id/inHousePercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="34dp"
+                    android:textSize="12sp"
+                    android:textColor="@color/gray"
+                    android:gravity="end"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

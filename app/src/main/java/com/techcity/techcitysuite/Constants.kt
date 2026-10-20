@@ -35,7 +35,11 @@ object AppConstants {
     const val KEY_DEVICE_TRANSACTION_NOTIFICATIONS_ENABLED = "device_transaction_notifications_enabled"
     const val KEY_EXPENSES_ENABLED = "expenses_enabled"
     const val KEY_STOCK_TRANSFER_ENABLED = "stock_transfer_enabled"
+    const val KEY_OVERVIEW_ENABLED = "overview_enabled"
     const val KEY_INVENTORY_STATUS_FILTER = "inventory_status_filter"
+
+    // Overview: Running cash on hand is counted from this date for branches never retrieved
+    const val OVERVIEW_RUNNING_START_DATE = "2026-10-16"
 
     // ============================================================================
     // FIREBASE COLLECTION NAMES
@@ -59,6 +63,8 @@ object AppConstants {
     const val COLLECTION_ACCESSORY_INVENTORY_ADJUSTMENTS = "accessory_inventory_adjustments"
     const val COLLECTION_EXPENSES = "expenses"
     const val COLLECTION_STOCK_TRANSFERS = "stock_transfers"
+    const val COLLECTION_DAILY_SUMMARIES = "daily_summaries"
+    const val COLLECTION_CASH_RETRIEVALS = "cash_retrievals"
 
     // ============================================================================
     // TRANSACTION TYPES

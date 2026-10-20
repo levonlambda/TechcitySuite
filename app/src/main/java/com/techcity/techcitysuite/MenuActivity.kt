@@ -179,6 +179,14 @@ class MenuActivity : AppCompatActivity() {
         } else {
             binding.stockTransferCard.visibility = View.GONE
         }
+
+        // Overview visibility
+        val overviewEnabled = prefs.getBoolean(AppConstants.KEY_OVERVIEW_ENABLED, false)
+        if (overviewEnabled) {
+            binding.overviewCard.visibility = View.VISIBLE
+        } else {
+            binding.overviewCard.visibility = View.GONE
+        }
     }
 
     // ============================================================================
@@ -270,6 +278,12 @@ class MenuActivity : AppCompatActivity() {
         // Stock Transfer button
         binding.stockTransferButton.setOnClickListener {
             val intent = Intent(this, StockTransferListActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Overview button
+        binding.overviewButton.setOnClickListener {
+            val intent = Intent(this, OverviewActivity::class.java)
             startActivity(intent)
         }
     }
