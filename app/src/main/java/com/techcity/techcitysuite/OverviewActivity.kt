@@ -14,13 +14,16 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.techcity.techcitysuite.databinding.ActivityOverviewBinding
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -83,6 +86,9 @@ class OverviewActivity : AppCompatActivity() {
     private var summaryCache: List<Map<String, Any?>> = emptyList()
     private var summaryCacheStart: String = ""
     private var summaryCacheLoaded = false
+
+    // On-device copy of End of Day documents; synced incrementally by syncSummaries()
+    private lateinit var diskCache: OverviewSummaryCache
 
     // Latest retrieval per branch and the resulting Running figures
     private var latestRetrievals: Map<String, CashRetrieval?> = emptyMap()
@@ -156,6 +162,7 @@ class OverviewActivity : AppCompatActivity() {
         private const val SWIPE_THRESHOLD = 0.4f
         private const val LOAD_ERROR_MESSAGE = "Could not load. Check your connection and try again."
         private const val NO_LOCATIONS_MESSAGE = "No store locations found"
+        private const val CACHE_FILE_NAME = "overview_summaries_cache.json"
     }
 
     // ============================================================================
@@ -172,12 +179,22 @@ class OverviewActivity : AppCompatActivity() {
         binding = ActivityOverviewBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        diskCache = OverviewSummaryCache(File(filesDir, CACHE_FILE_NAME))
+
         todayDate = today()
         dailyDate = todayDate
         monthlyMonth = currentMonth()
 
         binding.backButton.setOnClickListener { finish() }
         binding.refreshButton.setOnClickListener { loadAll() }
+        binding.refreshButton.setOnLongClickListener {
+            Toast.makeText(this, "Reloading all End of Day reports", Toast.LENGTH_SHORT).show()
+            scope.launch {
+                withContext(Dispatchers.IO) { diskCache.clear() }
+                loadAll()
+            }
+            true
+        }
         binding.dailyDateButton.setOnClickListener { showDailyDatePicker() }
         binding.monthlyMonthButton.setOnClickListener { showMonthPicker() }
 
@@ -378,11 +395,7 @@ class OverviewActivity : AppCompatActivity() {
             val runningStarts = runningByBranch.values.map { it.rangeStart }
             val unionStart = (runningStarts + firstDayOfYear()).minOrNull() ?: firstDayOfYear()
 
-            summaryCache = if (unionStart <= yesterday) {
-                withContext(Dispatchers.IO) { fetchDailySummaries(unionStart, yesterday) }
-            } else {
-                emptyList()
-            }
+            summaryCache = syncSummaries(unionStart, yesterday)
             summaryCacheStart = unionStart
             summaryCacheLoaded = true
 
@@ -397,6 +410,41 @@ class OverviewActivity : AppCompatActivity() {
             setSectionState(Section.CASH, SectionState.ERROR)
             setSectionState(Section.YEARLY, SectionState.ERROR)
             if (monthlyMonth == currentMonth()) setSectionState(Section.MONTHLY, SectionState.ERROR)
+        }
+    }
+
+    /**
+     * Bring the on-disk End of Day cache up to date with as few reads as possible and return the
+     * documents dated within [neededStart, endDate].
+     *  - First visit: one range query date >= neededStart (no upper bound).
+     *  - Needed range moved earlier: one gap query [neededStart, cacheStart).
+     *  - Otherwise: one query timestamp > watermark.
+     *
+     * The first-visit load deliberately has no upper date bound: the watermark must be the greatest
+     * timestamp among every document dated on or after neededStart (including today's report, if
+     * already saved), or a document could sit below the watermark yet be missing from the cache.
+     */
+    private suspend fun syncSummaries(neededStart: String, endDate: String): List<Map<String, Any?>> {
+        return withContext(Dispatchers.IO) {
+            if (diskCache.isEmpty) diskCache.load()
+
+            if (diskCache.isEmpty) {
+                // FIRESTORE READ: full load, once per device
+                diskCache.merge(fetchDailySummariesFrom(neededStart))
+                diskCache.cacheStart = neededStart
+            } else {
+                if (!diskCache.covers(neededStart)) {
+                    // FIRESTORE READ: gap load, rare
+                    diskCache.merge(fetchDailySummaries(neededStart, shiftDate(diskCache.cacheStart, -1)))
+                    diskCache.cacheStart = neededStart
+                }
+                // FIRESTORE READ: 1 read if nothing changed, else 1 per changed report
+                diskCache.merge(fetchDailySummariesChangedAfter(diskCache.watermark!!))
+            }
+
+            diskCache.pruneBefore = firstDayOfPreviousYear()
+            diskCache.save()
+            diskCache.inRange(neededStart, endDate)
         }
     }
 
@@ -452,7 +500,11 @@ class OverviewActivity : AppCompatActivity() {
             try {
                 val start = firstDayOfMonth(month)
                 val end = lastDayOfMonth(month)
-                val docs = withContext(Dispatchers.IO) { fetchDailySummaries(start, end) }
+                val docs = if (summaryCacheLoaded && diskCache.covers(start)) {
+                    diskCache.inRange(start, end)
+                } else {
+                    withContext(Dispatchers.IO) { fetchDailySummaries(start, end) }
+                }
                 if (month != monthlyMonth) return@launch
                 val totals = aggregateSummaries(docs, start, end)
                 renderPeriodSection(Section.MONTHLY, totals, includeToday = false)
@@ -502,15 +554,42 @@ class OverviewActivity : AppCompatActivity() {
         }
     }
 
+    /** End of Day documents for all branches with date >= startDate (no upper bound). */
+    private suspend fun fetchDailySummariesFrom(startDate: String): List<Map<String, Any?>> {
+        val snapshot = db.collection(AppConstants.COLLECTION_DAILY_SUMMARIES)
+            .whereGreaterThanOrEqualTo("date", startDate)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { doc ->
+            val data = doc.data?.toMutableMap() ?: return@mapNotNull null
+            data["_id"] = doc.id
+            data
+        }
+    }
+
+    /** End of Day documents saved or re-saved after the given server timestamp. */
+    private suspend fun fetchDailySummariesChangedAfter(after: Timestamp): List<Map<String, Any?>> {
+        val snapshot = db.collection(AppConstants.COLLECTION_DAILY_SUMMARIES)
+            .whereGreaterThan("timestamp", after)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { doc ->
+            val data = doc.data?.toMutableMap() ?: return@mapNotNull null
+            data["_id"] = doc.id
+            data
+        }
+    }
+
     /** Latest retrieval for a branch: greatest rangeEnd, ties broken by recordedAt. */
     private suspend fun fetchLatestRetrieval(storeLocation: String): CashRetrieval? {
         val snapshot = db.collection(AppConstants.COLLECTION_CASH_RETRIEVALS)
             .whereEqualTo("storeLocation", storeLocation)
+            .orderBy("rangeEnd", Query.Direction.DESCENDING)
+            .orderBy("recordedAt", Query.Direction.DESCENDING)
+            .limit(1)
             .get()
             .await()
-        return snapshot.documents
-            .map { CashRetrieval.fromDocument(it) }
-            .maxWithOrNull(compareBy<CashRetrieval> { it.rangeEnd }.thenBy { it.recordedAt?.seconds ?: 0L })
+        return snapshot.documents.firstOrNull()?.let { CashRetrieval.fromDocument(it) }
     }
 
     // ============================================================================
@@ -1164,6 +1243,8 @@ class OverviewActivity : AppCompatActivity() {
     }
 
     private fun firstDayOfYear(): String = "${todayDate.substring(0, 4)}-01-01"
+
+    private fun firstDayOfPreviousYear(): String = "${todayDate.substring(0, 4).toInt() - 1}-01-01"
 
     private fun daysBetweenInclusive(start: String, end: String): List<String> {
         if (start > end) return emptyList()
