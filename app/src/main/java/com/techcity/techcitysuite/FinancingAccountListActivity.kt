@@ -14,10 +14,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -47,6 +51,7 @@ class FinancingAccountListActivity : AppCompatActivity() {
     private var allAccounts: MutableList<FinancingAccount> = mutableListOf()
     private var filteredAccounts: MutableList<FinancingAccount> = mutableListOf()
     private var adapter: FinancingAccountAdapter? = null
+    private var accountsListener: ListenerRegistration? = null
 
     private val displayDateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
     private val storageDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -64,16 +69,13 @@ class FinancingAccountListActivity : AppCompatActivity() {
         setupRecyclerView()
         setupSwipeActions()
         setupFab()
-        loadAccounts()
-    }
-
-    override fun onResume() {
-        super.onResume()
+        setupBottomBarInsets()
         loadAccounts()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        accountsListener?.remove()
         scope.coroutineContext[Job]?.cancel()
     }
 
@@ -120,6 +122,20 @@ class FinancingAccountListActivity : AppCompatActivity() {
         binding.addButton.setOnClickListener {
             val intent = Intent(this, AddFinancingAccountActivity::class.java)
             startActivity(intent)
+        }
+    }
+
+    /**
+     * The app draws edge-to-edge (target SDK 35+), so the system navigation bar overlays the
+     * bottom summary bar. Add the navigation bar height to the bar's bottom padding so the
+     * Total Financed and Entries figures stay visible above it.
+     */
+    private fun setupBottomBarInsets() {
+        val basePaddingBottom = binding.bottomSummaryBar.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomSummaryBar) { view, insets ->
+            val navBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.updatePadding(bottom = basePaddingBottom + navBarInset)
+            insets
         }
     }
 
@@ -241,49 +257,55 @@ class FinancingAccountListActivity : AppCompatActivity() {
         binding.emptyMessage.visibility = View.GONE
         binding.accountsRecyclerView.visibility = View.GONE
 
-        scope.launch {
-            try {
-                val accounts = withContext(Dispatchers.IO) {
-                    val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
-                    calendar.add(Calendar.YEAR, -2)
-                    val twoYearsAgo = com.google.firebase.Timestamp(calendar.time)
+        // Remove any existing listener
+        accountsListener?.remove()
 
-                    val snapshot = db.collection(AppConstants.COLLECTION_FINANCING_ACCOUNTS)
-                        .whereGreaterThan("createdAt", twoYearsAgo)
-                        .orderBy("createdAt", Query.Direction.DESCENDING)
-                        .get()
-                        .await()
+        // Stable cutoff: first day of the month, two years back, midnight Asia/Manila.
+        // Firestore keys listener resume tokens by the exact query (filter values included);
+        // a cutoff that changes every millisecond would make every open a brand-new query.
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
+        calendar.add(Calendar.YEAR, -2)
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val cutoff = com.google.firebase.Timestamp(calendar.time)
 
-                    snapshot.documents.map { doc ->
-                        FinancingAccount(
-                            id = doc.id,
-                            financingCompany = doc.getString("financingCompany") ?: "",
-                            customerName = doc.getString("customerName") ?: "",
-                            accountNumber = doc.getString("accountNumber") ?: "",
-                            purchaseDate = doc.getString("purchaseDate") ?: "",
-                            contactNumber = doc.getString("contactNumber") ?: "",
-                            devicePurchased = doc.getString("devicePurchased"),
-                            monthlyPayment = doc.getDouble("monthlyPayment"),
-                            term = doc.getString("term"),
-                            downpayment = doc.getDouble("downpayment"),
-                            financedAmount = doc.getDouble("financedAmount"),
-                            createdAt = doc.getTimestamp("createdAt"),
-                            createdBy = doc.getString("createdBy") ?: "",
-                            storeLocation = doc.getString("storeLocation") ?: ""
-                        )
-                    }
+        accountsListener = db.collection(AppConstants.COLLECTION_FINANCING_ACCOUNTS)
+            .whereGreaterThan("createdAt", cutoff)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                binding.progressBar.visibility = View.GONE
+
+                if (error != null) {
+                    Toast.makeText(this@FinancingAccountListActivity, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
                 }
+
+                val accounts = snapshot?.documents?.map { doc ->
+                    FinancingAccount(
+                        id = doc.id,
+                        financingCompany = doc.getString("financingCompany") ?: "",
+                        customerName = doc.getString("customerName") ?: "",
+                        accountNumber = doc.getString("accountNumber") ?: "",
+                        purchaseDate = doc.getString("purchaseDate") ?: "",
+                        contactNumber = doc.getString("contactNumber") ?: "",
+                        devicePurchased = doc.getString("devicePurchased"),
+                        monthlyPayment = doc.getDouble("monthlyPayment"),
+                        term = doc.getString("term"),
+                        downpayment = doc.getDouble("downpayment"),
+                        financedAmount = doc.getDouble("financedAmount"),
+                        createdAt = doc.getTimestamp("createdAt"),
+                        createdBy = doc.getString("createdBy") ?: "",
+                        storeLocation = doc.getString("storeLocation") ?: ""
+                    )
+                } ?: emptyList()
 
                 allAccounts.clear()
                 allAccounts.addAll(accounts)
                 applyFilters()
-
-            } catch (e: Exception) {
-                Toast.makeText(this@FinancingAccountListActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
-                binding.progressBar.visibility = View.GONE
             }
-        }
     }
 
     // ============================================================================
