@@ -577,14 +577,12 @@ class MenuActivity : AppCompatActivity() {
                         radioGroup.check(radioButton.id)
                     }
                 }
-                var listener: android.widget.RadioGroup.OnCheckedChangeListener? = null
-                listener = android.widget.RadioGroup.OnCheckedChangeListener { group, checkedId ->
-                    if (checkedId == View.NO_ID) return@OnCheckedChangeListener
+                radioGroup.setOnCheckedChangeListener { group, checkedId ->
+                    if (checkedId == View.NO_ID) return@setOnCheckedChangeListener
                     val option = group.findViewById<android.widget.RadioButton>(checkedId)?.tag
-                        as? StoreLocationHelper.StoreLocationOption ?: return@OnCheckedChangeListener
-                    onBranchPicked(dialog, radioGroup, listener, option)
+                        as? StoreLocationHelper.StoreLocationOption ?: return@setOnCheckedChangeListener
+                    onBranchPicked(dialog, option)
                 }
-                radioGroup.setOnCheckedChangeListener(listener)
                 radioGroup.visibility = View.VISIBLE
             } catch (e: Exception) {
                 progressBar.visibility = View.GONE
@@ -596,13 +594,11 @@ class MenuActivity : AppCompatActivity() {
     }
 
     /**
-     * Handle a branch selection: no-op for the current branch, immediate save on an
-     * unconfigured device, otherwise confirm before switching.
+     * Handle a branch selection: no-op for the current branch, otherwise switch immediately.
+     * The settings password entered before the picker is the only gate; no confirmation.
      */
     private fun onBranchPicked(
         pickerDialog: androidx.appcompat.app.AlertDialog,
-        radioGroup: android.widget.RadioGroup,
-        listener: android.widget.RadioGroup.OnCheckedChangeListener?,
         option: StoreLocationHelper.StoreLocationOption
     ) {
         val current = StoreLocationHelper.getStoreLocation(this)
@@ -612,54 +608,8 @@ class MenuActivity : AppCompatActivity() {
             return
         }
 
-        if (current.isBlank()) {
-            applyBranch(option)
-            pickerDialog.dismiss()
-            return
-        }
-
-        val currentDisplay = StoreLocationHelper.getDisplayName(current)
-        val newDisplay = StoreLocationHelper.getDisplayName(option.name)
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Change Store Location?")
-            .setMessage(
-                "This device will switch from \"$currentDisplay\" to \"$newDisplay\" and will " +
-                "only show records for the new store location. Existing records are not moved."
-            )
-            .setPositiveButton("Confirm") { _, _ ->
-                applyBranch(option)
-                pickerDialog.dismiss()
-            }
-            .setNegativeButton("Cancel") { _, _ ->
-                restoreCurrentBranchSelection(radioGroup, listener, current)
-            }
-            .setOnCancelListener {
-                restoreCurrentBranchSelection(radioGroup, listener, current)
-            }
-            .show()
-    }
-
-    /**
-     * Re-check the radio button for the device's current branch (or clear the selection
-     * when the current branch is not in the list) after a cancelled confirmation.
-     * The change listener is detached while doing so to avoid re-triggering the picker.
-     */
-    private fun restoreCurrentBranchSelection(
-        radioGroup: android.widget.RadioGroup,
-        listener: android.widget.RadioGroup.OnCheckedChangeListener?,
-        current: String
-    ) {
-        radioGroup.setOnCheckedChangeListener(null)
-        radioGroup.clearCheck()
-        for (i in 0 until radioGroup.childCount) {
-            val radioButton = radioGroup.getChildAt(i) as? android.widget.RadioButton ?: continue
-            val option = radioButton.tag as? StoreLocationHelper.StoreLocationOption ?: continue
-            if (option.name == current) {
-                radioGroup.check(radioButton.id)
-                break
-            }
-        }
-        radioGroup.setOnCheckedChangeListener(listener)
+        applyBranch(option)
+        pickerDialog.dismiss()
     }
 
     /**
