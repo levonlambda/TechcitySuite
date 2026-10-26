@@ -1,6 +1,9 @@
 package com.techcity.techcitysuite
 
 import android.app.DatePickerDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -55,7 +58,15 @@ class EndOfDayListActivity : AppCompatActivity() {
         val deviceCount: Int,
         val accessoryCount: Int,
         val serviceCount: Int,
-        val totalRevenue: Double
+        val totalRevenue: Double,
+        // Spreadsheet export figures (long-press to copy), see _specs/eod-report-clipboard-export.md
+        val deviceCashCollected: Double = 0.0,      // Column 1
+        val accessoryCashCollected: Double = 0.0,   // Column 2
+        val homeCreditBalance: Double = 0.0,        // Column 3
+        val skyroBalance: Double = 0.0,             // Column 4
+        val creditCardTotal: Double = 0.0,          // Column 5
+        val inHouseSalmonBalance: Double = 0.0,     // Column 6
+        val hasBreakdownData: Boolean = false       // false for legacy docs without salesSummary/cashFlowSummary
     )
 
     // ============================================================================
@@ -297,6 +308,35 @@ class EndOfDayListActivity : AppCompatActivity() {
                 val totals = data["grandTotals"] as? Map<*, *>
                 val totalRevenue = (totals?.get("totalRevenue") as? Number)?.toDouble() ?: 0.0
 
+                // Extract spreadsheet export figures (columns 1-6) from the saved summary
+                val cashFlowSummary = data["cashFlowSummary"] as? Map<*, *>
+                val deviceCashFlow = cashFlowSummary?.get("devices") as? Map<*, *>
+                val accessoryCashFlow = cashFlowSummary?.get("accessories") as? Map<*, *>
+
+                val salesSummary = data["salesSummary"] as? Map<*, *>
+                val deviceSales = salesSummary?.get("devices") as? Map<*, *>
+                val accessorySales = salesSummary?.get("accessories") as? Map<*, *>
+
+                // Columns 1, 2: all collections except Credit Card
+                val deviceCashCollected = nonCreditCardCollections(deviceCashFlow)
+                val accessoryCashCollected = nonCreditCardCollections(accessoryCashFlow)
+
+                // Column 5: Credit Card collections (devices + accessories)
+                val creditCardTotal = numberOrZero(deviceCashFlow, "creditCard") +
+                    numberOrZero(accessoryCashFlow, "creditCard")
+
+                // Columns 3, 4, 6: balances (devices + accessories)
+                val homeCreditBalance = salesBalance(deviceSales, "homeCredit") +
+                    salesBalance(accessorySales, "homeCredit")
+                val skyroBalance = salesBalance(deviceSales, "skyro") +
+                    salesBalance(accessorySales, "skyro")
+                val inHouseSalmonBalance = salesBalance(deviceSales, "inHouse") +
+                    salesBalance(accessorySales, "inHouse") +
+                    salesBalance(deviceSales, "salmon") +
+                    salesBalance(accessorySales, "salmon")
+
+                val hasBreakdownData = salesSummary != null || cashFlowSummary != null
+
                 EODReportSummary(
                     documentId = doc.id,
                     date = data["date"] as? String ?: "",
@@ -306,7 +346,14 @@ class EndOfDayListActivity : AppCompatActivity() {
                     deviceCount = deviceCount,
                     accessoryCount = accessoryCount,
                     serviceCount = serviceCount,
-                    totalRevenue = totalRevenue
+                    totalRevenue = totalRevenue,
+                    deviceCashCollected = deviceCashCollected,
+                    accessoryCashCollected = accessoryCashCollected,
+                    homeCreditBalance = homeCreditBalance,
+                    skyroBalance = skyroBalance,
+                    creditCardTotal = creditCardTotal,
+                    inHouseSalmonBalance = inHouseSalmonBalance,
+                    hasBreakdownData = hasBreakdownData
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -366,6 +413,13 @@ class EndOfDayListActivity : AppCompatActivity() {
                 root.setOnClickListener {
                     onItemClick(item)
                 }
+
+                // Long-press copies the spreadsheet figures (columns 1-6) to the clipboard.
+                // Return true so the click does not also fire and open the report.
+                root.setOnLongClickListener {
+                    copyReportFiguresToClipboard(item)
+                    true
+                }
             }
         }
 
@@ -422,6 +476,70 @@ class EndOfDayListActivity : AppCompatActivity() {
     private fun formatCurrency(amount: Double): String {
         val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
         return format.format(amount)
+    }
+
+    /**
+     * Reads a numeric field from a saved summary map, defaulting to 0.0 when missing.
+     */
+    private fun numberOrZero(map: Map<*, *>?, key: String): Double {
+        return (map?.get(key) as? Number)?.toDouble() ?: 0.0
+    }
+
+    /**
+     * Sum of all payment-source buckets except Credit Card from a cashFlowSummary section
+     * (devices or accessories). Used for spreadsheet columns 1 and 2.
+     */
+    private fun nonCreditCardCollections(cashFlow: Map<*, *>?): Double {
+        return numberOrZero(cashFlow, "cash") +
+            numberOrZero(cashFlow, "gcash") +
+            numberOrZero(cashFlow, "paymaya") +
+            numberOrZero(cashFlow, "bankTransfer") +
+            numberOrZero(cashFlow, "others")
+    }
+
+    /**
+     * Reads the balance of a transaction type (e.g. "homeCredit") from a salesSummary
+     * section (devices or accessories), defaulting to 0.0 when missing.
+     */
+    private fun salesBalance(sales: Map<*, *>?, typeKey: String): Double {
+        val typeMap = sales?.get(typeKey) as? Map<*, *>
+        return numberOrZero(typeMap, "balance")
+    }
+
+    /**
+     * Builds the tab-separated clipboard line for the six spreadsheet columns, in order 1-6.
+     * Uses Locale.US so the decimal separator is always a period and there is no grouping,
+     * which lets Excel treat the pasted values as numbers.
+     */
+    private fun buildClipboardLine(item: EODReportSummary): String {
+        val values = listOf(
+            item.deviceCashCollected,
+            item.accessoryCashCollected,
+            item.homeCreditBalance,
+            item.skyroBalance,
+            item.creditCardTotal,
+            item.inHouseSalmonBalance
+        )
+        return values.joinToString("\t") { String.format(Locale.US, "%.2f", it) }
+    }
+
+    /**
+     * Copies the six spreadsheet figures of a report to the clipboard and confirms with a toast.
+     */
+    private fun copyReportFiguresToClipboard(item: EODReportSummary) {
+        if (!item.hasBreakdownData) {
+            showMessage("This report has no breakdown data to copy", true)
+            return
+        }
+
+        try {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("EOD figures", buildClipboardLine(item)))
+            showMessage("Copied EOD figures for ${formatDisplayDate(item.date)}", false)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showMessage("Unable to copy: ${e.message}", true)
+        }
     }
 
     private fun showMessage(message: String, isError: Boolean) {
